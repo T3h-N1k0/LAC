@@ -1,0 +1,82 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Recherche de compte {% endblock title %}
+
+{% block head_js %}
+
+<link rel="stylesheet" href="{{
+      url_for('static', filename='themes/blue/style.css')
+      }}" type="text/css" id="" media="print, projection, screen" />
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery.tablesorter.min.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+        url_for('static', filename='excellentexport.min.js')
+        }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function() {
+   $("#userz").tablesorter({widthFixed: true, widgets: ['zebra']});
+ }
+ );
+
+</script>
+
+
+{% endblock head_js %}
+
+{% block body %}
+<form method=post action="/search_user">
+  <dl>
+    {{ render_formfield(form.uid_number) }}
+    {{ render_formfield(form.sn) }}
+    {{ render_formfield(form.uid) }}
+    {{ render_formfield(form.mail) }}
+    {{ render_formfield(form.user_type) }}
+    {{ render_formfield(form.user_disabled) }}
+  </dl>
+  <p><input type=submit value=Chercher>
+</form>
+
+{% if userz %}
+<h1>Liste des utilisateurs : </h1>
+<a download="user_list_{{ timestamp }}.xls" href="#" onclick="return ExcellentExport.excel(this, 'userz', 'Comptes');">Exporter vers Excel</a>
+<a download="user_list_{{ timestamp }}.csv" href="#" onclick="return ExcellentExport.csv(this, 'userz');">Export vers CSV</a>
+
+<table  class="tablesorter" id="userz"  >
+  <thead>
+  <tr>
+    {% for attribute_label in attributes.values() %}
+    <th>{{ attribute_label }}</th>
+    {% endfor %}
+  </tr>
+  </thead>
+  <tbody>
+  {% for user in userz|sort %}
+      <tr>
+        {% for attribute_key in attributes.keys() %}
+        <td>
+          {% for value in user.get_attributes()[attribute_key]  %}
+          {{ value.decode('utf-8') }}
+          {% endfor %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<h1>Aucun résultat</h1>
+{% endif %}
+
+
+{{ search_resultz  }}
+{% endblock %}

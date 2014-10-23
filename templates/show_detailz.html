@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body %}
+    {% if account %}
+    <h1> Détails pour le compte {{ account[0][1]['uid'][0] }} : </h1>
+        <table style="width:100%">
+        {% for attribute_key in account[0][1]|sort %}
+          {% for value in account[0][1][attribute_key]  %}
+            <tr>
+                <td> {{ attribute_key }} : {{ value }} </td>
+            </tr>
+          {% endfor %}
+        {% endfor %}
+        </table>
+    {% else %}
+      <h1>Groupe vide</h1>
+    {% endif %}
+{% endblock %}

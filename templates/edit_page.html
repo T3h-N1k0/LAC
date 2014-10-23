@@ -1,0 +1,55 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Recherche de compte {% endblock title %}
+
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#oc_form-available_oc').dblclick(function() {
+     selectFromList('#oc_form-available_oc', '#oc_form-selected_oc');
+   });
+   $('#oc_form-selected_oc').dblclick(function() {
+     removeFromList('#oc_form-available_oc', '#oc_form-selected_oc');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#oc_form-available_oc', '#oc_form-selected_oc');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#oc_form-available_oc', '#oc_form-selected_oc');
+   });
+   $('#searchFilter').keyup(function() {
+     var searchArea = $('#oc_form-available_oc');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#oc_form-selected_oc option').prop('selected', true);
+   });
+ });
+</script>
+
+{% endblock head_js %}
+
+{% block body %}
+<form method="post" action="/edit_page/{{ page.label}}">
+  <input id="searchFilter" type="text"/>
+  {{ render_formfield(form.oc_form.available_oc) }}
+  {{ render_formfield(form.oc_form.selected_oc) }}
+  {% for label in attr_label_list %}
+  {{ render_formfield(get_attr(form, label)) }}
+  {% endfor  %}
+  <input id="update" type="submit" value="Mettre à jour" >
+</form>
+{% endblock body %}

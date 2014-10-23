@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{                                                                                                                               url_for('static', filename='jquery-2.1.1.js')                                                                                                               }}"></script>
+
+
+<script type="text/javascript" language='javascript' src="{{
+         url_for('static', filename='TableFilter/tablefilter.js')
+         }}"></script>
+
+
+{% endblock head_js %}
+
+{% block body %}
+
+{% if memberz %}
+<h1> Liste des membres du group {{ group }} : </h1>
+<table id='table1' >
+  {% for member in memberz|sort %}
+  <tr>
+    <td> <a href="{{
+            url_for('get_account_detailz', uid=member[1]['uid'][0]) }}">{{member[1]['uid'][0]
+      }}</a> </td>
+  </tr>
+  {%endfor%}
+</table>
+{% else %}
+<h1>Groupe vide</h1>
+{% endif %}
+
+<script language="javascript" type="text/javascript">
+ var table_propz = { on_keyup: true,
+                     on_keyup_delay: 10
+ }
+ setFilterGrid("table1", table_propz);
+</script>
+
+{% endblock %}

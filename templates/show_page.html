@@ -1,0 +1,30 @@
+{% from "_formhelpers.html" import render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Recherche de compte {% endblock title %}
+
+{% block head_js %}
+{% endblock head_js %}
+
+{% block body %}
+{% for attr_name, attr_values in uid_attributez.iteritems() %}
+{% if attr_name in page_fieldz %}
+
+{% if page_fieldz[attr_name].display %}
+
+{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :
+<ul>
+{% for value in attr_values %}
+<li>{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+{% endif %}
+
+{% endfor %}
+page_fieldz <br/>
+{{ page_fieldz }}
+ <br/>
+uid_attributez <br/>
+{{ uid_attributez }}
+{% endblock body %}
