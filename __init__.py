@@ -255,6 +255,8 @@ class TestForm(Form):
 @app.route('/')
 @login_required
 def home():
+    #init_people_group_redis()
+    populate_grouplist_redis()
     return render_template('home.html')
 
 
@@ -332,17 +334,10 @@ def change_password(uid):
 
 @app.route('/people/<group>')
 @login_required
-def get_group_person_memberz(group):
-    """
-    List memberz of a group inherited from people ou
-    """
-    ldap_filter='(objectclass=inetOrgPerson)'
-    attributes=['uid']
-    base_dn='ou={0},ou=people,{1}'.format(group,app.config['LDAP_SEARCH_BASE'])
-
-    records = ldap.search(base_dn,ldap_filter,attributes)
+def show_group_memberz(group):
+    memberz = get_group_memeberz(group)
     return render_template('show_group_memberz.html',
-                           memberz=records,
+                           memberz=memberz,
                            group=group)
 
 
@@ -623,9 +618,18 @@ def edit(page,uid):
 
 ### Helperz
 
-def init_people_group_redis():
-    for group, in app.config['PEOPLE_GROUPS']:
-        delete(group)
+def populate_grouplist_redis():
+    grouplist = get_groupz_list()
+    for (uid, group) in grouplist:
+        r.hset('grouplist', uid, group)
+    print(r.hgetall('grouplist'))
+
+def populate_people_group_redis():
+    for group in app.config['PEOPLE_GROUPS']:
+        r.delete('groupz:{0}'.format(group))
+        memberz = get_group_person_memberz(group)
+        for member in memberz:
+            r.sadd("groupz:{0}".format(group), member)
 
 def create_ldapattr_if_not_exists(label):
     db_attr = LDAPAttribute.query.filter_by(
@@ -658,7 +662,7 @@ def generate_edit_form(page, uid):
         get_uid_detailz(uid)
     )[0].get_attributes()
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
-    groupz_list = get_groupz_list()
+
 
     attributes = []
     class EditForm(Form):
@@ -679,7 +683,7 @@ def generate_edit_form(page, uid):
                 setattr(EditForm,
                         attr_name,
                         FieldList(SelectField(page_attrz[attr_name].description,
-                                              choices=groupz_list)))
+                                              choices=r.hgetall('grouplist'))))
 
 
     form = EditForm(request.form)
@@ -847,6 +851,20 @@ def get_type(obj):
     return str(type(obj))
 app.jinja_env.globals.update(get_type=get_type)
 
+def get_group_person_memberz(group):
+    """
+    List memberz of a group inherited from people ou
+    """
+    ldap_filter='(objectclass=inetOrgPerson)'
+    attributes=['uid']
+    base_dn='ou={0},ou=people,{1}'.format(group,app.config['LDAP_SEARCH_BASE'])
+
+    records = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    memberz = [ member.get_attributes()['uid'][0] for member in records]
+    return memberz
+
 def get_groupz_list():
     ldap_filter = "(objectClass=posixGroup)"
     ldap_groupz = ldaphelper.get_search_results(
@@ -882,9 +900,9 @@ def get_subschema():
     return subschema
 
 def get_posix_group_cn_by_gid(gid):
-    ldap_filter = "(&(objectClass=posixGroup)(gidNumber={0}) )".format(gid)
-    resultz = ldap.search(ldap_filter=ldap_filter, attributes=['cn'])
-    return resultz[0][1]['cn'][0]
+    return 'bla'
+    #return r.hget(uid)
+
 app.jinja_env.globals.update(
     get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
 )
@@ -935,5 +953,4 @@ if __name__ == '__main__':
     app.debug = app.config['DEBUG']
 
     decoder = PythonLDAPDecoder(app.config['ENCODING'])
-
     app.run()
