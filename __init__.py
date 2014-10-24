@@ -155,7 +155,7 @@ class PageObjectClass(db.Model):
 class Field(db.Model):
     __tablename__ = 'field'
     id = db.Column(db.Integer, primary_key=True)
-    label = db.Column(db.String(50), unique=True)
+    label = db.Column(db.String(50))
     description = db.Column(db.String(80))
     display = db.Column(db.Boolean())
     edit = db.Column(db.Boolean())
@@ -178,7 +178,7 @@ class Field(db.Model):
                  label,
                  page,
                  ldapattribute,
-                 fieldtype,
+                 fieldtype=None,
                  description=None,
                  display=False,
                  edit=False,
@@ -239,9 +239,14 @@ class SelectOCForm(Form):
     available_oc = SelectMultipleField(u'Classes disponibles', coerce=int)
     selected_oc = SelectMultipleField(u'Classes selectionnées', coerce=int)
 
+class SelectAttrForm(Form):
+    available_attr = SelectMultipleField(u'Attributs disponibles', coerce=int)
+    selected_attr = SelectMultipleField(u'Attributs selectionnés', coerce=int)
+
+
 class EditPageViewForm(Form):
     oc_form = FormField(SelectOCForm)
-
+    attr_form = FormField(SelectAttrForm)
 
 class TestForm(Form):
     @classmethod
@@ -388,35 +393,72 @@ def edit_page(page_label):
 
     raw_form = generate_edit_page_admin_form(page)
     form = raw_form['form']
-    attributes = raw_form['attributes']
-    page_oc_id_list = raw_form['page_oc_id_list']
 
     if request.method == 'POST' :
-        if form.oc_form.selected_oc.data is None:
-            flash("Au moins une classe est requise")
-            return render_template('edit_page.html',
-                                   page=page,
-                                   form=form)
-        # On traite les ObjectClass ajoutées
-        for oc_id in form.oc_form.selected_oc.data :
-            if oc_id not in page_oc_id_list:
-                page_oc =  PageObjectClass(page.id, oc_id)
-                db.session.add(page_oc)
-        # On traite les ObjectClass supprimées
-        for oc_id in page_oc_id_list:
-            if oc_id not in form.oc_form.selected_oc.data:
-                PageObjectClass.query.filter_by(page_id=page.id,
-                                                ldapobjectclass_id= oc_id
-                ).delete()
+        attributes = raw_form['attributes']
+        page_oc_id_list = raw_form['page_oc_id_list']
+        page_unic_attr_id_list = raw_form['page_unic_attr_id_list']
 
-        update_fields_from_edit_page_admin_form(form, attributes, page)
+        if form.oc_form.selected_oc.data is not None:
+            # flash("Au moins une classe est requise")
+            # return render_template('edit_page.html',
+            #                        page=page,
+            #                        form=form)
+
+            # On traite les ObjectClass ajoutées
+            for oc_id in form.oc_form.selected_oc.data :
+                print(oc_id)
+                print(page_oc_id_list)
+                if oc_id not in page_oc_id_list:
+                    page_oc =  PageObjectClass(page.id, oc_id)
+                    db.session.add(page_oc)
+                    # On traite les ObjectClass supprimées
+            for oc_id in page_oc_id_list:
+                if oc_id not in form.oc_form.selected_oc.data:
+                    PageObjectClass.query.filter_by(page_id=page.id,
+                                                    ldapobjectclass_id= oc_id
+                    ).delete()
+        if form.attr_form.selected_attr.data is not None:
+            # On traite les Attributes ajoutées
+            for attr_id in form.attr_form.selected_attr.data :
+                if attr_id not in page_unic_attr_id_list:
+                    attr = LDAPAttribute.query.filter_by(id = attr_id).first()
+                    page_attr = Field(label = attr.label,
+                                      page = page,
+                                      ldapattribute = attr)
+                    print(page_attr)
+                    db.session.add(page_attr)
+
+            # On traite les Attributes supprimées
+            for attr_id in page_unic_attr_id_list:
+                if attr_id not in form.attr_form.selected_attr.data:
+                    attr = Field.query.filter_by(
+                        id=attr_id
+                    )
+                    attributes.remove(attr.first())
+                    attr.delete()
+                    print(attr)
+                    # Field.query.filter_by(
+                    #     id=attr_id
+                    # ).delete()
+                    print()
+
+                    print("test  : {0}".format(a))
+
+        if attributes is not None :
+            update_fields_from_edit_page_admin_form(form, attributes, page)
 
         db.session.commit()
 
         raw_form = generate_edit_page_admin_form(page)
         form = raw_form['form']
 
-    attr_label_list = sorted([attr.label for attr in raw_form['attributes'] ])
+    if raw_form['attributes'] is not None:
+        attr_label_list = sorted(
+            [attr.label for attr in raw_form['attributes'] ]
+        )
+    else:
+        attr_label_list = []
 
     return render_template('edit_page.html',
                            page=page,
@@ -631,6 +673,12 @@ def populate_people_group_redis():
         for member in memberz:
             r.sadd("groupz:{0}".format(group), member)
 
+def get_group_from_member_uid(uid):
+    for group in app.config['PEOPLE_GROUPS']:
+        if uid in r.smembers("groupz:{0}".format(group)):
+            return group
+    flash(u"Impossible de trouver le groupe associé à {0}".format(uid))
+
 def create_ldapattr_if_not_exists(label):
     db_attr = LDAPAttribute.query.filter_by(
         label = label
@@ -750,13 +798,23 @@ def generate_edit_page_admin_form(page):
 
     page_oc_list = PageObjectClass.query.filter_by(page_id=page.id).all()
     select_oc_choices = filter(None,[(oc.ldapobjectclass.id,
-                                              oc.ldapobjectclass.label)
-                                             for oc in page_oc_list ])
+                                      oc.ldapobjectclass.label)
+                                     for oc in page_oc_list ])
     page_oc_id_list = [oc[0] for oc in select_oc_choices]
     page_oc_attr_list = LDAPObjectClassAttribute.query.filter(
         LDAPObjectClassAttribute.ldapobjectclass_id.in_(page_oc_id_list)
     ).all()
-    page_attr_id_list = [ a.id for a in page_oc_attr_list ]
+    page_oc_attr_id_list = [ a.id for a in page_oc_attr_list ]
+
+    page_unic_attr_list = Field.query.filter(
+        Field.page_id==page.id
+    ).all()
+    print(page_unic_attr_list)
+    page_unic_attr_id_list = [attr.id for attr in page_unic_attr_list]
+    select_unic_attr_choices = filter(None, [(attr.id,
+                                              attr.label)
+                                             for attr in page_unic_attr_list ])
+
     available_oc = LDAPObjectClass.query.all()
     field_types = FieldType.query.all()
     display_mode_choices = [(field_type.id, field_type.type)
@@ -765,11 +823,33 @@ def generate_edit_page_admin_form(page):
                                       if oc.id not in page_oc_id_list
                                       and oc is not None
                                       else None for oc in available_oc])
-    attributes = set([oc_attr.ldapattribute for oc_attr in  page_oc_attr_list])
-    attr_label_list = set([ attr.label for attr in attributes ])
+
+
+    available_unic_attr = LDAPAttribute.query.all()
+    available_unic_attr_choices = filter(
+        None, [(attr.id,attr.label)
+               if attr.id not in page_unic_attr_id_list
+               and attr is not None
+               else None for attr in available_unic_attr]
+    )
+
+    attributes = set([])
+
+    attributes.update(
+        [oc_attr.ldapattribute for oc_attr in  page_oc_attr_list]
+    )
+    attributes.update(
+        [attr.ldapattribute for attr in page_unic_attr_list]
+    )
+
+    if attributes is not None:
+        attr_label_list = set([ attr.label for attr in attributes ])
+    else:
+        attr_label_list = set([])
 
     class EditPageForm(EditPageViewForm):
         pass
+
 
     for label in attr_label_list:
         existing_field = Field.query.filter_by(label=label,
@@ -800,10 +880,13 @@ def generate_edit_page_admin_form(page):
     form = EditPageForm(request.form)
     form.oc_form.available_oc.choices = available_oc_choices
     form.oc_form.selected_oc.choices = select_oc_choices
+    form.attr_form.available_attr.choices = available_unic_attr_choices
+    form.attr_form.selected_attr.choices = select_unic_attr_choices
 
     return {'form' : form,
             'attributes': attributes,
-            'page_oc_id_list': page_oc_id_list}
+            'page_oc_id_list': page_oc_id_list,
+            'page_unic_attr_id_list': page_unic_attr_id_list}
 
 
 def update_fields_from_edit_page_admin_form(form, attributes, page):
@@ -812,35 +895,50 @@ def update_fields_from_edit_page_admin_form(form, attributes, page):
                        ~Field.label.in_(attributes_labelz)
     ).delete(synchronize_session='fetch')
 
+    print(attributes)
+
     for attribute in attributes:
         attribute_field = getattr(form, attribute.label)
-        field_type = FieldType.query.filter_by(
-            id=attribute_field.display_mode.data
-        ).first()
-        existing_field = Field.query.filter_by(page_id=page.id,
-                                               label=attribute.label,
-                                               ldapattribute_id=attribute.id
-        ).first()
-        if existing_field is not None:
-            existing_field.display = attribute_field.display.data
-            existing_field.edit = attribute_field.edit.data
-            existing_field.restrict = attribute_field.restrict.data
-            existing_field.fieldtype = field_type
-            existing_field.description = attribute_field.desc.data
-            existing_field.multivalue = attribute_field.multivalue.data
-        else:
-            new_field = Field(label=attribute.label,
-                              page=page,
-                              ldapattribute=attribute,
-                              display=attribute_field.display.data,
-                              edit=attribute_field.edit.data,
-                              restrict=attribute_field.restrict.data,
-                              fieldtype=field_type,
-                              description=attribute_field.desc.data,
-                              multivalue=attribute_field.multivalue.data)
-            db.session.add(new_field)
+        upsert_field(attribute, attribute_field, page)
 
 
+def create_default_field(attribute, page):
+    print(page.label)
+    page_attr = Field(label = attribute.label,
+                      page = page,
+                      ldapattribute = attribute)
+    db.session.add(page_attr)
+    db.session.commit()
+
+def upsert_field(attribute, form_field, page):
+    print('appel')
+    field_type = FieldType.query.filter_by(
+        id=form_field.display_mode.data
+    ).first()
+    print(page.id)
+    print(attribute.label)
+    existing_field = Field.query.filter_by(page_id=page.id,
+                                           label=attribute.label,
+                                           ldapattribute_id=attribute.id
+    ).first()
+    if existing_field is not None:
+        existing_field.display = form_field.display.data
+        existing_field.edit = form_field.edit.data
+        existing_field.restrict = form_field.restrict.data
+        existing_field.fieldtype = field_type
+        existing_field.description = form_field.desc.data
+        existing_field.multivalue = form_field.multivalue.data
+    else:
+        new_field = Field(label=attribute.label,
+                          page=page,
+                          ldapattribute=attribute,
+                          display=form_field.display.data,
+                          edit=form_field.edit.data,
+                          restrict=form_field.restrict.data,
+                          fieldtype=field_type,
+                          description=form_field.desc.data,
+                          multivalue=form_field.multivalue.data)
+        db.session.add(new_field)
 
 def get_attr(form, name):
     return getattr(form, name)
@@ -898,14 +996,6 @@ def get_subschema():
     subschema_subentry = subschema_entry.get_attributes()
     subschema = schema.subentry.SubSchema( subschema_subentry )
     return subschema
-
-def get_posix_group_cn_by_gid(gid):
-    return 'bla'
-    #return r.hget(uid)
-
-app.jinja_env.globals.update(
-    get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
-)
 
 def process_ldap_result(resultz):
     for result in resultz:

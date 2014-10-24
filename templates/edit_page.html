@@ -29,13 +29,31 @@
    $('#toAvailable').click(function(){
      removeFromList('#oc_form-available_oc', '#oc_form-selected_oc');
    });
-   $('#searchFilter').keyup(function() {
+   $('#searchOCFilter').keyup(function() {
      var searchArea = $('#oc_form-available_oc');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#attr_form-available_attr').dblclick(function() {
+     selectFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#attr_form-selected_attr').dblclick(function() {
+     removeFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#searchAttrFilter').keyup(function() {
+     var searchArea = $('#attr_form-available_attr');
      // Select Box ID
      searchFromList($(this).val(), searchArea);
    });
    $('#update').click(function() {
      $('#oc_form-selected_oc option').prop('selected', true);
+     $('#attr_form-selected_attr option').prop('selected', true);
    });
  });
 </script>
@@ -44,12 +62,21 @@
 
 {% block body %}
 <form method="post" action="/edit_page/{{ page.label}}">
-  <input id="searchFilter" type="text"/>
-  {{ render_formfield(form.oc_form.available_oc) }}
-  {{ render_formfield(form.oc_form.selected_oc) }}
-  {% for label in attr_label_list %}
-  {{ render_formfield(get_attr(form, label)) }}
-  {% endfor  %}
+  <fieldset>
+    <legend>Configuration par ObjectClass :</legend>
+    <input id="searchOCFilter" type="text"/>
+    {{ render_formfield(form.oc_form.available_oc) }}
+    {{ render_formfield(form.oc_form.selected_oc) }}
+    {% for label in attr_label_list %}
+    {{ render_formfield(get_attr(form, label)) }}
+    {% endfor  %}
+  </fieldset>
+  <fieldset>
+    <legend>Configuration par Attributs :</legend>
+    <input id="searchAttrFilter" type="text"/>
+    {{ render_formfield(form.attr_form.available_attr) }}
+    {{ render_formfield(form.attr_form.selected_attr) }}
+  </fieldset>
   <input id="update" type="submit" value="Mettre à jour" >
 </form>
 {% endblock body %}
