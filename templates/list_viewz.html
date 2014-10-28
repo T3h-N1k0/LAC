@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+{% block body %}
+{% for page in pagez %}
+<a href="{{ url_for(
+   'edit_page',
+   page_label=page.label)}}">{{ page.description }}</a>
+<br/>
+{% endfor %}
+{% endblock body %}
