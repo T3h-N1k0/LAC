@@ -15,7 +15,7 @@
       {% if not session.logged_in %}
       <a href="{{ url_for('login') }}">Se connecter</a>
       {% else %}
-      Connecté en tant que "{{ session['uid']}}"   <a href="{{ url_for('logout') }}">Déconnecter</a>
+      Connecté en tant que "{{ session['uid']}}"   <a href="{{ url_for('logout') }}">Déconnecter</a>  <a href="{{ url_for('home') }}">Accueil</a>
       {% endif %}
     </div>
     {% with messages = get_flashed_messages() %}

@@ -243,10 +243,17 @@ class SelectAttrForm(Form):
     available_attr = SelectMultipleField(u'Attributs disponibles', coerce=int)
     selected_attr = SelectMultipleField(u'Attributs selectionnés', coerce=int)
 
+class SelectMemberzForm(Form):
+    available_memberz = SelectMultipleField(u'Membres disponibles', coerce=int)
+    selected_memberz = SelectMultipleField(u'Membres selectionnés', coerce=int)
 
 class EditPageViewForm(Form):
     oc_form = FormField(SelectOCForm)
     attr_form = FormField(SelectAttrForm)
+
+class AddPageViewForm(Form):
+    label = TextField(u'Libellé de la vue')
+    description = TextField('Description de la vue')
 
 class TestForm(Form):
     @classmethod
@@ -260,9 +267,10 @@ class TestForm(Form):
 @app.route('/')
 @login_required
 def home():
-    #init_people_group_redis()
+    populate_people_group_redis()
     populate_grouplist_redis()
-    return render_template('home.html')
+    return render_template('home.html',
+                           groupz = app.config['PEOPLE_GROUPS'])
 
 
 @app.route('/search_user', methods=['POST', 'GET'])
@@ -273,16 +281,11 @@ def search_user():
     """
     form = SearchUserForm(request.form)
     search_resultz=""
-    search_attributez = {'uid': 'Login',
-                         'givenName' : 'Nom d\'utilisateur' ,
-                         'telephoneNumber' : u'Téléphone',
-                         'mail' : 'Adresse mail',
-                         'sn' : u'Prénom',
-                         'uidNumber' : u'Numéro uid',
-                         'gidNumber' : 'Groupe princpal',
-                         'authTimestamp' : 'Dernier bind' ,
-                         'createTimestamp': u'Date de création',
-                         'cinesdaterenew' : 'Date de renouvellement'}
+    page = Page.query.filter_by(label = "search_user").first()
+    page_attributez = Field.query.filter_by(page_id = page.id).all()
+    search_attributez = [attr.label.encode('utf-8')
+                         for attr in page_attributez]
+    print("Search attributez : {0}".format(search_attributez))
 
     if request.method == 'POST' and form.validate():
         filter_list =[]
@@ -297,7 +300,7 @@ def search_user():
         if form.user_disabled.data :
             filter_list.append("(shadowExpire=0)")
         if form.user_type.data == "":
-            base_dn = app.config['LDAP_SEARCH_BASE']
+            base_dn = "ou=people,{0}".format(app.config['LDAP_SEARCH_BASE'])
         else:
             base_dn = "ou={0},ou=people,{1}".format(form.user_type.data,
                                           app.config['LDAP_SEARCH_BASE'])
@@ -312,16 +315,18 @@ def search_user():
         print("Search filter : {0}".format(ldap_filter))
         #print("ROOT_DN : {0}".format(base_dn))
 
+        print(search_attributez)
         raw_resultz = ldap.search(ldap_filter=ldap_filter,
-                                  attributes=search_attributez.keys(),
+                                  attributes=search_attributez,
                                   base_dn=base_dn)
 
+        print(raw_resultz)
         search_resultz = ldaphelper.get_search_results(raw_resultz)
 
     return render_template('search_user.html',
                            userz=search_resultz,
                            form=form,
-                           attributes=search_attributez,
+                           attributes=page_attributez,
                            timestamp=time.strftime("%Y%m%d_%H%M") )
 
 
@@ -340,7 +345,7 @@ def change_password(uid):
 @app.route('/people/<group>')
 @login_required
 def show_group_memberz(group):
-    memberz = get_group_memeberz(group)
+    memberz = get_group_person_memberz(group)
     return render_template('show_group_memberz.html',
                            memberz=memberz,
                            group=group)
@@ -369,6 +374,7 @@ def test(uid):
 @app.route('/show/<page>/<uid>')
 @login_required
 def show(page, uid):
+    print("uid : {0}".format(uid))
     page = Page.query.filter_by(label = page).first()
     page_fieldz = dict(
         (row.label.lower(), row)
@@ -376,20 +382,23 @@ def show(page, uid):
     )
     uid_detailz = ldaphelper.get_search_results(get_uid_detailz(uid))[0]
     return render_template('show_page.html',
+                           uid = uid,
                            uid_attributez=uid_detailz.get_attributes(),
                            page_fieldz=page_fieldz)
 
 @app.route('/edit_page/<page_label>', methods=('GET', 'POST'))
+@app.route('/edit_page/')
 @login_required
-def edit_page(page_label):
+def edit_page(page_label=None):
     """
     Customize page attributes
     """
     page = Page.query.filter_by(label=page_label).first()
 
     if page is None:
-        flash('Page introuvable')
-        return render_template('info.html')
+        pagez = Page.query.all()
+        return render_template('list_viewz.html',
+                               pagez=pagez)
 
     raw_form = generate_edit_page_admin_form(page)
     form = raw_form['form']
@@ -456,6 +465,30 @@ def edit_page(page_label):
     return render_template('edit_page.html',
                            page=page,
                            attr_label_list = attr_label_list,
+                           form=form)
+
+@app.route('/lac_admin/', methods=('GET', 'POST'))
+@login_required
+def edit_lac_admin():
+    form = SelectMemberzForm(request.form)
+    memberz = get_lac_admin_memberz()
+    all_userz = get_all_users()
+
+
+@app.route('/add_page/', methods=('GET', 'POST'))
+@login_required
+def add_page():
+    form = AddPageViewForm(request.form)
+    if request.method == 'POST' :
+        if form.label.data is not None and form.description.data is not None:
+            page = Page(label = form.label.data,
+                        description = form.description.data)
+            db.session.add(page)
+            db.session.commit()
+            flash(u'Vue correctement ajoutée')
+            return render_template('home.html')
+
+    return render_template('add_page.html',
                            form=form)
 
 @app.route('/reset_schema/')
@@ -617,7 +650,7 @@ def hello(name=None):
 @login_required
 def edit(page,uid):
     page = Page.query.filter_by(label=page).first()
-    raw_form = generate_edit_form2(page,uid)
+    raw_form = generate_edit_form(page,uid)
     form = raw_form['form']
     attributes = raw_form['attributes']
     uid_attributez = ldaphelper.get_search_results(
@@ -666,12 +699,6 @@ def populate_people_group_redis():
         for member in memberz:
             r.sadd("groupz:{0}".format(group), member)
 
-def get_group_from_member_uid(uid):
-    for group in app.config['PEOPLE_GROUPS']:
-        if uid in r.smembers("groupz:{0}".format(group)):
-            return group
-    flash(u"Impossible de trouver le groupe associé à {0}".format(uid))
-
 def create_ldapattr_if_not_exists(label):
     db_attr = LDAPAttribute.query.filter_by(
         label = label
@@ -694,59 +721,8 @@ def update_ldap_object_from_edit_form(form, attributes, uid):
     print(pre_modlist)
     ldap.update_uid_attribute(uid, pre_modlist)
 
+
 def generate_edit_form(page, uid):
-    page_attrz = dict(
-        (row.label.lower(), row)
-        for row in Field.query.filter_by(page_id = page.id).all()
-    )
-    uid_attributez = ldaphelper.get_search_results(
-        get_uid_detailz(uid)
-    )[0].get_attributes()
-    date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
-
-
-    attributes = []
-    class EditForm(Form):
-        pass
-
-    for attr_name, attr_values in uid_attributez.iteritems():
-        if attr_name in page_attrz and page_attrz[attr_name].edit:
-            attributes.append(attr_name)
-            if page_attrz[attr_name].fieldtype.type == 'Text':
-                setattr(EditForm,
-                        attr_name,
-                        FieldList(TextField(page_attrz[attr_name].description)))
-            elif page_attrz[attr_name].fieldtype.type in date_formatz:
-                setattr(EditForm,
-                        attr_name,
-                        FieldList(DateField(page_attrz[attr_name].description)))
-            elif  page_attrz[attr_name].fieldtype.type == 'GIDNumber':
-                setattr(EditForm,
-                        attr_name,
-                        FieldList(SelectField(page_attrz[attr_name].description,
-                                              choices=r.hgetall('grouplist'))))
-
-
-    form = EditForm(request.form)
-
-    # Tweak pour vider le form des anciennes entrées
-    # (pourquoi sont-elles encore là ?!)
-    for attr in attributes:
-        form_attr = getattr(form, attr)
-        while(len(form_attr.entries)>0):
-            form_attr.pop_entry()
-
-
-    for attr_name, attr_values in uid_attributez.iteritems():
-        if attr_name in page_attrz and page_attrz[attr_name].edit:
-            attr_field = getattr(form, attr_name)
-            for attr_value in uid_attributez[attr_name]:
-                attr_field.append_entry(attr_value)
-
-    return {'form': form,
-            'attr_label_list': attr_label_list}
-
-def generate_edit_form2(page, uid):
     page_attrz = dict(
         (row.label.lower(), row)
         for row in Field.query.filter_by(page_id = page.id).all()
@@ -763,7 +739,6 @@ def generate_edit_form2(page, uid):
         def append_field(cls, name, field):
             setattr(cls, name, field)
             return cls
-
 
     for attr_name, attr_values in uid_attributez.iteritems():
         if attr_name in page_attrz and page_attrz[attr_name].edit:
@@ -960,9 +935,17 @@ def get_attr_from_oc_id_list(oc_id_list):
     ).all()
     return attr_list
 
+def get_group_from_member_uid(uid):
+    for group in app.config['PEOPLE_GROUPS']:
+        if uid in r.smembers("groupz:{0}".format(group)):
+            return group
+    flash(u"Impossible de trouver le groupe associé à {0}".format(uid))
+app.jinja_env.globals.update(
+    get_group_from_member_uid=get_group_from_member_uid
+)
+
 def get_attr(form, name):
     return getattr(form, name)
-
 app.jinja_env.globals.update(get_attr=get_attr)
 
 def get_type(obj):
@@ -1047,6 +1030,9 @@ def generalized_time_to_datetime(generalized_time):
     )
     return created_datetime
 
+app.jinja_env.globals.update(
+    generalized_time_to_datetime=generalized_time_to_datetime
+)
 def days_number_to_datetime(nb):
     return datetime.fromtimestamp(
         # 86400 == nombre de secondes par jour
@@ -1056,11 +1042,16 @@ app.jinja_env.globals.update(
     days_number_to_datetime=days_number_to_datetime
 )
 
+def get_posix_group_cn_by_gid(gid):
+    return r.hget('grouplist', gid)
+
+app.jinja_env.globals.update(
+    get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
+)
 ### Run !
 
 if __name__ == '__main__':
     app.config.from_object('config')
     app.debug = app.config['DEBUG']
-
     decoder = PythonLDAPDecoder(app.config['ENCODING'])
     app.run()

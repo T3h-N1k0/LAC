@@ -32,8 +32,12 @@ LAC actuel (pointe sur ta base ldap) : https://lac-preprod.cines.fr
 Serveur ldap (ou tu pourras installer le serveur web + poser le nouveau lac) : ldapone.cines.fr
 
 ### Questions:
-- Longueur fixe pour uid ?
-
+- Permettre des traitements par lots (fichiers CSV), l'application doit fournir un CSV backup des donnée avant modif => que doit contenir ce fichier de backup ?
+- Template d'objet LDAP : edit_page ?
+- Objets enfants ?
+- sous quelle forme faire les modifications par groupe/héritage ?
+- Où sont les admins LDAP ?
+- Unicité : stockage de tous les uids dans la base locale LAC ?
 
 
 ### Sécurité :

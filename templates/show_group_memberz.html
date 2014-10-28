@@ -20,8 +20,7 @@
   {% for member in memberz|sort %}
   <tr>
     <td> <a href="{{
-            url_for('get_account_detailz', uid=member[1]['uid'][0]) }}">{{member[1]['uid'][0]
-      }}</a> </td>
+            url_for('get_account_detailz', uid=member) }}">{{member}}</a> </td>
   </tr>
   {%endfor%}
 </table>

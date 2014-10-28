@@ -1,2 +1,37 @@
 {% extends "layout.html" %}
+{% block body %}
 <h1> Da LDAP Noob Interface </h1>
+
+<a href="{{ url_for(
+   'search_user')}}">Chercher un utilisateur</a>
+<br/>
+<a href="{{ url_for(
+   'change_password',
+   uid=session['uid'])}}">Changer mon mot de passe</a>
+<br/>
+<a href="{{ url_for(
+   'get_my_infoz')}}">Détails de mon compte</a>
+<br/><br/>
+List des membres par groupe (avec vue complète) :
+<br/>
+{% for group in groupz %}
+<a href="{{ url_for(
+   'show_group_memberz',
+   group=group)}}">{{ group }}</a>
+<br/>
+{% endfor %}
+<br/>
+Administration :
+<br/>
+<br/>
+<a href="{{ url_for(
+   'edit_page')}}">Editer une vue</a>
+<br/>
+<a href="{{ url_for(
+   'add_page')}}">Ajouter une vue</a>
+<br/>
+
+<a href="{{ url_for(
+   'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a>
+<br/>
+{% endblock body %}
