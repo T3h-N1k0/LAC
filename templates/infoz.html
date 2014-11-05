@@ -1,0 +1,6 @@
+{% block body %}
+{% for key in session %}
+{{  key }} : {{ session[key] }}
+<br/>
+{% endfor %}
+{% endblock %}

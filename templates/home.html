@@ -11,15 +11,27 @@
 <br/>
 <a href="{{ url_for(
    'get_my_infoz')}}">Détails de mon compte</a>
-<br/><br/>
+<br/><br/><br/>
 List des membres par groupe (avec vue complète) :
 <br/>
-{% for group in groupz %}
+{% for group in config['PEOPLE_GROUPS'] %}
 <a href="{{ url_for(
    'show_group_memberz',
    group=group)}}">{{ group }}</a>
 <br/>
 {% endfor %}
+
+<br/>
+<a href="{{ url_for(
+   'edit_group_submission')}}">Editer la soumission par groupe(s)</a>
+<br/>
+<a href="{{ url_for(
+   'edit_default_quota')}}">Gérer les quotas par defaut</a>
+<br/>
+<a href="{{ url_for(
+   'edit_group')}}">Editer un/des attribut(s) par groupe(s)</a>
+<br/>
+{% if session['admin'] %}
 <br/>
 Administration :
 <br/>
@@ -34,4 +46,5 @@ Administration :
 <a href="{{ url_for(
    'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a>
 <br/>
+{% endif %}
 {% endblock body %}

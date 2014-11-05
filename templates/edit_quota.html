@@ -1,0 +1,28 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Recherche de compte {% endblock title %}
+
+{% block head_js %}
+{% endblock head_js %}
+
+{% block body %}
+{% if form %}
+<form method="post" action="/edit_quota/{{ storage_cn }}">
+{{ render_formfield(form.cinesQuotaSizeHardTemp) }}
+{{ render_formfield(form.cinesQuotaSizeSoftTemp) }}
+{{ render_formfield(form.cinesQuotaSizeSoftTempExpire) }}
+{{ render_formfield(form.cinesQuotaInodeHardTemp) }}
+{{ render_formfield(form.cinesQuotaInodeSoftTemp) }}
+{{ render_formfield(form.cinesQuotaInodeTempExpire) }}
+<input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
+{% else %}
+{% for storage in storagez  %}
+<a href="{{ url_for(
+   'edit_quota',
+   storage_cn=storage
+   )}}">Gérer les quotas pour {{ storage }}</a>
+<br/>
+{% endfor %}
+{% endif %}
+{% endblock body %}

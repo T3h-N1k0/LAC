@@ -11,7 +11,7 @@ from string import capwords
 
 import ldap
 from flask import current_app, request, flash, render_template
-
+import ldaphelper
 
 # Find the stack on which we want to store the database connection.
 # Starting with Flask 0.9, the _app_ctx_stack is the correct one,
@@ -111,7 +111,8 @@ class LDAP(object):
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
             self.conn.passwd_s(dn, old_pass, new_pass)
-            session['password'] = new_pass
+            if session['uid'] == uid:
+                session['password'] = new_pass
             flash(u'Mot de passe mis à jour avec succès')
         except ldap.LDAPError as e:
             return self.ldap_err(e)
@@ -130,27 +131,152 @@ class LDAP(object):
             session['uid'] = username
             session['password'] = pwd.encode('utf8')
             session['logged_in'] = True
+            session['admin'] = self.is_admin(username)
             return True
 
         except ldap.LDAPError as e:
             return self.ldap_err(e)
         except Exception as e:
+            print(e)
             return self.other_err(e)
+
+    def is_admin(self, uid):
+        if self.get_full_dn_from_uid(uid) in self.get_ldap_admin_memberz():
+            return True
+        else:
+            return False
+
+    def get_full_dn_from_cn(self, cn):
+        filter='(cn={0})'.format(cn)
+        if 'logged_in' in session:
+            result = self.search(ldap_filter=filter)
+        else:
+            result = self.anonymous_search(filter=filter)
+        return result[0][0]
 
     def get_full_dn_from_uid(self, uid):
         filter='(uid={0})'.format(uid)
-        result = self.anonymous_search(filter=filter)
+        if 'logged_in' in session:
+            result = self.search(ldap_filter=filter)
+        else:
+            result = self.anonymous_search(filter=filter)
         return result[0][0]
+
+    def get_ldap_admin_memberz(self):
+        ldap_filter='(cn=ldapadmin)'
+        attributes=['member']
+        raw_resultz = ldaphelper.get_search_results(
+            self.search(ldap_filter=ldap_filter,attributes=attributes)
+        )
+        memberz = raw_resultz[0].get_attributes()['member']
+        print("memberz {0}".format(memberz))
+        return memberz
+
 
     def update_uid_attribute(self, uid, pre_modlist):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_REPLACE, name, values)
                      for name, values in pre_modlist]
-        print(mod_attrs)
+        self.generic_modify(dn, mod_attrs)
+        # try:
+        #     self.connect()
+        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
+        #     self.conn.modify_s(dn, mod_attrs)
+        #     self.conn.unbind_s()
+
+        # except ldap.LDAPError as e:
+        #     print(e)
+        #     return self.ldap_err(e)
+        # except Exception as e:
+        #     print(e)
+        #     return self.other_err(e)
+
+    def add_uid_attribute(self, uid, pre_modlist):
+        dn = self.get_full_dn_from_uid(uid)
+        mod_attrs = [(ldap.MOD_ADD, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
+        # try:
+        #     self.connect()
+        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
+        #     self.conn.modify_s(dn, mod_attrs)
+        #     self.conn.unbind_s()
+
+        # except ldap.LDAPError as e:
+        #     print(e)
+        #     return self.ldap_err(e)
+        # except Exception as e:
+        #     print(e)
+        #     return self.other_err(e)
+
+    def add_cn_attribute(self, cn, pre_modlist):
+        dn = self.get_full_dn_from_cn(cn)
+        mod_attrs = [(ldap.MOD_ADD, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
+        # try:
+        #     self.connect()
+        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
+        #     print('modify_s({0}, {1})'.format(dn,mod_attrs))
+        #     self.conn.modify_s(dn, mod_attrs)
+        #     self.conn.unbind_s()
+
+        # except ldap.LDAPError as e:
+        #     print(e)
+        #     return self.ldap_err(e)
+        # except Exception as e:
+        #     print(e)
+        #     return self.other_err(e)
+
+    def remove_uid_attribute(self, uid, pre_modlist):
+        dn = self.get_full_dn_from_uid(uid)
+        mod_attrs = [(ldap.MOD_DELETE, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
+        # try:
+        #     self.connect()
+        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
+        #     print('modify_s({0}, {1})'.format(dn,mod_attrs[0]))
+        #     self.conn.modify_s(dn, mod_attrs)
+        #     self.conn.unbind_s()
+
+        # except ldap.LDAPError as e:
+        #     print(e)
+        #     return self.ldap_err(e)
+        # except Exception as e:
+        #     print(e)
+        #     return self.other_err(e)
+
+    def remove_cn_attribute(self, cn, pre_modlist):
+        dn = self.get_full_dn_from_cn(cn)
+        mod_attrs = [(ldap.MOD_DELETE, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
+        # try:
+        #     self.connect()
+        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
+        #     print('modify_s({0}, {1})'.format(dn,mod_attrs[0]))
+        #     self.conn.modify_s(dn, mod_attrs)
+        #     self.conn.unbind_s()
+
+        # except ldap.LDAPError as e:
+        #     print(e)
+        #     return self.ldap_err(e)
+        # except Exception as e:
+        #     print(e)
+        #     return self.other_err(e)
+
+    def update_cn_attribute(self, cn, pre_modlist):
+        dn = self.get_full_dn_from_cn(cn)
+        mod_attrs = [(ldap.MOD_REPLACE, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
+
+    def generic_modify(self, dn, mod_attrs):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-            print('modify_s({0}, {1})'.format(dn,mod_attrs[0]))
+            print('modify_s({0}, {1})'.format(dn,mod_attrs))
             self.conn.modify_s(dn, mod_attrs)
             self.conn.unbind_s()
 
@@ -211,5 +337,18 @@ def login_required(f):
         if 'user_dn' in session:
             return f(*args, **kwargs)
         return redirect(url_for(current_app.config['LDAP_LOGIN_VIEW']))
+
+    return decorated
+
+def admin_login_required(f):
+    """
+    Decorator for views that require login.
+    """
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'admin' in session:
+            return f(*args, **kwargs)
+        flash(u'Espace réservé aux admins')
+        return redirect(url_for('home'))
 
     return decorated

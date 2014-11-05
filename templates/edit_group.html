@@ -1,0 +1,97 @@
+{% from "_formhelpers.html" import render_formfield, render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Edition d'un groupe  {% endblock title %}
+
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#group_form-available_groupz').dblclick(function() {
+     selectFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#group_form-selected_groupz').dblclick(function() {
+     removeFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#searchGroupzFilter').keyup(function() {
+     var searchArea = $('#group_form-available_groupz');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#attr_form-available_attr').dblclick(function() {
+     selectFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#attr_form-selected_attr').dblclick(function() {
+     removeFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#searchAttrFilter').keyup(function() {
+     var searchArea = $('#attr_form-available_attr');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#group_form-selected_groupz option').prop('selected', true);
+     $('#attr_form-selected_attr option').prop('selected', true);
+   });
+ });
+</script>
+
+{% endblock head_js %}
+
+{% block body %}
+<form method="post" action="/edit_group/">
+{% if view_form %}
+  <fieldset>
+    <legend>Attributs à modifier :</legend>
+    <input id="searchAttrFilter" type="text"/>
+    {{ render_formfield(view_form.attr_form.available_attr) }}
+    {{ render_formfield(view_form.attr_form.selected_attr) }}
+  </fieldset>
+  <input id="update" type="submit" value="Suivant" >
+{% endif %}
+
+{% if edit_form %}
+
+  <fieldset>
+    <legend>Appliquer les modifications aux groupes suivants :</legend>
+    <input id="searchGroupzFilter" type="text"/>
+    {{ render_formfield(edit_form.group_form.available_groupz) }}
+    {{ render_formfield(edit_form.group_form.selected_groupz) }}
+  </fieldset>
+  </br>
+  <div {% if not session['admin']  %}style="display: none;"{% endif %}>{{ render_formfield(edit_form.action) }}</div>
+  </br>
+  <fieldset>
+    <legend>Attributs à modifier :</legend>
+    {% for field in fieldz %}
+    <dt>{{ field.label }}</dt>
+    <dd>{{ render_formfield(get_attr(edit_form, field.label)) }}</dd>
+    {% endfor  %}
+  </fieldset>
+  <input id="update" type="submit" value="Modifier le groupe" >
+{% endif %}
+
+</form>
+{% endblock body %}

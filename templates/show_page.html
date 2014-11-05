@@ -7,12 +7,26 @@
 {% endblock head_js %}
 
 {% block body %}
+{% if session['admin'] %}
 <a href="{{ url_for(
    'edit',
    page=get_group_from_member_uid(uid),
    uid=uid
    )}}">Editer</a>
+<a href="{{ url_for(
+   'toggle_account',
+   uid=uid
+   )}}">{% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
+<a href="{{ url_for(
+   'change_password',
+   uid=uid
+   )}}">Gérer le mot de passe</a>
+<a href="{{ url_for(
+   'edit_submission',
+   uid=uid
+   )}}">Gérer la soumission</a>
 <br/>
+{% endif %}
 {% for attr_name, attr_values in uid_attributez.iteritems() %}
 {% if attr_name in page_fieldz %}
 
