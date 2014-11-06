@@ -11,9 +11,12 @@
 <form method="post" action="/edit_quota/{{ storage_cn }}">
 {{ render_formfield(form.cinesQuotaSizeHardTemp) }}
 {{ render_formfield(form.cinesQuotaSizeSoftTemp) }}
-{{ render_formfield(form.cinesQuotaSizeSoftTempExpire) }}
+
 {{ render_formfield(form.cinesQuotaInodeHardTemp) }}
 {{ render_formfield(form.cinesQuotaInodeSoftTemp) }}
+
+
+{{ render_formfield(form.cinesQuotaSizeSoftTempExpire) }}
 {{ render_formfield(form.cinesQuotaInodeTempExpire) }}
 <input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
 {% else %}

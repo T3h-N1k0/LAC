@@ -295,11 +295,11 @@ class EditDefaultQuotaForm(Form):
 class EditQuotaForm(Form):
     cinesQuotaSizeHardTemp = FormField(QuotaForm)
     cinesQuotaSizeSoftTemp = FormField(QuotaForm)
-    cinesQuotaSizeSoftTempExpire = DateField(
+    cinesQuotaSizeSoftTempExpire = TextField(
         u'Date d\'expiration pour cinesQuotaSizeSoftTemp')
     cinesQuotaInodeHardTemp = FormField(QuotaForm)
     cinesQuotaInodeSoftTemp = FormField(QuotaForm)
-    cinesQuotaInodeTempExpire = DateField(
+    cinesQuotaInodeTempExpire = TextField(
         u'Date d\'expiration pour cinesQuotaInodeSoftTemp')
 
 
@@ -1034,17 +1034,28 @@ def set_default_quota_form_values(form, storage):
 
 def set_quota_form_values(form, storage):
     default_unit = form.cinesQuotaInodeHardTemp.unit.default
+    default_storage_cn = get_default_storage_cn(storage['cn'][0])
+    default_storage = get_default_storage(default_storage_cn).get_attributes()
+    date_now = str(datetime.now().strftime('%Y-%m-%d'))
     cinesQuotaSizeHardTemp = int(
-        storage['cinesQuotaSizeHardTemp'][0]
+        storage['cinesQuotaSizeHardTemp'][0] if
+        'cinesQuotaSizeHardTemp' in storage
+        else default_storage['cinesQuotaSizeHard'][0]
     ) / default_unit
     cinesQuotaSizeSoftTemp = int(
-        storage['cinesQuotaSizeSoftTemp'][0]
+        storage['cinesQuotaSizeSoftTemp'][0]if
+        'cinesQuotaSizeSoftTemp' in storage
+        else default_storage['cinesQuotaSizeSoft'][0]
     ) / default_unit
     cinesQuotaInodeHardTemp = int(
-        storage['cinesQuotaInodeHardTemp'][0]
+        storage['cinesQuotaInodeHardTemp'][0]if
+        'cinesQuotaInodeHardTemp' in storage
+        else default_storage['cinesQuotaInodeHard'][0]
     ) / default_unit
     cinesQuotaInodeSoftTemp = int(
-        storage['cinesQuotaInodeSoftTemp'][0]
+        storage['cinesQuotaInodeSoftTemp'][0]if
+        'cinesQuotaInodeSoftTemp' in storage
+        else default_storage['cinesQuotaInodeSoft'][0]
     ) / default_unit
     form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp
     form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp
@@ -1052,10 +1063,12 @@ def set_quota_form_values(form, storage):
     form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp
     form.cinesQuotaSizeSoftTempExpire.data = storage[
         'cinesQuotaSizeSoftTempExpire'
-    ][0]
+    ][0] if 'cinesQuotaSizeSoftTempExpire' in storage else date_now
     form.cinesQuotaInodeTempExpire.data = storage[
         'cinesQuotaInodeTempExpire'
-    ][0]
+    ][0] if 'cinesQuotaInodeTempExpire' in storage else date_now
+
+    print(form.cinesQuotaInodeTempExpire)
 
 def disable_account(user):
     user_attr = user.get_attributes()
@@ -1437,6 +1450,13 @@ def get_default_storage(cn):
     )[0]
     return storage
 
+def get_default_storage_cn(cn):
+    dn = ldap.get_full_dn_from_cn(cn)
+    m = re.search('(?<=cn={0},cn=)\w+'.format(cn), dn)
+    group_cn = m.group(0)
+    group_gid = get_gid_from_posix_group_cn(group_cn)
+    return cn.replace(group_gid, '')
+
 def get_storage(cn):
     ldap_filter='(&(objectClass=cinesQuota)(cn={0}))'.format(cn)
     attributes=['*']
@@ -1795,6 +1815,11 @@ def days_number_to_datetime(nb):
 app.jinja_env.globals.update(
     days_number_to_datetime=days_number_to_datetime
 )
+
+def get_gid_from_posix_group_cn(cn):
+    for gid, group_cn in r.hgetall('grouplist').iteritems():
+        if group_cn == cn:
+            return gid
 
 def get_posix_group_cn_by_gid(gid):
     return r.hget('grouplist', gid)
