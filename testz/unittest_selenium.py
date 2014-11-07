@@ -77,13 +77,24 @@ class LACSearchUser(unittest.TestCase):
         assert u"chatelain"  in driver.page_source
 
     def test_search(self):
-	self.login()
+        self.login()
         self.search_by_uidNumber()
         self.search_by_sn()
         self.search_by_uid()
         self.search_by_mail()
         self.search_by_user_type()
 
+    def test_show_detailz(self):
+        self.login()
+        driver = self.driver
+        driver.get("{0}/search_user".format(self.host))
+        #self.assertIn("Recherche de compte", driver.title)
+        elem = driver.find_element_by_id("uid")
+        elem.send_keys("chatelain")
+        driver.find_element_by_id("submit").click()
+        driver.find_element_by_class_name('odd').click()
+        self.assertIn(u"Détails pour le compte chatelain", driver.title)
+        #assert u"" not in driver.page_source
 
     def tearDown(self):
         self.driver.close()
