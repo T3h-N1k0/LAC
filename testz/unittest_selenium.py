@@ -23,7 +23,7 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("omgwtfbbqtest!")
         driver.find_element_by_id("submit").click()
 
-    def admin_login(self)
+    def admin_login(self):
         driver = self.driver
         driver.get("{0}/".format(self.host))
         elem_username = driver.find_element_by_name("username")
