@@ -125,7 +125,7 @@ class LACSearchUser(unittest.TestCase):
 
     def del_account_email(self):
         driver = self.driver
-        driver.find_element_by_id('mail-0-remove').click()
+        driver.find_element_by_id('mail-1-remove').click()
         driver.find_element_by_id("update").click()
 
     def check_deleted_account_email(self):
