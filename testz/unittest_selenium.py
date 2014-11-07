@@ -81,7 +81,6 @@ class LACSearchUser(unittest.TestCase):
 
     def test_list_group_memberz_cines(self):
         driver = self.driver
-        self.login()
         driver.get("{0}/".format(self.host))
         driver.find_element_by_link_text("cines").click()
         assert u"chatelain"  in driver.page_source
