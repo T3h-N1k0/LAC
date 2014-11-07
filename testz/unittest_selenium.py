@@ -7,7 +7,7 @@ from selenium.webdriver.support.ui import Select
 
 class LACSearchUser(unittest.TestCase):
 
-    host = "http://localhost:5000"
+    host = "http://host:5000"
 
     def setUp(self):
         self.driver = webdriver.Firefox()
@@ -22,7 +22,7 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("Sympalecines!")
         driver.find_element_by_id("submit").click()
 
-    def search_by_uidNumber(self)
+    def search_by_uidNumber(self):
         driver = self.driver
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
@@ -77,6 +77,7 @@ class LACSearchUser(unittest.TestCase):
         assert u"chatelain"  in driver.page_source
 
     def test_search(self):
+	self.login()
         self.search_by_uidNumber()
         self.search_by_sn()
         self.search_by_uid()
