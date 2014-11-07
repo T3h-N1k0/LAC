@@ -22,7 +22,7 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("Sympalecines!")
         driver.find_element_by_id("submit").click()
 
-    def search_by_uidNumber(self)
+    def search_by_uidNumber(self):
         driver = self.driver
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
