@@ -12,6 +12,7 @@ class LACSearchUser(unittest.TestCase):
     def setUp(self):
         self.driver = webdriver.Firefox()
         self.driver.implicitly_wait(4)
+        self.login()
 
     def login(self):
         driver = self.driver
@@ -19,7 +20,16 @@ class LACSearchUser(unittest.TestCase):
         elem_username = driver.find_element_by_name("username")
         elem_pass  = driver.find_element_by_name("password")
         elem_username.send_keys("chatelain_test")
-        elem_pass.send_keys("Sympalecines!")
+        elem_pass.send_keys("omgwtfbbqtest!")
+        driver.find_element_by_id("submit").click()
+
+    def admin_login(self)
+        driver = self.driver
+        driver.get("{0}/".format(self.host))
+        elem_username = driver.find_element_by_name("username")
+        elem_pass  = driver.find_element_by_name("password")
+        elem_username.send_keys("chatelain")
+        elem_pass.send_keys("omgwtfbbqtest!")
         driver.find_element_by_id("submit").click()
 
     def search_by_uidNumber(self):
@@ -77,7 +87,6 @@ class LACSearchUser(unittest.TestCase):
         assert u"chatelain"  in driver.page_source
 
     def test_search(self):
-        self.login()
         self.search_by_uidNumber()
         self.search_by_sn()
         self.search_by_uid()
@@ -85,7 +94,6 @@ class LACSearchUser(unittest.TestCase):
         self.search_by_user_type()
 
     def test_show_detailz(self):
-        self.login()
         driver = self.driver
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
