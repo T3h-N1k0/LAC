@@ -22,7 +22,7 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("Sympalecines!")
         driver.find_element_by_id("submit").click()
 
-    def search_by_uidNumber(self):
+    def search_by_uidNumber(self)
         driver = self.driver
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
@@ -69,7 +69,7 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
 
-    def test_list_group_memberz_cines(self):
+    def list_group_memberz_cines(self):
         driver = self.driver
         self.login()
         driver.get("{0}/".format(self.host))
@@ -77,10 +77,10 @@ class LACSearchUser(unittest.TestCase):
         assert u"chatelain"  in driver.page_source
 
     def test_search(self):
-        self.search_by_uidNumber(
+        self.search_by_uidNumber()
         self.search_by_sn()
         self.search_by_uid()
-        self.search_by_mail(
+        self.search_by_mail()
         self.search_by_user_type()
 
 
