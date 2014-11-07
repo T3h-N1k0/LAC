@@ -8,7 +8,7 @@ from selenium.webdriver.support.ui import Select
 class LACSearchUser(unittest.TestCase):
 
     def setUp(self):
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Firefox()
 
     def login(self):
         driver = self.driver
