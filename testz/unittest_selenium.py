@@ -7,10 +7,11 @@ from selenium.webdriver.support.ui import Select
 
 class LACSearchUser(unittest.TestCase):
 
-    self.host = "http://localhost:5000"
+    host = "http://localhost:5000"
 
     def setUp(self):
         self.driver = webdriver.Firefox()
+        self.driver.implicitly_wait(4)
 
     def login(self):
         driver = self.driver
@@ -21,10 +22,8 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("Sympalecines!")
         driver.find_element_by_id("submit").click()
 
-
-    def test_search_by_uidNumber(self):
+    def search_by_uidNumber(self)
         driver = self.driver
-        self.login()
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("uid_number")
@@ -32,9 +31,8 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
 
-    def test_search_by_sn(self):
+    def search_by_sn(self):
         driver = self.driver
-        self.login()
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("sn")
@@ -42,9 +40,10 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
 
-    def test_search_by_uid(self):
+
+
+    def search_by_uid(self):
         driver = self.driver
-        self.login()
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("uid")
@@ -52,9 +51,8 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
 
-    def test_search_by_mail(self):
+    def search_by_mail(self):
         driver = self.driver
-        self.login()
         driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("mail")
@@ -62,18 +60,14 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
 
-    def test_search_by_user_type(self):
+    def search_by_user_type(self):
         driver = self.driver
-        self.login()
         driver.get("{0}/search_user".format(self.host))
-        #self.assertIn("Recherche de compte", driver.title)
+        self.assertIn("Recherche de compte", driver.title)
         elem = Select(driver.find_element_by_id("user_type"))
         elem.select_by_visible_text("Compte CINES")
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
-
-    def tearDown(self):
-        self.driver.close()
 
     def test_list_group_memberz_cines(self):
         driver = self.driver
@@ -81,6 +75,17 @@ class LACSearchUser(unittest.TestCase):
         driver.get("{0}/".format(self.host))
         driver.find_element_by_link_text("cines").click()
         assert u"chatelain"  in driver.page_source
+
+    def test_search(self):
+        self.search_by_uidNumber(
+        self.search_by_sn()
+        self.search_by_uid()
+        self.search_by_mail(
+        self.search_by_user_type()
+
+
+    def tearDown(self):
+        self.driver.close()
 
 
 
