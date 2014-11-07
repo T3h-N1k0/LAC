@@ -10,7 +10,9 @@
    uid=session['uid'])}}">Changer mon mot de passe</a>
 <br/>
 <a href="{{ url_for(
-   'get_my_infoz')}}">Détails de mon compte</a>
+   'show',
+   page=get_group_from_member_uid(session['uid']),
+   uid=session['uid'])}}">Détails de mon compte</a>
 <br/><br/><br/>
 List des membres par groupe (avec vue complète) :
 <br/>
