@@ -69,7 +69,7 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submit").click()
         assert u"Aucun résultat" not in driver.page_source
 
-    def list_group_memberz_cines(self):
+    def test_list_group_memberz_cines(self):
         driver = self.driver
         self.login()
         driver.get("{0}/".format(self.host))
