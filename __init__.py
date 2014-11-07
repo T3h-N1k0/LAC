@@ -1744,4 +1744,4 @@ if __name__ == '__main__':
     app.config.from_object('config')
     app.debug = app.config['DEBUG']
     decoder = PythonLDAPDecoder(app.config['ENCODING'])
-    app.run()
+    app.run(host='0.0.0.0')

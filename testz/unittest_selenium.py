@@ -7,12 +7,14 @@ from selenium.webdriver.support.ui import Select
 
 class LACSearchUser(unittest.TestCase):
 
+    self.host = "http://localhost:5000"
+
     def setUp(self):
         self.driver = webdriver.Firefox()
 
     def login(self):
         driver = self.driver
-        driver.get("http://localhost:5000/")
+        driver.get("{0}/".format(self.host))
         elem_username = driver.find_element_by_name("username")
         elem_pass  = driver.find_element_by_name("password")
         elem_username.send_keys("chatelain_test")
@@ -23,7 +25,7 @@ class LACSearchUser(unittest.TestCase):
     def test_search_by_uidNumber(self):
         driver = self.driver
         self.login()
-        driver.get("http://localhost:5000/search_user")
+        driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("uid_number")
         elem.send_keys("1053")
@@ -33,7 +35,7 @@ class LACSearchUser(unittest.TestCase):
     def test_search_by_sn(self):
         driver = self.driver
         self.login()
-        driver.get("http://localhost:5000/search_user")
+        driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("sn")
         elem.send_keys("chatelain")
@@ -43,7 +45,7 @@ class LACSearchUser(unittest.TestCase):
     def test_search_by_uid(self):
         driver = self.driver
         self.login()
-        driver.get("http://localhost:5000/search_user")
+        driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("uid")
         elem.send_keys("chatelain")
@@ -53,7 +55,7 @@ class LACSearchUser(unittest.TestCase):
     def test_search_by_mail(self):
         driver = self.driver
         self.login()
-        driver.get("http://localhost:5000/search_user")
+        driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = driver.find_element_by_id("mail")
         elem.send_keys("chatelain@cines.fr")
@@ -63,7 +65,7 @@ class LACSearchUser(unittest.TestCase):
     def test_search_by_user_type(self):
         driver = self.driver
         self.login()
-        driver.get("http://localhost:5000/search_user")
+        driver.get("{0}/search_user".format(self.host))
         #self.assertIn("Recherche de compte", driver.title)
         elem = Select(driver.find_element_by_id("user_type"))
         elem.select_by_visible_text("Compte CINES")
@@ -76,7 +78,7 @@ class LACSearchUser(unittest.TestCase):
     def test_list_group_memberz_cines(self):
         driver = self.driver
         self.login()
-        driver.get("http://localhost:5000/")
+        driver.get("{0}/".format(self.host))
         driver.find_element_by_link_text("cines").click()
         assert u"chatelain"  in driver.page_source
 
