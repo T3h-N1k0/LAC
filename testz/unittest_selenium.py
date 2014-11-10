@@ -5,6 +5,7 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.common.action_chains import ActionChains
 
 class LACSearchUser(unittest.TestCase):
 
@@ -131,9 +132,11 @@ class LACSearchUser(unittest.TestCase):
     def add_submission(self):
         driver = self.driver
         driver.get("{0}/edit_group_submission/".format(self.host))
-        driver.find_element_by_xpath(
+        option = driver.find_element_by_xpath(
             "//select[@id='group_form-available_groupz']/option[text()='cnu0003']"
-        ).double_click()
+        )
+        action_chains = ActionChains(driver)
+        action_chains.double_click(option).perform()
         wrk_group = Select(driver.find_element_by_id(
             "submission_form-wrk_group"
         ))
@@ -146,9 +149,11 @@ class LACSearchUser(unittest.TestCase):
     def remove_submission(self):
         driver = self.driver
         driver.get("{0}/edit_group_submission/".format(self.host))
-        driver.find_element_by_xpath(
+        option = driver.find_element_by_xpath(
             "//select[@id='group_form-available_groupz']/option[text()='cnu0003']"
-        ).double_click()
+        )
+        action_chains = ActionChains(driver)
+        action_chains.double_click(option).perform()
         wrk_group = Select(driver.find_element_by_id(
             "submission_form-wrk_group"
         ))
