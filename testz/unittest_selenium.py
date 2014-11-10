@@ -34,7 +34,7 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("omgwtfbbqtest!")
         driver.find_element_by_id("submit").click()
 
-    def testing_login(self):
+    def check_login(self):
         driver = self.driver
         driver.get("{0}/".format(self.host))
         elem_username = driver.find_element_by_name("username")
@@ -197,10 +197,11 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("update").click()
 
     def check_changed_pass(self):
-        self.driver.close()
-        self.testing_login()
+        driver = self.driver
+        driver.find_element_by_link_text(u"Déconnecter").click()
+        self.check_login()
         self.assertIn("Accueil", driver.title)
-        self.driver.close()
+        driver.find_element_by_link_text(u"Déconnecter").click()
         self.admin_login()
 
     def _test_list_group_memberz_cines(self):
