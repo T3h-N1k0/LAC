@@ -1,9 +1,10 @@
 # coding: utf-8
 
 import unittest
+import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 class LACSearchUser(unittest.TestCase):
 
@@ -103,12 +104,6 @@ class LACSearchUser(unittest.TestCase):
         driver.get("{0}/edit/cines/chatelain".format(self.host))
         self.assertIn(u"Editer le compte chatelain", driver.title)
 
-    def test_list_group_memberz_cines(self):
-        driver = self.driver
-        driver.get("{0}/".format(self.host))
-        driver.find_element_by_link_text("cines").click()
-        assert u"chatelain"  in driver.page_source
-
     def add_account_email(self):
         driver = self.driver
         driver.find_element_by_xpath(
@@ -133,8 +128,52 @@ class LACSearchUser(unittest.TestCase):
         driver.get("{0}/show/cines/chatelain".format(self.host))
         assert u"test@test.test" not in driver.page_source
 
+    def add_submission(self):
+        driver = self.driver
+        driver.get("{0}/edit_group_submission/".format(self.host))
+        driver.find_element_by_xpath(
+            "//select[@id='group_form-available_groupz']/option[text()='cnu0003']"
+        ).double_click()
+        wrk_group = Select(driver.find_element_by_id(
+            "submission_form-wrk_group"
+        ))
+        wrk_group.select_by_visible_text("ambre")
+        driver.find_element_by_id("submission_form-member").click()
+        driver.find_element_by_id("submission_form-submission").click()
+        driver.find_element_by_id("update").click()
+        time.sleep(3)
 
-    def test_search(self):
+    def remove_submission(self):
+        driver = self.driver
+        driver.get("{0}/edit_group_submission/".format(self.host))
+        driver.find_element_by_xpath(
+            "//select[@id='group_form-available_groupz']/option[text()='cnu0003']"
+        ).double_click()
+        wrk_group = Select(driver.find_element_by_id(
+            "submission_form-wrk_group"
+        ))
+        wrk_group.select_by_visible_text("ambre")
+        driver.find_element_by_id("update").click()
+        time.sleep(3)
+
+
+    def check_added_submission(self):
+        driver = self.driver
+        driver.get("{0}/show/cines/chatelain".format(self.host))
+        assert u"ambre=1" in driver.page_source
+
+    def check_deleted_submission(self):
+        driver = self.driver
+        driver.get("{0}/show/cines/chatelain".format(self.host))
+        assert u"ambre=0" in driver.page_source
+
+    def _test_list_group_memberz_cines(self):
+        driver = self.driver
+        driver.get("{0}/".format(self.host))
+        driver.find_element_by_link_text("cines").click()
+        assert u"chatelain"  in driver.page_source
+
+    def _test_search(self):
         self.search_by_uidNumber()
         self.search_by_sn()
         self.search_by_uid()
@@ -142,16 +181,23 @@ class LACSearchUser(unittest.TestCase):
         self.search_by_user_type()
         self.search_link_to_show()
 
-    def test_show_detailz(self):
+    def _test_show_detailz(self):
         self.own_account_view_admin()
 
-    def test_edit_account(self):
+    def _test_edit_account(self):
         self.get_edit_account_page()
         self.add_account_email()
         self.check_added_account_email()
         self.get_edit_account_page()
         self.del_account_email()
         self.check_deleted_account_email()
+
+
+    def test_edit_group_submission(self):
+        self.add_submission()
+        self.check_added_submission()
+        self.remove_submission()
+        self.check_deleted_submission()
 
     def tearDown(self):
         self.driver.close()
