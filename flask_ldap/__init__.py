@@ -85,6 +85,39 @@ class LDAP(object):
         except Exception as e:
             return self.other_err(e)
 
+
+    def admin_search(self,
+               base_dn=None,
+               ldap_filter=None,
+               attributes=None,
+               scope=ldap.SCOPE_SUBTREE):
+
+        if base_dn==None:
+            base_dn=self.app.config['LDAP_SEARCH_BASE']
+
+        dn = self.get_full_dn_from_uid(self.app.config['LAC_ADMIN_USER'])
+        try:
+            self.connect()
+
+            self.conn.simple_bind_s(dn,
+                                    self.app.config['LAC_ADMIN_PASS'])
+
+            records = self.conn.search_s(base_dn,
+                                         scope,
+                                         ldap_filter,
+                                         attributes)
+            self.conn.unbind_s()
+            print('recordz {0}'.format(records))
+            return records
+
+        except ldap.LDAPError as e:
+            print(e)
+            return self.ldap_err(e)
+        except Exception as e:
+            print('error : {0}'.format(e))
+            return self.other_err(e)
+
+
     def search(self,
                base_dn=None,
                ldap_filter=None,
@@ -156,17 +189,17 @@ class LDAP(object):
 
     def get_full_dn_from_uid(self, uid):
         filter='(uid={0})'.format(uid)
-        if 'logged_in' in session:
-            result = self.search(ldap_filter=filter)
-        else:
-            result = self.anonymous_search(filter=filter)
+        # if 'logged_in' in session:
+        #     result = self.search(ldap_filter=filter)
+        # else:
+        result = self.anonymous_search(filter=filter)
         return result[0][0]
 
     def get_ldap_admin_memberz(self):
         ldap_filter='(cn=ldapadmin)'
         attributes=['member']
         raw_resultz = ldaphelper.get_search_results(
-            self.search(ldap_filter=ldap_filter,attributes=attributes)
+            self.admin_search(ldap_filter=ldap_filter,attributes=attributes)
         )
         memberz = raw_resultz[0].get_attributes()['member']
         print("memberz {0}".format(memberz))
@@ -334,7 +367,8 @@ def login_required(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        if 'user_dn' in session:
+        print(session)
+        if 'logged_in' in session:
             return f(*args, **kwargs)
         return redirect(url_for(current_app.config['LDAP_LOGIN_VIEW']))
 

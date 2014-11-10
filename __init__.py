@@ -28,10 +28,10 @@ __copyright__ = "Copyright 2014, Nicolas CHATELAIN @ CINES"
 __license__ = "GPL"
 
 
-
 app = Flask(__name__)
 ldap = LDAP(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://lac:omgwtfbbq@localhost/lac'
+
 db = SQLAlchemy(app)
 #Bootstrap(app)
 utc = pytz.utc
@@ -218,9 +218,9 @@ class FieldType(db.Model):
 @app.route('/')
 @login_required
 def home():
-    populate_people_group_redis()
-    populate_grouplist_redis()
-    populate_work_group_redis()
+    # populate_people_group_redis()
+    # populate_grouplist_redis()
+    # populate_work_group_redis()
     return render_template('home.html')
 
 
@@ -429,14 +429,11 @@ def edit_page(page_label=None):
                         id=attr_id
                     ).delete()
 
-        print("Commit !")
         db.session.commit()
 
         raw_form = generate_edit_page_admin_form(page)
         form = raw_form['form']
         attr_label_list = raw_form['attr_label_list']
-        print(attr_label_list)
-        print("test {0}".format(Field.query.filter_by(page_id = page.id).all()))
 
     return render_template('edit_page.html',
                            page=page,
@@ -757,8 +754,6 @@ def edit_group():
     if request.method == 'POST':
 
         if view_form.attr_form.selected_attr.data:
-            print(view_form.attr_form.selected_attr.data)
-            print('boucle 1')
             raw_edit_form = generate_edit_group_form(
                 page,
                 view_form.attr_form.selected_attr.data
@@ -1023,12 +1018,13 @@ def populate_ldap_admin_choices(form):
     form.available_memberz.choices = available_userz
     form.selected_memberz.choices = selected_memberz
 
-
+@app.before_first_request
 def populate_grouplist_redis():
     grouplist = get_groupz_list()
     for (uid, group) in grouplist:
         r.hset('grouplist', uid, group)
 
+@app.before_first_request
 def populate_people_group_redis():
     for group in app.config['PEOPLE_GROUPS']:
         r.delete('groupz:{0}'.format(group))
@@ -1036,6 +1032,7 @@ def populate_people_group_redis():
         for member in memberz:
             r.sadd("groupz:{0}".format(group), member)
 
+@app.before_first_request
 def populate_work_group_redis():
     for group in get_submission_groupz_list():
         r.delete('wrk_groupz:{0}'.format(group))
@@ -1479,7 +1476,7 @@ def get_people_group_memberz(group):
     base_dn='ou={0},ou=people,{1}'.format(group,app.config['LDAP_SEARCH_BASE'])
 
     records = ldaphelper.get_search_results(
-        ldap.search(base_dn,ldap_filter,attributes)
+        ldap.admin_search(base_dn,ldap_filter,attributes)
     )
     memberz = [ member.get_attributes()['uid'][0] for member in records]
     return memberz
@@ -1495,7 +1492,7 @@ def get_work_group_memberz(group):
     )
 
     records = ldaphelper.get_search_results(
-        ldap.search(base_dn,ldap_filter,attributes)
+        ldap.admin_search(base_dn,ldap_filter,attributes)
     )
     memberz = []
     for member in records:
@@ -1504,10 +1501,9 @@ def get_work_group_memberz(group):
 
 def get_groupz_list():
     ldap_filter = "(objectClass=posixGroup)"
-    ldap_groupz = ldaphelper.get_search_results(
-        ldap.search(ldap_filter=ldap_filter,
-                         attributes=['cn', 'gidNumber'])
-    )
+    ldap_groupz = ldap.admin_search(ldap_filter=ldap_filter,
+                                    attributes=['cn', 'gidNumber'])
+    ldap_groupz  = ldaphelper.get_search_results(ldap_groupz)
     ldap_groupz_list = []
     for group in ldap_groupz:
         group_attrz = group.get_attributes()
@@ -1519,7 +1515,7 @@ def get_groupz_list():
 def get_submission_groupz_list():
     ldap_filter = "(&(objectClass=cinesGrWork)(cinesGrWorkType=1))"
     ldap_groupz = ldaphelper.get_search_results(
-        ldap.search(ldap_filter=ldap_filter,
+        ldap.admin_search(ldap_filter=ldap_filter,
                          attributes=['cn'])
     )
     ldap_groupz_list = []
@@ -1543,7 +1539,6 @@ def get_lac_admin_memberz():
     raw_resultz = ldaphelper.get_search_results(
         ldap.search(ldap_filter=ldap_filter,attributes=attributes)
     )
-    print(raw_resultz)
     memberz = raw_resultz[0].get_attributes()['member']
     return memberz
 
@@ -1738,6 +1733,8 @@ def get_posix_group_cn_by_gid(gid):
 app.jinja_env.globals.update(
     get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
 )
+
+
 ### Run !
 
 if __name__ == '__main__':
