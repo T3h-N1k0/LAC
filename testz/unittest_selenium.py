@@ -34,6 +34,15 @@ class LACSearchUser(unittest.TestCase):
         elem_pass.send_keys("omgwtfbbqtest!")
         driver.find_element_by_id("submit").click()
 
+    def testing_login(self):
+        driver = self.driver
+        driver.get("{0}/".format(self.host))
+        elem_username = driver.find_element_by_name("username")
+        elem_pass  = driver.find_element_by_name("password")
+        elem_username.send_keys("chatelain_test")
+        elem_pass.send_keys("fuuuletmetestthat!")
+        driver.find_element_by_id("submit").click()
+
     def search_by_uidNumber(self):
         driver = self.driver
         driver.get("{0}/search_user".format(self.host))
@@ -144,7 +153,6 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_id("submission_form-member").click()
         driver.find_element_by_id("submission_form-submission").click()
         driver.find_element_by_id("update").click()
-        time.sleep(3)
 
     def remove_submission(self):
         driver = self.driver
@@ -159,8 +167,6 @@ class LACSearchUser(unittest.TestCase):
         ))
         wrk_group.select_by_visible_text("ambre")
         driver.find_element_by_id("update").click()
-        time.sleep(3)
-
 
     def check_added_submission(self):
         driver = self.driver
@@ -171,6 +177,31 @@ class LACSearchUser(unittest.TestCase):
         driver = self.driver
         driver.get("{0}/show/cines/chatelain".format(self.host))
         assert u"ambre=0" in driver.page_source
+
+    def set_generated_pass(self):
+        driver = self.driver
+        driver.get("{0}/change_password/chatelain_test".format(self.host))
+        driver.find_element_by_id("generate").click()
+        generated_pass = driver.find_element_by_xpath(
+            "//div[@id='generated_pass']/span"
+        ).text
+        driver.find_element_by_id("update").click()
+        return generated_pass
+
+    def set_manual_pass(self, password):
+        driver = self.driver
+        driver.get("{0}/change_password/chatelain_test".format(self.host))
+        driver.find_element_by_id("manual").click()
+        driver.find_element_by_id("new_pass").send_keys(password)
+        driver.find_element_by_id("new_pass_confirm").send_keys(password)
+        driver.find_element_by_id("update").click()
+
+    def check_changed_pass(self):
+        self.driver.close()
+        self.testing_login()
+        self.assertIn("Accueil", driver.title)
+        self.driver.close()
+        self.admin_login()
 
     def _test_list_group_memberz_cines(self):
         driver = self.driver
@@ -198,11 +229,18 @@ class LACSearchUser(unittest.TestCase):
         self.check_deleted_account_email()
 
 
-    def test_edit_group_submission(self):
+    def _test_edit_group_submission(self):
         self.add_submission()
         self.check_added_submission()
         self.remove_submission()
         self.check_deleted_submission()
+
+    def test_change_pass(self):
+        self.set_manual_pass('fuuuletmetestthat!')
+        self.check_changed_pass()
+        for i in range(1, 8):
+            self.set_generated_pass()
+        self.set_manual_pass('omgwtfbbqtest!')
 
     def tearDown(self):
         self.driver.close()
