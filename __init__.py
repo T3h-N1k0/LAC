@@ -281,7 +281,7 @@ def search_user():
                            timestamp=time.strftime("%Y%m%d_%H%M") )
 
 
-@app.route('/edit/<uid>', methods=['POST', 'GET'])
+@app.route('/change_password/<uid>', methods=['POST', 'GET'])
 @login_required
 def change_password(uid):
     """
