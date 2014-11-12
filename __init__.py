@@ -986,14 +986,19 @@ def disable_account(user):
     flash(u'Compte {0} désactivé'.format(user_attr['uid'][0]))
 
 def enable_account(user):
-    user_attr = user.get_attributes()
-    new_shadow_expire_datetime = datetime.now() + relativedelta(
-        months = +app.config['SHADOW_DURATION'])
-    new_shadow_expire = str(datetime_to_days_number(new_shadow_expire_datetime))
-    ldap.update_uid_attribute(user_attr['uid'][0],
-                              [('shadowExpire', new_shadow_expire)]
-                          )
-    flash(u'Compte {0} activé'.format(user_attr['uid'][0]))
+    user_uid = user.get_attributes()['uid'][0]
+    if get_group_from_member_uid(user_uid) == 'ccc':
+        new_shadow_expire_datetime = datetime.now() + relativedelta(
+            months = +app.config['SHADOW_DURATION'])
+        new_shadow_expire = str(
+            datetime_to_days_number(new_shadow_expire_datetime))
+        ldap.update_uid_attribute(user_uid,
+                                  [('shadowExpire', new_shadow_expire)]
+        )
+    else:
+        ldap.remove_uid_attribute(user_uid,
+                                  [('shadowExpire', None)])
+    flash(u'Compte {0} activé'.format(user_uid))
 
 def populate_lac_admin_choices(form):
     memberz = [ get_uid_from_dn(dn) for dn in get_lac_admin_memberz() ]
@@ -1019,12 +1024,19 @@ def populate_ldap_admin_choices(form):
     form.selected_memberz.choices = selected_memberz
 
 @app.before_first_request
+def init_populate_grouplist_redis():
+    populate_grouplist_redis()
+
 def populate_grouplist_redis():
     grouplist = get_groupz_list()
     for (uid, group) in grouplist:
         r.hset('grouplist', uid, group)
 
 @app.before_first_request
+def init_populate_people_group_redis():
+    populate_people_group_redis()
+
+
 def populate_people_group_redis():
     for group in app.config['PEOPLE_GROUPS']:
         r.delete('groupz:{0}'.format(group))
@@ -1032,7 +1044,13 @@ def populate_people_group_redis():
         for member in memberz:
             r.sadd("groupz:{0}".format(group), member)
 
+
+
 @app.before_first_request
+def init_populate_work_group_redis():
+    populate_work_group_redis()
+
+
 def populate_work_group_redis():
     for group in get_submission_groupz_list():
         r.delete('wrk_groupz:{0}'.format(group))
@@ -1596,7 +1614,9 @@ def process_ldap_result(resultz):
 
 def is_active(user):
     user_attrz = user.get_attributes()
-    if datetime.now() > days_number_to_datetime(user_attrz['shadowExpire'][0]):
+    if 'shadowExpire' in user_attrz and datetime.now()>days_number_to_datetime(
+            user_attrz['shadowExpire'][0]
+    ):
         return False
     else:
         return True
