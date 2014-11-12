@@ -204,13 +204,13 @@ class LACSearchUser(unittest.TestCase):
         driver.find_element_by_link_text(u"Déconnecter").click()
         self.admin_login()
 
-    def _test_list_group_memberz_cines(self):
+    def test_list_group_memberz_cines(self):
         driver = self.driver
         driver.get("{0}/".format(self.host))
         driver.find_element_by_link_text("cines").click()
         assert u"chatelain"  in driver.page_source
 
-    def _test_search(self):
+    def test_search(self):
         self.search_by_uidNumber()
         self.search_by_sn()
         self.search_by_uid()
@@ -218,10 +218,10 @@ class LACSearchUser(unittest.TestCase):
         self.search_by_user_type()
         self.search_link_to_show()
 
-    def _test_show_detailz(self):
+    def test_show_detailz(self):
         self.own_account_view_admin()
 
-    def _test_edit_account(self):
+    def test_edit_account(self):
         self.get_edit_account_page()
         self.add_account_email()
         self.check_added_account_email()
@@ -230,7 +230,7 @@ class LACSearchUser(unittest.TestCase):
         self.check_deleted_account_email()
 
 
-    def _test_edit_group_submission(self):
+    def test_edit_group_submission(self):
         self.add_submission()
         self.check_added_submission()
         self.remove_submission()
