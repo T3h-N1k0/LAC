@@ -70,25 +70,33 @@ class EditGroupSubmissionForm(Form):
     submission_form = FormField(EditSubmissionForm)
     group_form = FormField(SelectGroupzForm)
 
-class QuotaForm(Form):
+class SizeQuotaForm(Form):
     value = TextField('Valeur')
     unit = SelectField(u'Unité',
                        choices=[(1, 'ko'), (1000, 'Mo'), (1000000, 'Go')],
                        default=1000,
                        coerce=int)
 
+class InodeQuotaForm(Form):
+    value = TextField('Valeur')
+    unit = SelectField(u'Unité',
+                       choices=[(1000000, 'Million'), (1000000000, 'Milliard')],
+                       default=1000000,
+                       coerce=int)
+
+
 class EditDefaultQuotaForm(Form):
-    cinesQuotaSizeHard = FormField(QuotaForm)
-    cinesQuotaSizeSoft = FormField(QuotaForm)
-    cinesQuotaInodeHard = FormField(QuotaForm)
-    cinesQuotaInodeSoft = FormField(QuotaForm)
+    cinesQuotaSizeHard = FormField(SizeQuotaForm)
+    cinesQuotaSizeSoft = FormField(SizeQuotaForm)
+    cinesQuotaInodeHard = FormField(InodeQuotaForm)
+    cinesQuotaInodeSoft = FormField(InodeQuotaForm)
 
 class EditQuotaForm(Form):
-    cinesQuotaSizeHardTemp = FormField(QuotaForm)
-    cinesQuotaSizeSoftTemp = FormField(QuotaForm)
+    cinesQuotaSizeHardTemp = FormField(SizeQuotaForm)
+    cinesQuotaSizeSoftTemp = FormField(SizeQuotaForm)
     cinesQuotaSizeSoftTempExpire = TextField(
         u'Date d\'expiration pour cinesQuotaSizeSoftTemp')
-    cinesQuotaInodeHardTemp = FormField(QuotaForm)
-    cinesQuotaInodeSoftTemp = FormField(QuotaForm)
+    cinesQuotaInodeHardTemp = FormField(InodeQuotaForm)
+    cinesQuotaInodeSoftTemp = FormField(InodeQuotaForm)
     cinesQuotaInodeTempExpire = TextField(
         u'Date d\'expiration pour cinesQuotaInodeSoftTemp')

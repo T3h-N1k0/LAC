@@ -930,41 +930,53 @@ def edit_quota(storage_cn=None):
 ### Helperz
 
 def set_default_quota_form_values(form, storage):
-    default_unit = form.cinesQuotaInodeHard.unit.default
-    cinesQuotaSizeHard = int(storage['cinesQuotaSizeHard'][0]) / default_unit
-    cinesQuotaSizeSoft = int(storage['cinesQuotaSizeSoft'][0]) / default_unit
-    cinesQuotaInodeHard = int(storage['cinesQuotaInodeHard'][0]) / default_unit
-    cinesQuotaInodeSoft = int(storage['cinesQuotaInodeSoft'][0]) / default_unit
+    default_size_unit = form.cinesQuotaSizeHard.unit.default
+    default_inode_unit = form.cinesQuotaInodeHard.unit.default
+    cinesQuotaSizeHard = int(
+        storage['cinesQuotaSizeHard'][0]
+    ) / default_size_unit
+    cinesQuotaSizeSoft = int(
+        storage['cinesQuotaSizeSoft'][0]
+    ) / default_size_unit
+    cinesQuotaInodeHard = int(
+        storage['cinesQuotaInodeHard'][0]
+    ) / default_inode_unit
+    cinesQuotaInodeSoft = int(
+        storage['cinesQuotaInodeSoft'][0]
+    ) / default_inode_unit
     form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard
     form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft
     form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard
     form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft
 
 def set_quota_form_values(form, storage):
-    default_unit = form.cinesQuotaInodeHardTemp.unit.default
+    default_inode_unit = form.cinesQuotaInodeHardTemp.unit.default
+    default_size_unit = form.cinesQuotaSizeHardTemp.unit.default
     default_storage_cn = get_default_storage_cn(storage['cn'][0])
     default_storage = get_default_storage(default_storage_cn).get_attributes()
     date_now = str(datetime.now().strftime('%Y-%m-%d'))
+
     cinesQuotaSizeHardTemp = int(
         storage['cinesQuotaSizeHardTemp'][0] if
         'cinesQuotaSizeHardTemp' in storage
         else default_storage['cinesQuotaSizeHard'][0]
-    ) / default_unit
+    ) / default_size_unit
     cinesQuotaSizeSoftTemp = int(
         storage['cinesQuotaSizeSoftTemp'][0]if
         'cinesQuotaSizeSoftTemp' in storage
         else default_storage['cinesQuotaSizeSoft'][0]
-    ) / default_unit
+    ) / default_size_unit
     cinesQuotaInodeHardTemp = int(
         storage['cinesQuotaInodeHardTemp'][0]if
         'cinesQuotaInodeHardTemp' in storage
         else default_storage['cinesQuotaInodeHard'][0]
-    ) / default_unit
+    ) / default_inode_unit
     cinesQuotaInodeSoftTemp = int(
         storage['cinesQuotaInodeSoftTemp'][0]if
         'cinesQuotaInodeSoftTemp' in storage
         else default_storage['cinesQuotaInodeSoft'][0]
-    ) / default_unit
+    ) / default_inode_unit
+
     form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp
     form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp
     form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp
@@ -975,8 +987,6 @@ def set_quota_form_values(form, storage):
     form.cinesQuotaInodeTempExpire.data = storage[
         'cinesQuotaInodeTempExpire'
     ][0] if 'cinesQuotaInodeTempExpire' in storage else date_now
-
-    print(form.cinesQuotaInodeTempExpire)
 
 def disable_account(user):
     user_attr = user.get_attributes()
@@ -1705,9 +1715,10 @@ def update_quota(storage_cn, form):
                    ('cinesQuotaInodeSoftTemp',
                     cinesQuotaInodeSoftTemp),
                    ('cinesQuotaSizeSoftTempExpire',
-                    form.cinesQuotaSizeSoftTempExpire.data),
+                    form.cinesQuotaSizeSoftTempExpire.data.encode('utf-8')),
                    ('cinesQuotaInodeTempExpire',
-                    form.cinesQuotaInodeTempExpire.data)]
+                    form.cinesQuotaInodeTempExpire.data.encode('utf-8'))
+    ]
     ldap.update_cn_attribute(storage_cn, pre_modlist)
 
 
