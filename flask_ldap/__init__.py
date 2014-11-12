@@ -146,7 +146,6 @@ class LDAP(object):
             self.conn.passwd_s(dn, old_pass, new_pass)
             if session['uid'] == uid:
                 session['password'] = new_pass
-            flash(u'Mot de passe mis à jour avec succès')
         except ldap.LDAPError as e:
             return self.ldap_err(e)
         except Exception as e:

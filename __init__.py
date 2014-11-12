@@ -289,12 +289,14 @@ def change_password(uid):
     """
     form=ChangePassForm(request.form)
     if request.method == 'POST' and form.validate():
-        nt_hash = hashlib.new(
-            'md4',
-            form.new_pass.data.encode('utf-16le')
-        ).hexdigest().upper()
-        pre_modlist = [('sambaPwdLastSet', str(int(time.time()))),
-                       ('sambaNTPassword', nt_hash)]
+        pre_modlist = []
+        if get_group_from_member_uid(uid) == 'cines':
+            nt_hash = hashlib.new(
+                'md4',
+                form.new_pass.data.encode('utf-16le')
+            ).hexdigest().upper()
+            pre_modlist = [('sambaPwdLastSet', str(int(time.time()))),
+                           ('sambaNTPassword', nt_hash)]
         if uid != session['uid']:
             pre_modlist.append(('userPassword',
                                 form.new_pass.data.encode('utf-8')))
