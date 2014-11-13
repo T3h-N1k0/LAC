@@ -1000,8 +1000,11 @@ def disable_account(user):
 def enable_account(user):
     user_uid = user.get_attributes()['uid'][0]
     if get_group_from_member_uid(user_uid) == 'ccc':
-        new_shadow_expire_datetime = datetime.now() + relativedelta(
-            months = +app.config['SHADOW_DURATION'])
+        new_shadow_expire_datetime = days_number_to_datetime(
+            user.get_attributes()['cinesdaterenew'][0]
+        ) + relativedelta(
+            months = +app.config['SHADOW_DURATION']
+        )
         new_shadow_expire = str(
             datetime_to_days_number(new_shadow_expire_datetime))
         ldap.update_uid_attribute(user_uid,
