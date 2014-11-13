@@ -862,7 +862,7 @@ def edit_group_submission():
             rem_from_group_if_member(wrk_group, groupz_memberz_uid)
             for uid in groupz_memberz_uid:
                 set_submission(uid, wrk_group, '0')
-
+        return redirect(url_for('home'))
     return render_template('edit_group_submission.html',
                            form=form)
 
