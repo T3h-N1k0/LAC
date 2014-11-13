@@ -450,7 +450,7 @@ def edit_lac_admin():
 
     populate_lac_admin_choices(form)
 
-    memberz = [ get_uid_from_dn(dn) for dn in get_lac_admin_memberz() ]
+    memberz = [ get_uid_from_dn(dn) for dn in ldap.get_lac_admin_memberz() ]
 
     if request.method == 'POST':
         if form.selected_memberz.data is not None:
@@ -1016,7 +1016,7 @@ def enable_account(user):
     flash(u'Compte {0} activé'.format(user_uid))
 
 def populate_lac_admin_choices(form):
-    memberz = [ get_uid_from_dn(dn) for dn in get_lac_admin_memberz() ]
+    memberz = [ get_uid_from_dn(dn) for dn in ldap.get_lac_admin_memberz() ]
     all_userz = get_all_users()
     selected_memberz = [ (uid, uid) for uid in memberz ]
     available_userz = [ (user.get_attributes()['uid'][0],
@@ -1566,14 +1566,14 @@ def get_uid_detailz(uid):
     detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
     return detailz
 
-def get_lac_admin_memberz():
-    ldap_filter='(cn=lacadmin)'
-    attributes=['member']
-    raw_resultz = ldaphelper.get_search_results(
-        ldap.search(ldap_filter=ldap_filter,attributes=attributes)
-    )
-    memberz = raw_resultz[0].get_attributes()['member']
-    return memberz
+# def get_lac_admin_memberz():
+#     ldap_filter='(cn=lacadmin)'
+#     attributes=['member']
+#     raw_resultz = ldaphelper.get_search_results(
+#         ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+#     )
+#     memberz = raw_resultz[0].get_attributes()['member']
+#     return memberz
 
 def get_uid_from_dn(dn):
     m = re.search('uid=(.+?),', dn)

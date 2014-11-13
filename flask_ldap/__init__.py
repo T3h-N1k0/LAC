@@ -163,7 +163,7 @@ class LDAP(object):
             session['uid'] = username
             session['password'] = pwd.encode('utf8')
             session['logged_in'] = True
-            session['admin'] = self.is_admin(username)
+            session['admin'] = self.is_lac_admin(username)
             return True
 
         except ldap.LDAPError as e:
@@ -172,8 +172,8 @@ class LDAP(object):
             print(e)
             return self.other_err(e)
 
-    def is_admin(self, uid):
-        if self.get_full_dn_from_uid(uid) in self.get_ldap_admin_memberz():
+    def is_lac_admin(self, uid):
+        if self.get_full_dn_from_uid(uid) in self.get_lac_admin_memberz():
             return True
         else:
             return False
@@ -194,14 +194,23 @@ class LDAP(object):
         result = self.anonymous_search(filter=filter)
         return result[0][0]
 
-    def get_ldap_admin_memberz(self):
-        ldap_filter='(cn=ldapadmin)'
+    # def get_ldap_admin_memberz(self):
+    #     ldap_filter='(cn=ldapadmin)'
+    #     attributes=['member']
+    #     raw_resultz = ldaphelper.get_search_results(
+    #         self.admin_search(ldap_filter=ldap_filter,attributes=attributes)
+    #     )
+    #     memberz = raw_resultz[0].get_attributes()['member']
+    #     print("memberz {0}".format(memberz))
+    #     return memberz
+
+    def get_lac_admin_memberz(self):
+        ldap_filter='(cn=lacadmin)'
         attributes=['member']
         raw_resultz = ldaphelper.get_search_results(
             self.admin_search(ldap_filter=ldap_filter,attributes=attributes)
         )
         memberz = raw_resultz[0].get_attributes()['member']
-        print("memberz {0}".format(memberz))
         return memberz
 
 
