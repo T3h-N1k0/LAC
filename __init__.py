@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash
+from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, make_response
 from flask.ext.ldap import LDAP, login_required, admin_login_required
 from flask.ext.sqlalchemy import SQLAlchemy
+from werkzeug import secure_filename
 #from flask_bootstrap import Bootstrap
 from sqlalchemy import Table, Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship, backref
@@ -19,6 +20,7 @@ from ldap import SCOPE_BASE,schema
 import hashlib,binascii
 import redis
 import re
+import os
 
 # Custom modulez
 from formz import *
@@ -40,6 +42,9 @@ r = redis.Redis('localhost')
 # Add login URL associated with login function
 app.add_url_rule('/login', 'login', ldap.login, methods=['GET', 'POST'])
 app.add_url_rule('/logout', 'logout', ldap.logout, methods=['GET', 'POST'])
+
+
+ALLOWED_EXTENSIONS = set(['txt', 'csv'])
 
 
 ### Data Model
@@ -751,33 +756,60 @@ def edit_group():
         attrz_list = session['edit_group_fieldz_id']
     else:
         attrz_list = []
+
+    if 'edit_group_memberz_uid' in session:
+        groupz_memberz = session['edit_group_memberz_uid']
+    else:
+        groupz_memberz = []
+    # print('attrz_list : {0}'.format(attrz_list))
     edit_form = generate_edit_group_form(page, attrz_list)['form']
+    group_form = SelectGroupzForm(request.form)
+    group_form.available_groupz.choices = get_groupz_list()
+    group_form.selected_groupz.choices = []
+
 
     if request.method == 'POST':
 
         if view_form.attr_form.selected_attr.data:
-            raw_edit_form = generate_edit_group_form(
-                page,
-                view_form.attr_form.selected_attr.data
-            )
-            edit_form = raw_edit_form['form']
+            group_form = SelectGroupzForm(request.form)
+            group_form.available_groupz.choices = get_groupz_list()
+            group_form.selected_groupz.choices = []
+
             session[
                 'edit_group_fieldz_id'
             ] = view_form.attr_form.selected_attr.data
-            fieldz = Field.query.filter(
-                Field.id.in_(session['edit_group_fieldz_id'])
-            ).all()
-            print('fieldz {0}'.format(fieldz))
             return render_template('edit_group.html',
-                                   edit_form=edit_form,
-                                   fieldz=fieldz)
-        elif edit_form.group_form.selected_groupz.data :
-            print('boucle 2')
-            groupz_id = edit_form.group_form.selected_groupz.data
+                                   group_form=group_form)
+
+        elif group_form.selected_groupz.data:
+            groupz_id = group_form.selected_groupz.data
             groupz_label = [ get_posix_group_cn_by_gid(id)
                              for id in groupz_id ]
             groupz_memberz = get_posix_groupz_memberz(groupz_label)
 
+            session[
+                'edit_group_memberz_uid'
+            ] = groupz_memberz
+
+            fieldz = Field.query.filter(
+                Field.id.in_(session['edit_group_fieldz_id'])
+            ).all()
+            print('fieldz {0}'.format(fieldz))
+
+            raw_edit_form = generate_edit_group_form(
+                page,
+                session['edit_group_fieldz_id']
+            )
+            edit_form = raw_edit_form['form']
+
+
+            return render_template('edit_group.html',
+                                   edit_form=edit_form,
+                                   fieldz=fieldz,
+                                   attributez=[field.label.encode('utf-8')
+                                                      for field in fieldz])
+
+        elif edit_form.group_form.selected_groupz.data :
             fieldz = Field.query.filter(
                 Field.id.in_(session['edit_group_fieldz_id'])
             ).all()
@@ -794,6 +826,10 @@ def edit_group():
                 for uid in groupz_memberz:
                     ldap.update_uid_attribute(uid, pre_modlist)
             flash(u'Les groupes {0} ont été mis à jour'.format(groupz_label))
+            # if edit_form.backup.data:
+            #     return get_backup_file(
+            #         groupz_memberz,
+            #         [field.label.encode('utf-8') for field in fieldz])
             return redirect(url_for('home'))
     return render_template('edit_group.html',
                            view_form=view_form)
@@ -927,7 +963,131 @@ def edit_quota(storage_cn=None):
         return render_template('edit_quota.html',
                                storagez=storagez_labelz)
 
+@app.route('/get_backup_file/<userz>/<attributez>')
+def get_backup_file(userz, attributez):
+    userz = [user.encode('utf-8')
+             for user in userz.split(',')]
+    attributez = [attribute.encode('utf-8')
+                  for attribute in attributez.split(',')]
+    file_name = "backup_{0}.txt".format(
+        datetime.now().strftime("%d%b%HH%M_%Ss"))
+    file_content = " ".join(attributez)
+    for user in userz:
+        user_attr = ldaphelper.get_search_results(
+            ldap.search(
+                ldap_filter="(uid={0})".format(user),
+                attributes=attributez
+            )
+        )[0].get_attributes()
+        line = ",".join(["{0}={1}".format(key, value)
+                for key, value in user_attr.iteritems()])
+        line = ",".join(["uid={0}".format(user),line])
+        file_content = "\n".join([file_content, line])
+    response = make_response(file_content)
+    response.headers['Content-Disposition'] = 'attachment; filename={0}'.format(
+        file_name)
+    return response
+
+@app.route('/edit_file/', methods=('GET', 'POST'))
+@login_required
+def edit_file():
+
+    page = Page.query.filter_by(label='edit_file').first()
+    view_form = EditGroupViewForm(request.form)
+    view_form.attr_form.available_attr.choices = [
+        (attr.id, attr.label)
+        for attr in Field.query.filter_by(page_id = page.id).all()
+    ]
+    view_form.attr_form.selected_attr.choices = []
+    if 'edit_file_fieldz_id' in session:
+        attrz_list = session['edit_file_fieldz_id']
+    else:
+        attrz_list = []
+
+    if 'edit_file_memberz_uid' in session:
+        userz = session['edit_file_memberz_uid']
+    else:
+        userz = []
+
+    edit_form = generate_edit_group_form(page, attrz_list)['form']
+    file_form = UserzFileForm(request.form)
+
+    if request.method == 'POST':
+
+        if view_form.attr_form.selected_attr.data:
+            group_form = SelectGroupzForm(request.form)
+            group_form.available_groupz.choices = get_groupz_list()
+            group_form.selected_groupz.choices = []
+
+            session[
+                'edit_file_fieldz_id'
+            ] = view_form.attr_form.selected_attr.data
+            return render_template('edit_file.html',
+                                   file_form=file_form)
+
+        elif file_form.userz_file and edit_form.submited.data == 'False' :
+            userz_file = request.files[file_form.userz_file.name]
+            if userz_file and allowed_file(userz_file.filename):
+                # filename = secure_filename(file.filename)
+                userz = userz_file.read().split('\n')
+            else:
+                flash('Format du fichier incorrect')
+                return render_template('edit_file.html',
+                                       file_form=file_form)
+
+            session[
+                'edit_file_memberz_uid'
+            ] = userz
+
+            fieldz = Field.query.filter(
+                Field.id.in_(session['edit_file_fieldz_id'])
+            ).all()
+
+            raw_edit_form = generate_edit_group_form(
+                page,
+                attrz_list
+            )
+            edit_form = raw_edit_form['form']
+            edit_form.submited.data = 'True'
+            return render_template('edit_file.html',
+                                   edit_form=edit_form,
+                                   fieldz=fieldz,
+                                   attributez=[field.label.encode('utf-8')
+                                                      for field in fieldz])
+
+        elif edit_form.submited.data == 'True' :
+
+            fieldz = Field.query.filter(
+                Field.id.in_(attrz_list)
+            ).all()
+            pre_modlist = []
+            for field in fieldz:
+                pre_modlist.append(
+                    (field.label,
+                     getattr(edit_form, field.label).data.encode('utf-8'))
+                )
+            if edit_form.action.data == '0':
+                for uid in userz:
+                    ldap.add_uid_attribute(uid, pre_modlist)
+            elif edit_form.action.data == '1':
+                for uid in userz:
+                    ldap.update_uid_attribute(uid, pre_modlist)
+            flash(u'Les utilisateurs ont été mis à jour')
+            return redirect(url_for('home'))
+
+
+    return render_template('edit_file.html',
+                           view_form=view_form)
+
+
 ### Helperz
+
+def allowed_file(filename):
+    print("filename : {0}".format(filename))
+    print(filename.rsplit('.', 1)[1])
+
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 def set_default_quota_form_values(form, storage):
     default_size_unit = form.cinesQuotaSizeHard.unit.default
@@ -1119,8 +1279,6 @@ def generate_edit_group_form(page, attributez):
                              EditGroupForm)
 
     form = EditGroupForm(request.form)
-    form.group_form.available_groupz.choices = get_groupz_list()
-    form.group_form.selected_groupz.choices = []
     return {'form': form }
 
 def generate_edit_form(page, uid):
@@ -1635,7 +1793,6 @@ def is_active(user):
         return False
     else:
         return True
-
 
 
 def set_submission(uid, group, state):

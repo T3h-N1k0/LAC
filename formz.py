@@ -1,5 +1,5 @@
 # coding: utf-8
-from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField
+from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField, FileField, HiddenField
 ### Formz
 
 class SearchUserForm(Form):
@@ -57,10 +57,11 @@ class EditGroupViewForm(Form):
     attr_form = FormField(SelectAttrForm)
 
 class EditGroupBaseForm(Form):
-    group_form = FormField(SelectGroupzForm)
+    # group_form = FormField(SelectGroupzForm)
     action = SelectField('Action',
                          choices=[(0, 'Ajout'), (1, 'Modification')],
                          default=1)
+    submited = HiddenField(default="False")
 class EditSubmissionForm(Form):
     wrk_group = SelectField(u'Groupe de travail')
     member = BooleanField('Membre')
@@ -100,3 +101,6 @@ class EditQuotaForm(Form):
     cinesQuotaInodeSoftTemp = FormField(InodeQuotaForm)
     cinesQuotaInodeTempExpire = TextField(
         u'Date d\'expiration pour cinesQuotaInodeSoftTemp')
+
+class UserzFileForm(Form):
+    userz_file = FileField('Fichier contenant les logins utilisateur')

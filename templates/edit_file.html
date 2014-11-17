@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_formfield, render_field %}
 {% extends "layout.html" %}
 
-{% block title %} Edition d'un groupe  {% endblock title %}
+{% block title %} Edition par lot à partir d'un fichier  {% endblock title %}
 
 {% block head_js %}
 
@@ -61,8 +61,9 @@
 {% endblock head_js %}
 
 {% block body %}
-<form method="post" action="/edit_group/">
+
 {% if view_form %}
+<form method="post" action="/edit_file/">
   <fieldset>
     <legend>Attributs à modifier :</legend>
     <input id="searchAttrFilter" type="text"/>
@@ -72,30 +73,28 @@
   <input id="update" type="submit" value="Suivant" >
 {% endif %}
 
-{% if group_form %}
-
+{% if file_form %}
+<form method="post" action="/edit_file/" enctype=multipart/form-data>
   <fieldset>
-    <legend>Appliquer les modifications aux groupes suivants :</legend>
-    <input id="searchGroupzFilter" type="text"/>
-    {{ render_formfield(group_form.available_groupz) }}
-    {{ render_formfield(group_form.selected_groupz) }}
+    <legend>Uploader le fichier contenant les utilisateurs à modifier :</legend>
+    {{ render_formfield(file_form.userz_file) }}
   </fieldset>
   <input id="update" type="submit" value="Suivant" >
 {% endif %}
 {% if edit_form %}
+<form method="post" action="/edit_file/">
   </br>
-    <a href="{{ url_for('get_backup_file',
-               userz = ','.join(session['edit_group_memberz_uid']),
+  <a href="{{ url_for('get_backup_file',
+               userz = ','.join(session['edit_file_memberz_uid']),
                attributez = ','.join(attributez)) }}">Récupérer une sauvegarde</a>
   <div {% if not session['admin']  %}style="display: none;"{% endif %}>{{ render_formfield(edit_form.action) }}</div>
   </br>
-<form method="post" action="/edit_group/">
   <fieldset>
     <legend>Attributs à modifier :</legend>
     {% for field in fieldz %}
     <dt>{{ field.label }}</dt>
     <dd>{{ render_formfield(get_attr(edit_form, field.label)) }}</dd>
-    {{ render_formfield(edit_form.submited) }}
+    {{ edit_form.submited }}
     {% endfor  %}
   </fieldset>
   <input id="update" type="submit" value="Modifier le(s) groupe(s)" >
