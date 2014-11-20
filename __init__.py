@@ -2105,10 +2105,14 @@ def update_quota(storage_cn, form):
                     cinesQuotaInodeHardTemp),
                    ('cinesQuotaInodeSoftTemp',
                     cinesQuotaInodeSoftTemp),
-                   ('cinesQuotaSizeSoftTempExpire',
-                    form.cinesQuotaSizeSoftTempExpire.data.encode('utf-8')),
+                   ('cinesQuotaSizeTempExpire',
+                    datetime_to_timestamp(
+                        form.cinesQuotaSizeTempExpire.data
+                    ).encode('utf-8')),
                    ('cinesQuotaInodeTempExpire',
-                    form.cinesQuotaInodeTempExpire.data.encode('utf-8'))
+                    datetime_to_timestamp(
+                        form.cinesQuotaInodeTempExpire.data
+                    ).encode('utf-8'))
     ]
     ldap.update_cn_attribute(storage_cn, pre_modlist)
 
