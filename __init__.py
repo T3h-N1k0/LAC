@@ -1521,10 +1521,14 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     uid_number = get_next_id_from_ldap_ot(ldap_ot)
     add_record = [('uid', [uid.encode('utf-8')]),
                   ('uidNumber', [str(uid_number).encode('utf-8')]),
-                  ('objectClass', ot_oc_list),
-                  ('cinesSoumission', [get_initial_submission()])]
+                  ('objectClass', ot_oc_list)]
 
     add_record.extend(form_attributez)
+
+    if 'cinesusr' in ot_oc_list:
+        add_record.append(
+            ('cinesSoumission', [get_initial_submission()])
+        )
 
     if 'sambaSamAccount' in ot_oc_list:
         add_record.append(
