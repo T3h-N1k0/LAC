@@ -1532,27 +1532,27 @@ def append_field_to_form(page_attrz, attr_name, form):
                 attr_name,
                 FormField(EditSubmissionForm))
 
-def append_fieldlist_to_form(page_attrz, attr_name, form):
+def append_fieldlist_to_form(field, form):
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
-    if page_attrz[attr_name].fieldtype.type == 'Text':
+    if field.fieldtype.type == 'Text':
         setattr(form,
-                attr_name,
-                FieldList(TextField(page_attrz[attr_name].description)))
-    elif page_attrz[attr_name].fieldtype.type in date_formatz:
+                field.label,
+                FieldList(TextField(field.description)))
+    elif field.fieldtype.type in date_formatz:
         setattr(form,
-                attr_name,
-                FieldList(DateField(page_attrz[attr_name].description)))
-    elif  page_attrz[attr_name].fieldtype.type == 'GIDNumber':
+                field.label,
+                FieldList(DateField(field.description)))
+    elif  field.fieldtype.type == 'GIDNumber':
         setattr(form,
-                attr_name,
-                FieldList(SelectField(page_attrz[attr_name].description,
+                field.label,
+                FieldList(SelectField(field.description,
                                       choices=get_groupz_list())))
 
 
 def generate_edit_page_admin_form(page):
 
     # selection des attributs hérités des object classes
-    select_oc_choices = get_selected_oc_choices(page)
+    select_oc_choices = get_page_oc_choices(page)
 
     page_oc_id_list = [oc[0] for oc in select_oc_choices]
 
