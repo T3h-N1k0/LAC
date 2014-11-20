@@ -20,7 +20,7 @@
   {% for member in memberz|sort %}
   <tr>
     <td> <a href="{{
-            url_for('show',
+            url_for('show_user',
            page=get_group_from_member_uid(member),
            uid=member) }}">{{member}}</a> </td>
   </tr>

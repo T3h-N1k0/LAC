@@ -1,0 +1,30 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Editer le compte {{ uid }} {% endblock title %}
+
+{% block head_js %}
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='fieldset.js')
+         }}"></script>
+
+{% endblock head_js %}
+
+{% block body %}
+<form method="post" action="/edit_user/{{ page.label}}/{{ uid }}">
+  {% for field in fieldz %}
+    {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
+        {{ render_fieldlist(form, field.label, field.multivalue) }}
+    {% else %}
+        {{ render_formfield(get_attr(form, field.label))}}
+    {% endif  %}
+
+  {% endfor  %}
+  <input id="update" type="submit" value="Mettre à jour" >
+</form>
+
+{% endblock body %}

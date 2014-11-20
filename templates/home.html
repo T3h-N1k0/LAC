@@ -15,7 +15,7 @@ Accueil
    uid=session['uid'])}}">Changer mon mot de passe</a>
 <br/>
 <a href="{{ url_for(
-   'show',
+   'show_user',
    page=get_group_from_member_uid(session['uid']),
    uid=session['uid'])}}">Détails de mon compte</a>
 <br/><br/><br/>
@@ -33,10 +33,16 @@ List des membres par groupe (avec vue complète) :
    'edit_group_submission')}}">Editer la soumission par groupe(s)</a>
 <br/>
 <a href="{{ url_for(
+   'edit_quota')}}">Gérer les quotas spécifiques</a>
+<br/>
+<a href="{{ url_for(
    'edit_default_quota')}}">Gérer les quotas par defaut</a>
 <br/>
 <a href="{{ url_for(
    'edit_group')}}">Editer un/des attribut(s) par groupe(s)</a>
+<br/>
+<a href="{{ url_for(
+   'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a>
 <br/>
 {% if session['admin'] %}
 <br/>
@@ -44,10 +50,16 @@ Administration :
 <br/>
 <br/>
 <a href="{{ url_for(
-   'edit_page')}}">Editer une vue</a>
+   'edit_page')}}">Gérer les vues</a>
 <br/>
 <a href="{{ url_for(
    'add_page')}}">Ajouter une vue</a>
+<br/>
+<a href="{{ url_for(
+   'show_ldap_object_types')}}">Gérer les types d'objets LDAP</a>
+<br/>
+<a href="{{ url_for(
+   'add_ldap_object_type')}}">Ajouter un type d'objets LDAP</a>
 <br/>
 
 <a href="{{ url_for(
