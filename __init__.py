@@ -1870,6 +1870,18 @@ def get_posix_group_memberz(group):
     memberz = records[0].get_attributes()['memberUid']
     return memberz
 
+def get_people_dn_from_ou(ou):
+    ldap_filter='(ou={0})'.format(ou)
+    attributes=['entryDN']
+    base_dn='ou=people,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    records = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    full_dn = records[0].get_attributes()['entryDN'][0]
+    return full_dn
+
 def get_people_group_memberz(group):
     """
     List memberz of a group inherited from people ou
@@ -1929,6 +1941,13 @@ def get_submission_groupz_list():
 
     return ldap_groupz_list
 
+def get_initial_submission():
+    submission_groupz_list = get_submission_groupz_list()
+    initial_submission = ''.join([
+        '{0}=0;'.format(submission_group)
+        for submission_group in submission_groupz_list
+    ])
+    return initial_submission
 
 def get_uid_detailz(uid):
     ldap_filter='(uid={0})'.format(uid)
@@ -2112,6 +2131,12 @@ def generalized_time_to_datetime(generalized_time):
     )
     return created_datetime
 
+def datetime_to_timestamp(date):
+    # return (date_time  - datetime(1970, 1, 1)).total_seconds()
+    return str(int(time.mktime(
+        datetime.strptime(str(date), "%Y-%m-%d").timetuple()
+    )))
+
 def datetime_to_days_number(datetime):
     return int(datetime.strftime("%s"))/86400
 
@@ -2139,6 +2164,17 @@ app.jinja_env.globals.update(
     get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
 )
 
+def get_sambasid_prefix():
+    base_dn = app.config['LDAP_SEARCH_BASE']
+    ldap_filter='(sambaDomainName={0})'.format(app.config['SAMBA_DOMAIN_NAME'])
+    attributes=['sambaSID']
+    samba_domain_name = ldaphelper.get_search_results(
+        ldap.search(ldap_filter=ldap_filter,
+                    attributes=attributes,
+                    base_dn=base_dn)
+    )[0]
+    sambasid_prefix = samba_domain_name.get_attributes()['sambaSID'][0]
+    return sambasid_prefix
 
 ### Run !
 
