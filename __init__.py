@@ -65,6 +65,11 @@ class LDAPObjectClass(db.Model):
                                      backref="ldapobjectclass",
                                      lazy='dynamic')
 
+    ldapobjecttypeobjectclasses = db.relationship("LDAPObjectTypeObjectClass",
+                                                  backref="ldapobjectclass",
+                                                  lazy='dynamic')
+
+
     def __init__(self, label):
         self.label = label
 
