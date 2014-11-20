@@ -107,7 +107,7 @@ class LDAP(object):
                                          ldap_filter,
                                          attributes)
             self.conn.unbind_s()
-            print('recordz {0}'.format(records))
+            #print('recordz {0}'.format(records))
             return records
 
         except ldap.LDAPError as e:
@@ -120,12 +120,13 @@ class LDAP(object):
 
     def search(self,
                base_dn=None,
-               ldap_filter=None,
+               ldap_filter='',
                attributes=None,
                scope=ldap.SCOPE_SUBTREE):
         try:
             if base_dn==None:
                 base_dn=self.app.config['LDAP_SEARCH_BASE']
+            # print("ldap_filter : {0}".format(ldap_filter))
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
             records = self.conn.search_s(base_dn, scope, ldap_filter, attributes)
@@ -137,7 +138,7 @@ class LDAP(object):
             return self.ldap_err(e)
         except Exception as e:
             return self.other_err(e)
-
+            print(e)
     def change_passwd(self, uid, old_pass, new_pass):
         try:
             dn = self.get_full_dn_from_uid(uid)
@@ -328,6 +329,23 @@ class LDAP(object):
             print(e)
             return self.other_err(e)
 
+    def add(self, dn, add_record):
+        try:
+            self.connect()
+            self.conn.simple_bind_s(session['user_dn'], session['password'])
+            print('add_s({0}, {1})'.format(dn,add_record))
+            self.conn.add_s(dn, add_record)
+            self.conn.unbind_s()
+            return True
+        except ldap.LDAPError as e:
+            print(e)
+            return self.ldap_err(e)
+        except Exception as e:
+            print(e)
+            return self.other_err(e)
+
+
+
     def login(self):
         """
         View function for rendering and logic for auth form
@@ -375,7 +393,6 @@ def login_required(f):
     """
     @wraps(f)
     def decorated(*args, **kwargs):
-        print(session)
         if 'logged_in' in session:
             return f(*args, **kwargs)
         return redirect(url_for(current_app.config['LDAP_LOGIN_VIEW']))

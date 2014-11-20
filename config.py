@@ -19,3 +19,4 @@ DATE_DISPLAY_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
 SQLALCHEMY_DATABASE_URI = 'mysql://lac:omgwtfbbq@localhost/lac'
 PEOPLE_GROUPS = ['ccc', 'cines', 'deci', 'sam', 'autre', 'test', 'soft']
 SHADOW_DURATION = 12
+SAMBA_DOMAIN_NAME = 'PALLAS'

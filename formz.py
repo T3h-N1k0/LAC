@@ -43,7 +43,9 @@ class SelectGroupzForm(Form):
     available_groupz = SelectMultipleField(u'Groupes disponibles')
     selected_groupz = SelectMultipleField(u'Groupes selectionnés')
 
-
+class CreateQuotaForm(Form):
+    group = SelectField(u'Groupe')
+    default_quota = SelectField(u'Quota par défaut')
 
 class EditPageViewForm(Form):
     oc_form = FormField(SelectOCForm)
@@ -95,12 +97,30 @@ class EditDefaultQuotaForm(Form):
 class EditQuotaForm(Form):
     cinesQuotaSizeHardTemp = FormField(SizeQuotaForm)
     cinesQuotaSizeSoftTemp = FormField(SizeQuotaForm)
-    cinesQuotaSizeSoftTempExpire = TextField(
+    cinesQuotaSizeTempExpire = DateField(
         u'Date d\'expiration pour cinesQuotaSizeSoftTemp')
     cinesQuotaInodeHardTemp = FormField(InodeQuotaForm)
     cinesQuotaInodeSoftTemp = FormField(InodeQuotaForm)
-    cinesQuotaInodeTempExpire = TextField(
+    cinesQuotaInodeTempExpire = DateField(
         u'Date d\'expiration pour cinesQuotaInodeSoftTemp')
 
 class UserzFileForm(Form):
     userz_file = FileField('Fichier contenant les logins utilisateur')
+
+class LDAPObjectTypeForm(Form):
+    label = TextField(u'\'ou\' associée à ce type d\'objet')
+    description = TextField(u'Déscription')
+    ranges = TextField(
+        u'Ranges d\'ID associées à ce type (au format "n-p;n-p;...")')
+    apply_to = SelectField(u'Appliquée à un',
+                           choices=[('group', 'Groupe'),
+                                    ('user', 'Utilisateur')],
+                           default='group')
+    object_classes = FormField(SelectOCForm)
+
+class AddUserForm(Form):
+    # display_type = SelectField(u'Type d\'affichage pour le compte')
+    group = SelectField(u'Groupe')
+    ldap_object_type = SelectField(u'Type d\'objet LDAP', coerce=int)
+    uid = TextField(u'Login (uid)')
+    cn = TextField(u'Common Name')
