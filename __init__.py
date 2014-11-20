@@ -218,6 +218,39 @@ class FieldType(db.Model):
                           backref='fieldtype',
                           lazy='dynamic')
 
+# Many to one : LDAPObjectTypeObjectClass (n)---(1) LDAPObjectType
+# Many to one : LDAPObjectTypeObjectClass (n)---(1) LDAPObjectClass
+class LDAPObjectTypeObjectClass(db.Model):
+    __tablename__ = 'ldapobjecttypeobjectclass'
+    id = db.Column(db.Integer, primary_key=True)
+    ldapobjecttype_id = Column(Integer, ForeignKey('ldapobjecttype.id',
+                                         onupdate="CASCADE",
+                                         ondelete="CASCADE"))
+    ldapobjectclass_id = Column(Integer, ForeignKey('ldapobjectclass.id',
+                                                  onupdate="CASCADE",
+                                                  ondelete="CASCADE"))
+
+    def __init__(self, ldapobjecttype_id, ldapobjectclass_id):
+        self.ldapobjecttype_id = ldapobjecttype_id
+        self.ldapobjectclass_id = ldapobjectclass_id
+
+
+class LDAPObjectType(db.Model):
+    __tablename__ = 'ldapobjecttype'
+    id = db.Column(db.Integer, primary_key=True)
+    label = db.Column(db.String(50), unique=True)
+    description = db.Column(db.String(50))
+    ranges = db.Column(db.String(200))
+    apply_to = db.Column(db.String(20))
+    last_used_id = db.Column(db.Integer)
+
+    ldapobjecttypeobjectclasses = db.relationship("LDAPObjectTypeObjectClass",
+                                     backref="ldapobjecttype",
+                                     lazy='dynamic')
+
+
+
+
 ### Routez
 
 @app.route('/')
@@ -1080,6 +1113,98 @@ def edit_file():
                            view_form=view_form)
 
 
+@app.route('/edit_ldap_object_type/<ldap_object_type_label>',
+           methods=('GET', 'POST'))
+@login_required
+def edit_ldap_object_type(ldap_object_type_label):
+    if ldap_object_type_label is not None:
+        ldap_object_type = LDAPObjectType.query.filter_by(
+            label = ldap_object_type_label).first()
+        selected_oc_choices = get_ot_oc_choices(ldap_object_type)
+        ot_oc_id_list = [oc[0] for oc in selected_oc_choices]
+        available_oc_choices = filter(
+            None,
+            [(oc.id,oc.label)
+             if oc.id not in ot_oc_id_list
+             and oc is not None
+             else None for oc in LDAPObjectClass.query.all()]
+        )
+
+        form = LDAPObjectTypeForm(request.form)
+        if request.method == 'POST':
+            ldap_object_type.label = form.label.data
+            ldap_object_type.description = form.description.data
+            ldap_object_type.ranges = form.ranges.data
+            ldap_object_type.apply_to = form.apply_to.data
+            db.session.add(ldap_object_type)
+            if form.object_classes.selected_oc.data is not None:
+                # On traite les ObjectClass ajoutées
+                for oc_id in form.object_classes.selected_oc.data :
+                    if oc_id not in ot_oc_id_list:
+                        print("Creation de l'Object Class id {0}".format(oc_id))
+                        ot_oc =  LDAPObjectTypeObjectClass(
+                            ldap_object_type.id, oc_id)
+                        db.session.add(ot_oc)
+                        # On traite les ObjectClass supprimées
+                        # et les fieldz associés en cascade
+                for oc_id in ot_oc_id_list:
+                    if oc_id not in form.object_classes.selected_oc.data:
+                        print("Suppression de l'Object Class id {0}".format(oc_id))
+                        LDAPObjectTypeObjectClass.query.filter_by(
+                            ldapobjecttype_id=ldap_object_type.id,
+                            ldapobjectclass_id= oc_id
+                        ).delete()
+            db.session.commit()
+            flash(u'{0} mis à jour'.format(ldap_object_type.description))
+            return redirect(url_for('home'))
+        form.label.data = ldap_object_type.label
+        form.description.data = ldap_object_type.description
+        form.ranges.data = ldap_object_type.ranges
+        form.apply_to.data = ldap_object_type.apply_to
+        form.object_classes.selected_oc.choices = selected_oc_choices
+        form.object_classes.available_oc.choices = available_oc_choices
+
+        return render_template('edit_ldap_object_type.html',
+                               form=form)
+    else:
+        flash(u'Type d\'ID non trouvé')
+        return redirect(url_for('show_ldap_object_types'))
+
+@app.route('/add_ldap_object_type/', methods=('GET', 'POST'))
+@login_required
+def add_ldap_object_type():
+    form = LDAPObjectTypeForm(request.form)
+    if request.method == 'POST' and form.validate():
+        ldap_object_type = LDAPObjectType()
+        ldap_object_type.label = form.label.data
+        # ldap_object_type.ranges = form.ranges.data
+        db.session.add(ldap_object_type)
+        db.session.commit()
+        flash(u'Type d\'objet LDAP "{0}" ajouté'.format(ldap_object_type.label))
+        return redirect(url_for('edit_ldap_object_type',
+                                ldap_object_type_label= ldap_object_type.label))
+    return render_template('add_ldap_object_type.html',
+                               form=form)
+
+@app.route('/delete_ldap_object_type/<ldap_object_type_label>')
+@login_required
+def delete_ldap_object_types(ldap_object_type_label):
+    ldap_object_type = LDAPObjectType.query.filter_by(
+        label=ldap_object_type_label
+    ).delete()
+    db.session.commit()
+    flash(u'Objet {0} supprimé de la bdd'.format(ldap_object_type_label))
+    return render_template('show_ldap_object_types.html')
+
+
+
+@app.route('/show_ldap_object_types/')
+@login_required
+def show_ldap_object_types():
+    ldap_object_types = LDAPObjectType.query.all()
+    return render_template('show_ldap_object_types.html',
+                           ldap_object_types=ldap_object_types)
+
 ### Helperz
 
 def allowed_file(filename):
@@ -1225,6 +1350,18 @@ def populate_people_group_redis():
 def init_populate_work_group_redis():
     populate_work_group_redis()
 
+@app.before_first_request
+def init_populate_last_used_idz():
+    populate_last_used_idz()
+
+def populate_last_used_idz():
+    ldap_otz = LDAPObjectType.query.all()
+    for ldap_ot in ldap_otz:
+        last_used_id = get_last_used_id(ldap_ot)
+        # print('last_used_id : {0}'.format(last_used_id))
+        ldap_ot.last_used_id = last_used_id
+        db.session.add(ldap_ot)
+    db.session.commit()
 
 def populate_work_group_redis():
     for group in get_submission_groupz_list():
@@ -1595,11 +1732,19 @@ def get_available_oc_choices(selected_oc_id_list):
                                       else None for oc in available_oc])
     return available_oc_choices
 
-def get_selected_oc_choices(page):
+def get_page_oc_choices(page):
     page_oc_list = PageObjectClass.query.filter_by(page_id=page.id).all()
     select_oc_choices = filter(None,[(oc.ldapobjectclass.id,
                                       oc.ldapobjectclass.label)
                                      for oc in page_oc_list ])
+    return select_oc_choices
+
+def get_ot_oc_choices(object_type):
+    ot_oc_list = LDAPObjectTypeObjectClass.query.filter_by(
+        ldapobjecttype_id=object_type.id).all()
+    select_oc_choices = filter(None,[(oc.ldapobjectclass.id,
+                                      oc.ldapobjectclass.label)
+                                     for oc in ot_oc_list ])
     return select_oc_choices
 
 def get_attr_from_oc_id_list(oc_id_list):
