@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_formfield %}
 {% extends "layout.html" %}
 
-{% block title %} Recherche de compte {% endblock title %}
+{% block title %} Gestion des quotas {% endblock title %}
 
 {% block head_js %}
 {% endblock head_js %}
@@ -11,7 +11,7 @@
 <form method="post" action="/edit_quota/{{ storage_cn }}">
 {{ render_formfield(form.cinesQuotaSizeHardTemp) }}
 {{ render_formfield(form.cinesQuotaSizeSoftTemp) }}
-{{ render_formfield(form.cinesQuotaSizeSoftTempExpire) }}
+{{ render_formfield(form.cinesQuotaSizeTempExpire) }}
 {{ render_formfield(form.cinesQuotaInodeHardTemp) }}
 {{ render_formfield(form.cinesQuotaInodeSoftTemp) }}
 {{ render_formfield(form.cinesQuotaInodeTempExpire) }}

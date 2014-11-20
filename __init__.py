@@ -996,7 +996,63 @@ def edit_quota(storage_cn=None):
         return render_template('edit_quota.html',
                                storagez=storagez_labelz)
 
+@app.route('/add_quota/', methods=('GET', 'POST'))
+@admin_login_required
+def add_quota():
+    form = CreateQuotaForm(request.form)
+
+    default_storagez = get_default_storage_list()
+    form.default_quota.choices = [
+        (storage.get_attributes()['cn'][0],
+         storage.get_attributes()['cn'][0])
+        for storage in default_storagez ]
+    form.group.choices = get_groupz_list()
+
+    if request.method == 'POST' and form.validate():
+        niou_cn = '{0}.{1}'.format(
+                    form.default_quota.data,
+                    form.group.data)
+
+        default_storage = get_default_storage(
+            form.default_quota.data).get_attributes()
+
+        default_size_unit = get_attr(
+            get_attr(SizeQuotaForm, 'unit'),'kwargs')['default']
+        default_inode_unit = get_attr(
+            get_attr(InodeQuotaForm, 'unit'),'kwargs')['default']
+
+        cinesQuotaSizeHard = str(int(
+            default_storage['cinesQuotaSizeHard'][0]
+        ) / default_size_unit)
+        cinesQuotaSizeSoft = str(int(
+            default_storage['cinesQuotaSizeSoft'][0]
+        ) / default_size_unit)
+        cinesQuotaInodeHard = str(int(
+            default_storage['cinesQuotaInodeHard'][0]
+        ) / default_inode_unit)
+        cinesQuotaInodeSoft = str(int(
+            default_storage['cinesQuotaInodeSoft'][0]
+        ) / default_inode_unit)
+
+        add_record = [('cn', [niou_cn]),
+                      ('objectClass', ['top', 'cinesQuota']),
+                      ('cinesQuotaSizeHard', cinesQuotaSizeHard),
+                      ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
+                      ('cinesQuotaInodeHard', cinesQuotaInodeHard),
+                      ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)
+        ]
+        group_full_dn = ldap.get_full_dn_from_cn(
+            get_posix_group_cn_by_gid(form.group.data))
+        full_dn = 'cn={0},{1}'.format(niou_cn,group_full_dn)
+        ldap.add(full_dn, add_record)
+        flash(u'Quota initialisé')
+        return redirect(url_for('edit_quota',
+                                storage_cn = niou_cn))
+
+    return render_template('add_quota.html', form=form)
+
 @app.route('/get_backup_file/<userz>/<attributez>')
+@login_required
 def get_backup_file(userz, attributez):
     userz = [user.encode('utf-8')
              for user in userz.split(',')]
@@ -1237,41 +1293,47 @@ def set_default_quota_form_values(form, storage):
 def set_quota_form_values(form, storage):
     default_inode_unit = form.cinesQuotaInodeHardTemp.unit.default
     default_size_unit = form.cinesQuotaSizeHardTemp.unit.default
-    default_storage_cn = get_default_storage_cn(storage['cn'][0])
+    # default_storage_cn = get_default_storage_cn(storage['cn'][0])
+    default_storage_cn = storage['cn'][0].split('.')[0]
     default_storage = get_default_storage(default_storage_cn).get_attributes()
-    date_now = str(datetime.now().strftime('%Y-%m-%d'))
+    date_now = datetime.now()
 
-    cinesQuotaSizeHardTemp = int(
+    cinesQuotaSizeHardTemp = str(int(
         storage['cinesQuotaSizeHardTemp'][0] if
         'cinesQuotaSizeHardTemp' in storage
         else default_storage['cinesQuotaSizeHard'][0]
-    ) / default_size_unit
-    cinesQuotaSizeSoftTemp = int(
+    ) / default_size_unit)
+    cinesQuotaSizeSoftTemp = str(int(
         storage['cinesQuotaSizeSoftTemp'][0]if
         'cinesQuotaSizeSoftTemp' in storage
         else default_storage['cinesQuotaSizeSoft'][0]
-    ) / default_size_unit
-    cinesQuotaInodeHardTemp = int(
+    ) / default_size_unit)
+    cinesQuotaInodeHardTemp = str(int(
         storage['cinesQuotaInodeHardTemp'][0]if
         'cinesQuotaInodeHardTemp' in storage
         else default_storage['cinesQuotaInodeHard'][0]
-    ) / default_inode_unit
-    cinesQuotaInodeSoftTemp = int(
+    ) / default_inode_unit)
+    cinesQuotaInodeSoftTemp = str(int(
         storage['cinesQuotaInodeSoftTemp'][0]if
         'cinesQuotaInodeSoftTemp' in storage
         else default_storage['cinesQuotaInodeSoft'][0]
-    ) / default_inode_unit
+    ) / default_inode_unit)
+    cinesQuotaSizeTempExpire = datetime.fromtimestamp(
+        float(storage['cinesQuotaSizeTempExpire'][0])
+    ) if 'cinesQuotaSizeTempExpire' in storage else date_now
+    cinesQuotaInodeTempExpire =  datetime.fromtimestamp(
+        float(storage['cinesQuotaInodeTempExpire'][0])
+    ) if 'cinesQuotaInodeTempExpire' in storage else date_now
+
+    # print('cinesQuotaSizeTempExpire {0}'.format(
+    #     cinesQuotaSizeTempExpire))
 
     form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp
     form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp
     form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp
     form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp
-    form.cinesQuotaSizeSoftTempExpire.data = storage[
-        'cinesQuotaSizeSoftTempExpire'
-    ][0] if 'cinesQuotaSizeSoftTempExpire' in storage else date_now
-    form.cinesQuotaInodeTempExpire.data = storage[
-        'cinesQuotaInodeTempExpire'
-    ][0] if 'cinesQuotaInodeTempExpire' in storage else date_now
+    form.cinesQuotaSizeTempExpire.data = cinesQuotaSizeTempExpire
+    form.cinesQuotaInodeTempExpire.data = cinesQuotaInodeTempExpire
 
 def disable_account(user):
     user_attr = user.get_attributes()
