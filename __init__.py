@@ -1753,12 +1753,12 @@ def get_default_storage(cn):
     )[0]
     return storage
 
-def get_default_storage_cn(cn):
-    dn = ldap.get_full_dn_from_cn(cn)
-    m = re.search('(?<=cn={0},cn=)\w+'.format(cn), dn)
-    group_cn = m.group(0)
-    group_gid = get_gid_from_posix_group_cn(group_cn)
-    return cn.replace(group_gid, '')
+# def get_default_storage_cn(cn):
+    # dn = ldap.get_full_dn_from_cn(cn)
+    # m = re.search('(?<=cn={0},cn=)\w+'.format(cn), dn)
+    # group_cn = m.group(0)
+    # group_gid = get_gid_from_posix_group_cn(group_cn)
+    # return cn.replace(group_gid, '')
 
 def get_storage(cn):
     ldap_filter='(&(objectClass=cinesQuota)(cn={0}))'.format(cn)
