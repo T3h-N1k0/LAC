@@ -1972,7 +1972,7 @@ def get_uid_from_dn(dn):
         return ''
 
 def get_all_users():
-    base_dn='ou=people,dc=cines,dc=fr'
+    base_dn = "ou=people,{0}".format(app.config['LDAP_SEARCH_BASE'])
     ldap_filter='(objectclass=inetOrgPerson)'
     attributes=['*','+']
     userz = ldaphelper.get_search_results(
