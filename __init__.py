@@ -2407,6 +2407,17 @@ app.jinja_env.globals.update(
     days_number_to_datetime=days_number_to_datetime
 )
 
+def set_validators_to_form_field(form, field, validators):
+    form_field_kwargs = get_attr(
+        get_attr(form, field),'kwargs')
+
+    # print(get_attr(form, field))
+    # if 'validators' in form_field_kwargs:
+    #     form_field_kwargs['validators'].extend(validators)
+    # else:
+    form_field_kwargs['validators'] = validators
+
+    print(form_field_kwargs['validators'])
 def get_gid_from_posix_group_cn(cn):
     for gid, group_cn in r.hgetall('grouplist').iteritems():
         if group_cn == cn:
