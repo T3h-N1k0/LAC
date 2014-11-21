@@ -23,6 +23,11 @@
    uid=uid
    )}}">Gérer la soumission</a>
 <br/>
+<a href="{{ url_for(
+   'delete_user',
+   uid=uid
+   )}}">Supprimer l'utilisateur</a>
+<br/>
 {% endif %}
 {% if session['admin'] %}
 <a href="{{ url_for(
