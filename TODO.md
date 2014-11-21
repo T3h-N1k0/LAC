@@ -3,9 +3,7 @@
 - Etre plus ergonomique
 - Toolbox niveau prod
 - Création d'utilisateur/groupe.
-  Lorsqu'on crée un compte autre et soft il faut par defaut la ppolicy de service.
   Lorsqu'on crée un groupe pouvoir customiser la liste de système de fichier + vérifier l'unicité de son cn
-- Suppression d'un utilisateur. Prendre en compte les groupes le contenant
 - Une toolbox permettant d'integrer les outils courant (warning password expire / expiration des comptes / utilisateurs fantomes / Scrupté les tentative de brutforce)
 - regrouper les attributs par classe
 - Profile soumission
@@ -13,7 +11,6 @@
 - History des modifications du compte
 - Différencier groupe secondaire/projet (ou=grProjet,ou=groupePosix,dc=cines,dc=fr) compte CINES uniquement
 - History lastbind script local récupérant l'historique de tous les bind utilisateurs -−> mis dans une databases locale
-- PPolicy par default si pas de ppolicy  pwdPolicySubentry
 - PPolicy mettre en place le maxage :
 - Vérifier la moulinette de warning pour les comptes cines + comptes service pwdmaxage (ppolicies) et pwdChangedTime (usr)) : PPolicy par default si pas de ppolicy  pwdPolicySubentry : que les comptes cines / soft / service
   Remettre a zero tous les attributs
@@ -38,6 +35,9 @@
 - Permettre des traitements par lots (fichiers CSV), l'application doit fournir un CSV backup des donnée avant modif.
 - Unicité des UID géré via un objet ldap donnant le prochain uid dispo pour l'objet en cour (voir: lionel).
 - Unicité et historique uid/gid (gérer une liste d'exception uid/gid locaux) --> Fournir tranche uid reserver pour usage machine 50000 / 59999 + 25501-25601
+- Suppression d'un utilisateur. Prendre en compte les groupes le contenant
+- PPolicy par default si pas de ppolicy  pwdPolicySubentry
+  Lorsqu'on crée un compte autre et soft il faut par defaut la ppolicy de service.
 
 
 ### Remarques transverses :
@@ -58,6 +58,10 @@ Serveur ldap (ou tu pourras installer le serveur web + poser le nouveau lac) : l
 - sous quelle forme faire les modifications par groupe/héritage ?
 - Où sont les admins LDAP ?
 - Unicité : stockage de tous les uids dans la base locale LAC ?
+
+
+- ppolicies par défaut pour branches stockées où ?
+
 
 
 ### Sécurité :
