@@ -409,7 +409,11 @@ def show_user(page, uid):
         (row.label.lower(), row)
         for row in Field.query.filter_by(page_id = page.id).all()
     )
-    uid_detailz = ldaphelper.get_search_results(get_uid_detailz(uid))[0]
+    raw_detailz = get_uid_detailz(uid)
+    if not raw_detailz:
+        flash(u'Utilisateur non trouvé')
+        return redirect(url_for('home'))
+    uid_detailz = ldaphelper.get_search_results()[0]
     uid_attributez=uid_detailz.get_attributes()
     return render_template('show_user.html',
                            uid = uid,
