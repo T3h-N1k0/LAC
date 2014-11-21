@@ -810,13 +810,49 @@ def add_user(page_label=None,uid=None):
             return redirect(url_for('show_user',
                                     page=page_label,
                                     uid = uid))
-
-
-
-
-            # group_label = get_posix_group_cn_by_gid(add_form.group.data)
     return render_template('add_user.html',
                            add_form=add_form)
+
+@app.route('/edit_user/<page>/<uid>', methods=('GET', 'POST'))
+@login_required
+def edit_user(page,uid):
+    page = Page.query.filter_by(label=page).first()
+    EditForm = generate_edit_user_form_class(page)
+    form = EditForm(request.form)
+    fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
+    fieldz_labelz = [field.label for field in fieldz]
+
+    if request.method == 'POST' and form.validate() :
+        update_ldap_object_from_edit_user_form(form,fieldz_labelz,uid)
+        return redirect(url_for('show_user', page=page.label, uid=uid))
+    else:
+        set_edit_user_form_values(form, fieldz_labelz, uid)
+
+    return render_template('edit_user.html',
+                           form=form,
+                           page=page,
+                           uid=uid,
+                           fieldz=fieldz)
+
+@app.route('/delete_user/<uid>', methods=('GET', 'POST'))
+@login_required
+def delete_user(uid):
+    groupz = get_posix_groupz_from_member_uid(uid)
+
+    if request.method == 'POST':
+        print(uid)
+        user_dn = ldap.get_full_dn_from_uid(uid)
+        ldap.delete(user_dn)
+        for group in groupz:
+            # group_dn = ldap.get_full_dn_from_cn(group)
+            pre_modlist = [('memberUid', uid.encode('utf-8'))]
+            ldap.remove_cn_attribute(group,pre_modlist)
+        flash(u'Utilisateur {0} supprimé'.format(uid))
+        return redirect(url_for('home'))
+
+    return render_template('delete_user.html',
+                           groupz=groupz,
+                           uid=uid)
 
 
 @app.route('/select_edit_group_attributes/', methods=('GET', 'POST'))
@@ -2039,6 +2075,21 @@ def get_posix_group_memberz(group):
     print(records)
     memberz = records[0].get_attributes()['memberUid']
     return memberz
+
+
+def get_posix_groupz_from_member_uid(uid):
+    ldap_filter='(&(objectClass=posixGroup)(memberUid={0}))'.format(uid)
+    attributes=['cn']
+    base_dn='ou=groupePosix,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    groupz_obj = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    groupz = []
+    for group in groupz_obj:
+        groupz.append(group.get_attributes()['cn'][0])
+    return groupz
 
 def get_people_dn_from_ou(ou):
     ldap_filter='(ou={0})'.format(ou)

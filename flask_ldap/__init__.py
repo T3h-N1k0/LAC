@@ -344,6 +344,21 @@ class LDAP(object):
             print(e)
             return self.other_err(e)
 
+    def delete(self, dn):
+        try:
+            self.connect()
+            self.conn.simple_bind_s(session['user_dn'], session['password'])
+            print('delete_s({0})'.format(dn))
+            self.conn.delete_s(dn)
+            self.conn.unbind_s()
+            return True
+        except ldap.LDAPError as e:
+            print(e)
+            return self.ldap_err(e)
+        except Exception as e:
+            print(e)
+            return self.other_err(e)
+
 
 
     def login(self):
