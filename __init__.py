@@ -332,6 +332,12 @@ def change_password(uid):
     Change the password for a given UID
     """
     form=ChangePassForm(request.form)
+    pwd_policy = get_user_pwd_policy(uid)
+    pwd_min_length = pwd_policy['pwdMinLength'][0]
+    # pwd_max_age =
+
+
+
     if request.method == 'POST' and form.validate():
         pre_modlist = []
         if get_group_from_member_uid(uid) == 'cines':
@@ -354,7 +360,10 @@ def change_password(uid):
         ldap.update_uid_attribute(uid, pre_modlist)
 
         return redirect(url_for('home'))
-    return render_template('change_password.html', form=form, uid=uid)
+    return render_template('change_password.html',
+                           form=form,
+                           uid=uid,
+                           pwd_min_length=pwd_min_length)
 
 
 @app.route('/people/<group>')
@@ -2169,6 +2178,23 @@ def get_initial_submission():
         for submission_group in submission_groupz_list
     ])
     return initial_submission
+
+def get_user_pwd_policy(uid):
+    ldap_filter = "(&(objectClass=posixAccount)(uid={0}))".format(uid)
+    user = ldaphelper.get_search_results(
+        ldap.admin_search(ldap_filter=ldap_filter,
+                         attributes=['pwdPolicySubentry'])
+    )[0].get_attributes()
+    if 'pwdPolicySubentry' in user:
+        subentry_filter = '(entryDN={0})'.format(user['pwdPolicySubentry'][0])
+    else:
+        subentry_filter = '(&(objectClass=pwdPolicy)(cn=passwordDefault))'
+    base_dn = 'ou=policies,ou=system,{0}'.format(app.config['LDAP_SEARCH_BASE'])
+    pwd_policy = ldaphelper.get_search_results(
+        ldap.admin_search(ldap_filter=subentry_filter,
+                         attributes=['*'])
+    )[0].get_attributes()
+    return pwd_policy
 
 def get_uid_detailz(uid):
     ldap_filter='(uid={0})'.format(uid)
