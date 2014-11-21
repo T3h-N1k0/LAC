@@ -743,27 +743,6 @@ def hello(name=None):
     return render_template('test.html', name=session['uid'])
 
 
-@app.route('/edit_user/<page>/<uid>', methods=('GET', 'POST'))
-@login_required
-def edit_user(page,uid):
-    page = Page.query.filter_by(label=page).first()
-    EditForm = generate_edit_user_form_class(page)
-    form = EditForm(request.form)
-    fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
-    fieldz_labelz = [field.label for field in fieldz]
-
-    if request.method == 'POST' and form.validate() :
-        update_ldap_object_from_edit_user_form(form,fieldz_labelz,uid)
-        return redirect(url_for('show_user', page=page.label, uid=uid))
-    else:
-        set_edit_user_form_values(form, fieldz_labelz, uid)
-
-    return render_template('edit_user.html',
-                           form=form,
-                           page=page,
-                           uid=uid,
-                           fieldz=fieldz)
-
 @app.route('/add_user/<page_label>/<uid>', methods=('GET', 'POST'))
 @app.route('/add_user/', methods=('GET', 'POST'))
 @login_required
@@ -771,14 +750,11 @@ def add_user(page_label=None,uid=None):
     pages = Page.query.all()
     ldap_object_types = LDAPObjectType.query.all()
 
-    print("fuuuuuu {0}".format([user.get_attributes()['uid'][0] for user in get_all_users()]))
-
     existing_userz = [
         user.get_attributes()['uid'][0] for user in get_all_users()]
 
-    adduserform_kwargs = get_attr(
-        get_attr(AddUserForm, 'uid'),'kwargs')
-    adduserform_kwargs['validators'] = [validators.NoneOf(existing_userz)]
+    set_validators_to_form_field(
+        AddUserForm, 'uid',[validators.NoneOf(existing_userz)])
 
     add_form = AddUserForm(request.form)
     add_form.group.choices = get_groupz_list()
@@ -1524,12 +1500,16 @@ def init_populate_last_used_idz():
     populate_last_used_idz()
 
 def populate_last_used_idz():
+    ignore_ot_list = ['reserved', 'grLight', 'grPrace']
     ldap_otz = LDAPObjectType.query.all()
     for ldap_ot in ldap_otz:
-        last_used_id = get_last_used_id(ldap_ot)
-        # print('last_used_id : {0}'.format(last_used_id))
-        ldap_ot.last_used_id = last_used_id
-        db.session.add(ldap_ot)
+        if ldap_ot.label not in ignore_ot_list:
+            last_used_id = get_last_used_id(ldap_ot)
+            id_range = get_range_list_from_string(ldap_ot.ranges)
+            if int(last_used_id) not in id_range:
+                last_used_id = id_range[0]
+            ldap_ot.last_used_id = last_used_id
+            db.session.add(ldap_ot)
     db.session.commit()
 
 def populate_work_group_redis():
@@ -1560,6 +1540,8 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     ot_oc_list = [oc.ldapobjectclass.label.encode('utf-8')
                   for oc in ldap_ot_ocz]
 
+    service_ppolicy_groupz = ['soft', 'autre']
+
     form_attributez = []
     for field_label in fieldz_labelz:
         form_field_values = [entry.data.encode('utf-8')
@@ -1584,6 +1566,14 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
             ('sambaSID', "{0}-{1}".format(get_sambasid_prefix(),
                                                  uid_number))
         )
+    if page in service_ppolicy_groupz:
+        add_record.append(
+            ('pwdPolicySubentry',
+             'cn=passwordService,ou=policies,ou=system,{0}'.format(
+                 app.config['LDAP_SEARCH_BASE'])
+            )
+        )
+
     parent_dn = get_people_dn_from_ou(ldap_ot.label)
     full_dn = "uid={0};{1}".format(uid,parent_dn)
     if ldap.add(full_dn, add_record):
@@ -1598,18 +1588,26 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
 
 
 def get_next_id_from_ldap_ot(ldap_ot):
-    uid_range = get_range_list_from_string(ldap_ot.ranges)
-    return uid_range[uid_range.index(ldap_ot.last_used_id)+1]
+    id_range = get_range_list_from_string(ldap_ot.ranges)
+    next_index = id_range.index(ldap_ot.last_used_id)+1
+    while 1:
+        test_id = id_range[next_index]
+        ldap_filter = '(uidNumber={0})'.format(test_id)
+        raw_result = ldap.search(ldap_filter=ldap_filter,
+                                 attributes = ['uidNumber'])
+        if not raw_result:
+            return test_id
+        next_index += 1
 
 def get_range_list_from_string(rangez_string):
     rangez = rangez_string.split(';')
     rangez_lst = []
     for range_string in rangez:
-        range_split = range_string.split('-')
-        print(range_split)
-        rangez_lst.extend(range(
-            int(range_split[0]),
-            int(range_split[1])+1))
+        if range_string != '':
+            range_split = range_string.split('-')
+            rangez_lst.extend(range(
+                int(range_split[0]),
+                int(range_split[1])+1))
     return sorted(set(rangez_lst))
 
 def get_last_used_id(ldap_ot):
@@ -2425,6 +2423,21 @@ def get_gid_from_posix_group_cn(cn):
 
 def get_posix_group_cn_by_gid(gid):
     return r.hget('grouplist', gid)
+
+# def get_groupz_from_member_uid(uid):
+#     groupz = []
+#     full_dn = ldap.get_full_dn_from_uid(uid)
+#     for group in app.config['PEOPLE_GROUPS']:
+#         for member in r.smembers("groupz:{0}".format(group)):
+#             if uid == member:
+#                 print("group {0}".format(member))
+#                 groupz.append(group)
+#     for group in get_submission_groupz_list():
+#         for member in r.smembers("wrk_groupz:{0}".format(group)):
+#             if full_dn == member:
+#                 print("wrk_group {0}".format(member))
+#                 groupz.append(group)
+#     return groupz
 
 app.jinja_env.globals.update(
     get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
