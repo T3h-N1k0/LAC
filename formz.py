@@ -117,6 +117,8 @@ class LDAPObjectTypeForm(Form):
                                     ('user', 'Utilisateur')],
                            default='group')
     object_classes = FormField(SelectOCForm)
+    ppolicy = SelectField(u'Ppolicy', default='')
+    set_ppolicy = BooleanField('Appliquer la ppolicy')
 
 class AddUserForm(Form):
     # display_type = SelectField(u'Type d\'affichage pour le compte')

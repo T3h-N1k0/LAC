@@ -249,6 +249,7 @@ class LDAPObjectType(db.Model):
     ranges = db.Column(db.String(200))
     apply_to = db.Column(db.String(20))
     last_used_id = db.Column(db.Integer)
+    ppolicy = db.Column(db.String(50))
 
     ldapobjecttypeobjectclasses = db.relationship("LDAPObjectTypeObjectClass",
                                      backref="ldapobjecttype",
@@ -403,7 +404,6 @@ def test(uid):
 @app.route('/show_user/<page>/<uid>')
 @login_required
 def show_user(page, uid):
-    print("uid : {0}".format(uid))
     page = Page.query.filter_by(label = page).first()
     page_fieldz = dict(
         (row.label.lower(), row)
@@ -413,7 +413,8 @@ def show_user(page, uid):
     if not raw_detailz:
         flash(u'Utilisateur non trouvé')
         return redirect(url_for('home'))
-    uid_detailz = ldaphelper.get_search_results()[0]
+
+    uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
     uid_attributez=uid_detailz.get_attributes()
     return render_template('show_user.html',
                            uid = uid,
@@ -1261,6 +1262,11 @@ def edit_ldap_object_type(ldap_object_type_label):
             label = ldap_object_type_label).first()
         selected_oc_choices = get_ot_oc_choices(ldap_object_type)
         ot_oc_id_list = [oc[0] for oc in selected_oc_choices]
+        ppolicy_choices = [(ppolicy.get_attributes()['cn'][0],
+                            ppolicy.get_attributes()['cn'][0])
+                           for ppolicy in get_all_ppolicies()
+        ]
+        ppolicy_choices.append(('', 'Aucune'))
         available_oc_choices = filter(
             None,
             [(oc.id,oc.label)
@@ -1268,13 +1274,13 @@ def edit_ldap_object_type(ldap_object_type_label):
              and oc is not None
              else None for oc in LDAPObjectClass.query.all()]
         )
-
         form = LDAPObjectTypeForm(request.form)
         if request.method == 'POST':
             ldap_object_type.label = form.label.data
             ldap_object_type.description = form.description.data
             ldap_object_type.ranges = form.ranges.data
             ldap_object_type.apply_to = form.apply_to.data
+            ldap_object_type.ppolicy = form.ppolicy.data
             db.session.add(ldap_object_type)
             if form.object_classes.selected_oc.data is not None:
                 # On traite les ObjectClass ajoutées
@@ -1294,12 +1300,17 @@ def edit_ldap_object_type(ldap_object_type_label):
                             ldapobjectclass_id= oc_id
                         ).delete()
             db.session.commit()
+            if form.set_ppolicy.data :
+                set_group_ppolicy(ldap_object_type.label,
+                                  ldap_object_type.ppolicy)
             flash(u'{0} mis à jour'.format(ldap_object_type.description))
             return redirect(url_for('home'))
         form.label.data = ldap_object_type.label
         form.description.data = ldap_object_type.description
         form.ranges.data = ldap_object_type.ranges
         form.apply_to.data = ldap_object_type.apply_to
+        form.ppolicy.data = ldap_object_type.ppolicy
+        form.ppolicy.choices = ppolicy_choices
         form.object_classes.selected_oc.choices = selected_oc_choices
         form.object_classes.available_oc.choices = available_oc_choices
 
@@ -1540,8 +1551,6 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     ot_oc_list = [oc.ldapobjectclass.label.encode('utf-8')
                   for oc in ldap_ot_ocz]
 
-    service_ppolicy_groupz = ['soft', 'autre']
-
     form_attributez = []
     for field_label in fieldz_labelz:
         form_field_values = [entry.data.encode('utf-8')
@@ -1566,10 +1575,12 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
             ('sambaSID', "{0}-{1}".format(get_sambasid_prefix(),
                                                  uid_number))
         )
-    if page in service_ppolicy_groupz:
+
+    if ldap_ot.ppolicy != '':
         add_record.append(
             ('pwdPolicySubentry',
-             'cn=passwordService,ou=policies,ou=system,{0}'.format(
+             'cn={0},ou=policies,ou=system,{1}'.format(
+                 ldap_ot.ppolicy,
                  app.config['LDAP_SEARCH_BASE'])
             )
         )
@@ -2079,6 +2090,7 @@ def get_posix_group_memberz(group):
     base_dn='ou=groupePosix,{0}'.format(
         app.config['LDAP_SEARCH_BASE']
     )
+    print(ldap_filter)
     print(base_dn)
     records = ldaphelper.get_search_results(
         ldap.search(base_dn,ldap_filter,attributes)
@@ -2231,6 +2243,18 @@ def get_all_users():
     )
     return userz
 
+def get_all_ppolicies():
+    base_dn = "ou=policies,ou=system,{0}".format(app.config['LDAP_SEARCH_BASE'])
+    ldap_filter='(objectclass=pwdPolicy)'
+    attributes=['*','+']
+    userz = ldaphelper.get_search_results(
+        ldap.search(ldap_filter=ldap_filter,
+                    attributes=attributes,
+                    base_dn=base_dn)
+    )
+    return userz
+
+
 def get_subschema():
     ldap_filter='(objectclass=*)'
     base_dn='cn=subschema'
@@ -2288,6 +2312,17 @@ def set_submission(uid, group, state):
     pre_modlist = [('cinesSoumission', new_cines_soumission)]
     ldap.update_uid_attribute(uid, pre_modlist)
     flash(u'Soumission mis à jour pour le groupe {0}'.format(group))
+
+def set_group_ppolicy(group, ppolicy):
+    memberz = get_people_group_memberz(group)
+    ppolicy_value = 'cn={0},ou=policies,ou=system,{1}'.format(
+        ppolicy,
+        app.config['LDAP_SEARCH_BASE']) if ppolicy != '' else None
+    pre_modlist= [('pwdPolicySubentry',
+                   ppolicy_value)]
+
+    for member in memberz:
+        ldap.update_uid_attribute(member, pre_modlist)
 
 def update_default_quota(storage_cn, form):
     cinesQuotaSizeHard = str(
