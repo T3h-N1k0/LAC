@@ -1,0 +1,21 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Création d'une ppolicy {% endblock title %}
+
+{% block head_js %}
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+{% endblock head_js %}
+
+{% block body %}
+<form method="post" action="/add_ppolicy/">
+{{ render_formfield(form.cn) }}
+<input id="update" type="submit" value="Suivant" >
+
+{% endblock body %}

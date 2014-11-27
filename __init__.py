@@ -256,7 +256,25 @@ class LDAPObjectType(db.Model):
                                      lazy='dynamic')
 
 
+class Filesystem(db.Model):
+    __tablename__ = 'filesystem'
+    id = db.Column(db.Integer, primary_key=True)
+    label = db.Column(db.String(50), unique=True)
+    description = db.Column(db.String(50))
 
+    def __init__(self, label, description):
+        self.description = description
+        self.label = label
+
+class Shell(db.Model):
+    __tablename__ = 'shell'
+    id = db.Column(db.Integer, primary_key=True)
+    path = db.Column(db.String(50), unique=True)
+    label = db.Column(db.String(50))
+
+    def __init__(self, label, description):
+        self.path = path
+        self.label = label
 
 ### Routez
 
@@ -1355,6 +1373,154 @@ def show_ldap_object_types():
     return render_template('show_ldap_object_types.html',
                            ldap_object_types=ldap_object_types)
 
+
+@app.route('/show_ppolicies/')
+@login_required
+def show_ppolicies():
+    ppolicies = [ppolicy.get_attributes()['cn'][0]
+                 for ppolicy in get_all_ppolicies()]
+    return render_template('show_ppolicies.html',
+                           ppolicies=ppolicies)
+
+@app.route('/add_ppolicy/', methods=('GET', 'POST'))
+@login_required
+def add_ppolicy():
+    form = AddPolicyForm(request.form)
+    if request.method == 'POST' and form.validate():
+        cn = form.cn.data.encode('utf-8')
+        dn = "cn={0},ou=policies,ou=system,{1}".format(
+            cn,
+            app.config['LDAP_SEARCH_BASE'])
+        add_record=[('cn',[cn]),
+                    ('pwdAttribute', ['userPassword']),
+                    ('objectClass', ['device', 'pwdPolicy'])]
+        if ldap.add(dn, add_record):
+            flash(u'PPolicy {0} ajoutée'.format(cn))
+        return redirect(url_for('edit_ppolicy',
+                                ppolicy_label= cn))
+    return render_template('add_ppolicy.html',
+                           form=form)
+
+
+@app.route('/edit_ppolicy/<ppolicy_label>',
+           methods=('GET', 'POST'))
+@login_required
+def edit_ppolicy(ppolicy_label):
+    page = Page.query.filter_by(label = 'ppolicy').first()
+    form = generate_edit_ppolicy_form_class(page)(request.form)
+    fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
+    fieldz_labelz = [field.label for field in fieldz]
+
+    if request.method == 'POST' and form.validate() :
+        update_ldap_object_from_edit_ppolicy_form(form,
+                                                  fieldz_labelz,
+                                                  ppolicy_label)
+        return redirect(url_for('home'))
+    else:
+        set_edit_ppolicy_form_values(form, fieldz_labelz, ppolicy_label)
+
+    return render_template('edit_ppolicy.html',
+                           form=form,
+                           page=page,
+                           ppolicy_label=ppolicy_label,
+                           fieldz=fieldz)
+@app.route('/show_filesystems')
+@login_required
+def show_filesystems():
+    filesystems = Filesystem.query.all()
+    return render_template('show_filesystems.html',
+                           filesystems=filesystems)
+
+@app.route('/add_filesystem',methods=('GET', 'POST'))
+@login_required
+def add_filesystem():
+    add_form = FilesystemForm(request.form)
+    if request.method == 'POST' and add_form.validate():
+        filesystem = Filesystem(add_form.label.data,
+                                add_form.description.data)
+        db.session.add(filesystem)
+        db.session.commit()
+        flash(u'{0} créé'.format(add_form.label.data))
+        return redirect(url_for('show_filesystems'))
+    return render_template('add_filesystem.html',
+                           form = add_form)
+
+
+@app.route('/edit_filesystem/<fs_label>',methods=('GET', 'POST'))
+@login_required
+def edit_filesystem(fs_label):
+    filesystem = Filesystem.query.filter_by(label = fs_label).first()
+    add_form = FilesystemForm(request.form)
+    if request.method == 'POST' and add_form.validate():
+        filesystem.label = add_form.label.data,
+        filesystem.description = add_form.description.data
+        db.session.add(filesystem)
+        db.session.commit()
+        flash(u'{0} mis à jour'.format(add_form.label.data))
+        return redirect(url_for('show_filesystems'))
+    add_form.description.data = filesystem.description
+    add_form.label.data = filesystem.label
+    return render_template('edit_filesystem.html',
+                           form = add_form,
+                           filesystem = filesystem)
+
+@app.route('/delete_filesystem/<fs_label>')
+@login_required
+def delete_filesystem(fs_label):
+    Filesystem.query.filter_by(label = fs_label).delete()
+    db.session.commit()
+    flash(u'Système de fichier {0} supprimé'.format(fs_label))
+    return redirect(url_for('show_filesystems'))
+
+
+@app.route('/show_shells')
+@login_required
+def show_shells():
+    shells = Shell.query.all()
+    return render_template('show_shells.html',
+                           shells=shells)
+
+@app.route('/add_shell',methods=('GET', 'POST'))
+@login_required
+def add_shell():
+    add_form = ShellForm(request.form)
+    if request.method == 'POST' and add_form.validate():
+        shell = Shell(add_form.label.data,
+                      add_form.path.data)
+        db.session.add(shell)
+        db.session.commit()
+        flash(u'{0} créé'.format(add_form.label.data))
+        return redirect(url_for('show_shells'))
+    return render_template('add_shell.html',
+                           form = add_form)
+
+
+@app.route('/edit_shell/<shell_label>',methods=('GET', 'POST'))
+@login_required
+def edit_shell(shell_label):
+    shell = Shell.query.filter_by(label = shell_label).first()
+    add_form = ShellForm(request.form)
+    if request.method == 'POST' and add_form.validate():
+        shell.label = add_form.label.data,
+        shell.path = add_form.path.data
+        db.session.add(shell)
+        db.session.commit()
+        flash(u'{0} mis à jour'.format(add_form.label.data))
+        return redirect(url_for('show_shells'))
+    add_form.path.data = shell.path
+    add_form.label.data = shell.label
+    return render_template('edit_shell.html',
+                           form = add_form,
+                           shell = shell)
+
+@app.route('/delete_shell/<shell_label>')
+@login_required
+def delete_shell(shell_label):
+    Shell.query.filter_by(label = fs_label).delete()
+    db.session.commit()
+    flash(u'Shell {0} supprimé'.format(shell_label))
+    return redirect(url_for('show_shells'))
+
 ### Helperz
 
 def allowed_file(filename):
@@ -1651,6 +1817,24 @@ def get_last_used_id(ldap_ot):
             max_id = result_id
     return str(max_id)
 
+def get_filesystem_choices():
+    filesystems = Filesystem.query.all()
+    fs_choices = [ (fs.label, fs.description) for fs in filesystems]
+    return fs_choices
+
+def update_ldap_object_from_edit_ppolicy_form(form, attributes, cn):
+    ppolicy_attrz = get_ppolicy(cn).get_attributes()
+    pre_modlist = []
+    for attr in attributes:
+        field_value = getattr(form, attr).data.encode('utf-8')
+        print('form_field_value : {0}'.format(field_value))
+        if attr not in ppolicy_attrz or ppolicy_attrz[attr][0] != field_value:
+            # if attr == 'pwdMustChange':
+            #     pre_modlist.append((attr, [True if field_value else False]))
+            # else:
+            pre_modlist.append((attr, [field_value]))
+    print(pre_modlist)
+    ldap.update_cn_attribute(cn, pre_modlist)
 
 def update_ldap_object_from_edit_user_form(form, attributes, uid):
     uid_attributez = ldaphelper.get_search_results(
@@ -1701,19 +1885,45 @@ def generate_edit_user_form_class(page):
 
     return EditForm
 
+def generate_edit_ppolicy_form_class(page):
+    page_fieldz = Field.query.filter_by(page_id = page.id,
+                                        edit = True).all()
+    class EditForm(Form):
+        pass
 
-# def generate_add_user_form_class():
-#     class AddForm(AddUserForm):
-#         pass
+    for field in page_fieldz:
+        append_field_to_form(field, EditForm)
 
-#     uid_field = getattr(AddForm, 'uid')
-#     uid_field.
-#     return EditForm
+    return EditForm
 
 
+def set_edit_group_form_values(form, fieldz, cn=None):
+    if cn:
+        ldap_filter='(cn={0})'.format(cn)
+        attributes=['*','+']
+        detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+
+        group_attributez = ldaphelper.get_search_results(
+            detailz
+        )[0].get_attributes()
+    else:
+        group_attributez = {}
+
+    for field in fieldz:
+        form_field = getattr(form, field.label)
+        while(len(form_field.entries)>0):
+            form_field.pop_entry()
+        if field.label in group_attributez and len(
+                group_attributez[field.label]):
+            for field_value in group_attributez[field.label]:
+                form_field.append_entry(
+                    convert_to_display_mode(field_value,
+                                            field.fieldtype.type))
+        else:
+            form_field.append_entry()
 
 
-def set_edit_user_form_values(form, fieldz_namez, uid=None):
+def set_edit_user_form_values(form, fieldz, uid=None):
     if uid:
         uid_attributez = ldaphelper.get_search_results(
             get_uid_detailz(uid)
@@ -1721,16 +1931,29 @@ def set_edit_user_form_values(form, fieldz_namez, uid=None):
     else:
         uid_attributez = {}
 
-    for attr in fieldz_namez:
-        form_attr = getattr(form, attr)
-        while(len(form_attr.entries)>0):
-            form_attr.pop_entry()
+    for field in fieldz:
+        form_field = getattr(form, field.label)
+        while(len(form_field.entries)>0):
+            form_field.pop_entry()
+        if field.label in uid_attributez and len(uid_attributez[field.label]):
+            for field_value in uid_attributez[field.label]:
+                print(field_value)
+                form_field.append_entry(
+                    convert_to_display_mode(field_value,
+                                            field.fieldtype.type))
+        else:
+            form_field.append_entry()
+
+
+
+def set_edit_ppolicy_form_values(form, fieldz_namez, ppolicy_cn=None):
+    if ppolicy_cn:
+        ppolicy_attz = get_ppolicy(ppolicy_cn).get_attributes()
+    else:
+        ppolicy_attz = {}
 
     for field_name in fieldz_namez:
         field = getattr(form, field_name)
-        if field_name in uid_attributez and len(uid_attributez[field_name]):
-            for field_value in uid_attributez[field_name]:
-                field.append_entry(field_value)
         else:
             field.append_entry()
 

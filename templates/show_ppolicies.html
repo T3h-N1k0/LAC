@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %} Liste des ppolicies {% endblock title %}
+
+{% block body %}
+{% for ppolicy in ppolicies %}
+<a href="{{ url_for(
+   'edit_ppolicy',
+   ppolicy_label=ppolicy)}}">{{ ppolicy }}</a>
+<br/>
+{% endfor %}
+{% endblock body %}

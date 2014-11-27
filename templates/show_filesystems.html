@@ -1,0 +1,19 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Gérer les types de fichiers{% endblock title %}
+
+{% block body %}
+
+<a href="{{ url_for(
+   'add_filesystem')}}">Ajouter un système de fichier</a>
+<br/>
+<br/>
+Systèmes de fichier existants :
+{% for filesystem in filesystems %}
+<br/>
+<a href="{{ url_for(
+   'edit_filesystem',
+   fs_label=filesystem.label)}}">{{ filesystem.description }} </a>
+{% endfor %}
+{% endblock body %}
