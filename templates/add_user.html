@@ -40,7 +40,7 @@ Filtrer les groupes :
 <form method="post" action="/add_user/{{ page}}/{{ uid }}">
   {% for field in fieldz %}
     {% if 'FieldList' in get_type(get_attr(edit_form, field.label)) %}
-        {{ render_fieldlist(edit_form, field.label, field.multivalue) }}
+        {{ render_fieldlist(edit_form, field) }}
     {% else %}
         {{ render_formfield(get_attr(edit_form, field.label))}}
     {% endif  %}

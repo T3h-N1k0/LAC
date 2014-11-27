@@ -18,7 +18,7 @@
 <form method="post" action="/edit_user/{{ page.label}}/{{ uid }}">
   {% for field in fieldz %}
     {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
-        {{ render_fieldlist(form, field.label, field.multivalue) }}
+        {{ render_fieldlist(form, field) }}
     {% else %}
         {{ render_formfield(get_attr(form, field.label))}}
     {% endif  %}

@@ -11,29 +11,19 @@
   </dd>
 {% endmacro %}
 {% macro render_field(field, display_mode) %}
-{% if display_mode == 'Text' %}
-  {{ field }}
-{% elif display_mode == 'Datetime' %}
-  {{ field.strftime('%d-%m-%Y')}}
-{% elif display_mode == 'Generalizedtime' %}
-  {{ generalized_time_to_datetime(field).strftime('%d-%m-%Y') }}
-{% elif display_mode == 'GIDNumber' %}
-  {{ get_posix_group_cn_by_gid(field) }}
-{% elif display_mode == 'DaysNumber' %}
-  {{ days_number_to_datetime(field).strftime('%d-%m-%Y') }}
-{% endif  %}
+{{  convert_to_display_mode(field, display_mode) }}
 {% endmacro %}
-{% macro render_fieldlist(form, label, multivalue) %}
-  <div data-toggle="fieldset" id="{{ label }}-fieldset" >
+{% macro render_fieldlist(form, pagefield) %}
+  <div data-toggle="fieldset" id="{{ pagefield.label }}-fieldset" >
 
-    <dt>{{ get_attr(form, label)[0].label }}</dt>
-    {% if multivalue %}<button type="button" data-toggle="fieldset-add-row" data-target="#{{ label }}-fieldset">+</button>
+    <dt>{{ get_attr(form, pagefield.label)[0].label }}</dt>
+    {% if multivalue %}<button type="button" data-toggle="fieldset-add-row" data-target="#{{ pagefield.label }}-fieldset">+</button>
     {% endif %}
     <dd><ul>
-      {% for field in get_attr(form, label) %}
-      <li data-toggle="fieldset-entry"> {{ field(**kwargs)|safe }}
-      {% if multivalue %}
-        <button type="button" data-toggle="fieldset-remove-row" id="{{ label }}-{{loop.index0}}-remove">-</button></li>
+      {% for field in get_attr(form, pagefield.label) %}
+      <li data-toggle="fieldset-entry">  {{ field(**kwargs)|safe }}
+      {% if pagefield.multivalue %}
+        <button type="button" data-toggle="fieldset-remove-row" id="{{ pagefield.label }}-{{loop.index0}}-remove">-</button></li>
       {% endif %}
       {% if field.errors %}
         <ul class=errors>
