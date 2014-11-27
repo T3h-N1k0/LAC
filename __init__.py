@@ -2093,34 +2093,39 @@ def set_edit_ppolicy_form_values(form, fieldz_namez, ppolicy_cn=None):
 
     for field_name in fieldz_namez:
         field = getattr(form, field_name)
-        else:
-            field.append_entry()
+        if field_name in ppolicy_attz and len(ppolicy_attz[field_name]):
+            for field_value in ppolicy_attz[field_name]:
+                field.data = field_value.decode('utf-8')
 
-    # for attr_name, attr_values in uid_attributez.iteritems():
-    #     if attr_name in fieldz_dict:
-    #         attr_field = getattr(form, attr_name)
-    #         for field_value in uid_attributez[field_name]:
-    #             field.append_entry(field_value)
-
-def append_field_to_form(page_attrz, attr_name, form):
+def append_field_to_form(field, form):
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
-    if page_attrz[attr_name].fieldtype.type == 'Text':
+    if field.fieldtype.type == 'Text':
         setattr(form,
-                attr_name,
-                TextField(page_attrz[attr_name].description))
-    elif page_attrz[attr_name].fieldtype.type in date_formatz:
+                field.label,
+                TextField(field.description))
+    elif field.fieldtype.type in date_formatz:
         setattr(form,
-                attr_name,
-                DateField(page_attrz[attr_name].description))
-    elif  page_attrz[attr_name].fieldtype.type == 'GIDNumber':
+                field.label,
+                DateField(field.description))
+    elif  field.fieldtype.type == 'GIDNumber':
         setattr(form,
-                attr_name,
-                SelectField(page_attrz[attr_name].description,
-                            choices=get_groupz_list()))
-    elif page_attrz[attr_name].fieldtype.type == 'Submission':
+                field.label,
+                SelectField(field.description,
+                            choices=get_posix_groupz_choices()))
+    elif field.fieldtype.type == 'Submission':
         setattr(form,
-                attr_name,
+                field.label,
                 FormField(EditSubmissionForm))
+    elif  field.fieldtype.type == 'Shell':
+        setattr(form,
+                field.label,
+                SelectField(field.description,
+                            choices=get_shellz_choices()))
+    elif  field.fieldtype.type == 'Filesystem':
+        setattr(form,
+                field.label,
+                SelectField(field.description,
+                            choices=get_filesystem_choices()))
 
 def append_fieldlist_to_form(field, form):
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
@@ -2136,7 +2141,17 @@ def append_fieldlist_to_form(field, form):
         setattr(form,
                 field.label,
                 FieldList(SelectField(field.description,
-                                      choices=get_groupz_list())))
+                                      choices=get_posix_groupz_choices())))
+    elif  field.fieldtype.type == 'Shell':
+        setattr(form,
+                field.label,
+                FieldList(SelectField(field.description,
+                                      choices=get_shellz_choices())))
+    elif  field.fieldtype.type == 'Filesystem':
+        setattr(form,
+                field.label,
+                FieldList(SelectField(field.description,
+                                      choices=get_filesystem_choices())))
 
 
 def generate_edit_page_admin_form(page):
