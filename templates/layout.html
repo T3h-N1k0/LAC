@@ -17,6 +17,9 @@
       {% else %}
       Connecté en tant que "{{ session['uid']}}"   <a href="{{ url_for('logout') }}">Déconnecter</a>  <a href="{{ url_for('home') }}">Accueil</a>
       {% endif %}
+      <div style="background-color: {{ 'red' if config['PROD_FLAG'] else 'green' }}">
+        {{ config['LDAP_HOST'] }}
+      </div>
     </div>
     {% with messages = get_flashed_messages() %}
     {% if messages %}

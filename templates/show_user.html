@@ -33,8 +33,10 @@
 <a href="{{ url_for(
    'toggle_account',
    uid=uid
-   )}}">{% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
+   )}}">
+{% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
 {% endif %}
+<br/>
 {% for attr_name, attr_values in uid_attributez.iteritems() %}
 {% if attr_name in page_fieldz %}
 
