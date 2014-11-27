@@ -1747,11 +1747,13 @@ def init_populate_people_group_redis():
 
 
 def populate_people_group_redis():
-    for group in app.config['PEOPLE_GROUPS']:
-        r.delete('groupz:{0}'.format(group))
-        memberz = get_people_group_memberz(group)
+    for branch in app.config['BRANCHZ']:
+        people_group = branch['account']
+        print(people_group)
+        r.delete('groupz:{0}'.format(people_group))
+        memberz = get_people_group_memberz(people_group)
         for member in memberz:
-            r.sadd("groupz:{0}".format(group), member)
+            r.sadd("groupz:{0}".format(people_group), member)
 
 
 
@@ -2430,9 +2432,10 @@ def get_attr_from_oc_id_list(oc_id_list):
     return attr_list
 
 def get_group_from_member_uid(uid):
-    for group in app.config['PEOPLE_GROUPS']:
-        if uid in r.smembers("groupz:{0}".format(group)):
-            return group
+    for branch in app.config['BRANCHZ']:
+        people_group = branch['account']
+        if uid in r.smembers("groupz:{0}".format(people_group)):
+            return people_group
     flash(u"Impossible de trouver le groupe associé à {0}".format(uid))
 app.jinja_env.globals.update(
     get_group_from_member_uid=get_group_from_member_uid
