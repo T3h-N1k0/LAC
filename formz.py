@@ -107,9 +107,12 @@ class EditQuotaForm(Form):
 class UserzFileForm(Form):
     userz_file = FileField('Fichier contenant les logins utilisateur')
 
+class AddObjectTypeForm(Form):
+    label = TextField(u'\'ou\' associée à ce type d\'objet')
+
 class LDAPObjectTypeForm(Form):
     label = TextField(u'\'ou\' associée à ce type d\'objet')
-    description = TextField(u'Déscription')
+    description = TextField(u'Description')
     ranges = TextField(
         u'Ranges d\'ID associées à ce type (au format "n-p;n-p;...")')
     apply_to = SelectField(u'Appliquée à un',
@@ -117,8 +120,8 @@ class LDAPObjectTypeForm(Form):
                                     ('user', 'Utilisateur')],
                            default='group')
     object_classes = FormField(SelectOCForm)
-    ppolicy = SelectField(u'Ppolicy', default='')
-    set_ppolicy = BooleanField('Appliquer la ppolicy')
+    ppolicy = SelectField(u'Ppolicy', choices=[], default='')
+    set_ppolicy = BooleanField(u'Appliquer la ppolicy aux objets déjà créés')
 
 class AddUserForm(Form):
     # display_type = SelectField(u'Type d\'affichage pour le compte')
