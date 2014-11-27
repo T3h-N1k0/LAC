@@ -1,0 +1,13 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Ajouter un shell{% endblock title %}
+
+{% block body %}
+<form method="post" action="/add_shell">
+  {{ render_formfield(form.label) }}
+  {{ render_formfield(form.path) }}
+  <input id="update" type="submit" value="Ajouter" >
+</form>
+
+{% endblock body %}

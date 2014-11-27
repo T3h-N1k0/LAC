@@ -873,33 +873,120 @@ def select_edit_group_attributes():
     ]
     view_form.attr_form.selected_attr.choices = []
 
-
-
-
-
-@app.route('/edit_group/', methods=('GET', 'POST'))
+@app.route('/add_group/', methods=('GET', 'POST'))
+@app.route('/add_group/<page_label>', methods=('GET', 'POST'))
 @login_required
-def edit_group():
-    page = Page.query.filter_by(label='edit_group').first()
+def add_group(page_label=None):
+    pages = Page.query.all()
+    ldap_object_types = LDAPObjectType.query.all()
+
+    existing_groupz = [
+        group.get_attributes()['cn'][0] for group in get_all_groups()]
+
+    set_validators_to_form_field(
+        AddGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
+
+    add_form = AddGroupForm(request.form)
+    add_form.filesystem.choices = get_filesystem_choices()
+    add_form.group_type.choices = [(ot.label, ot.description)
+                                   for ot in ldap_object_types
+                                   if ot.apply_to == 'group']
+    if page_label:
+        ot = LDAPObjectType.query.filter_by(label = page_label).first()
+        add_form.group_type.default = ot.label
+
+    if request.method == 'POST':
+        if add_form.cn.data and add_form.validate():
+            create_ldap_object_from_add_group_form(add_form)
+            return redirect(url_for("home"))
+    return render_template('add_group.html',
+                           add_form=add_form)
+
+@app.route('/edit_group/<page_label>/<group_cn>', methods=('GET', 'POST'))
+@login_required
+def edit_group(page_label, group_cn):
+    page = Page.query.filter_by(label=page_label).first()
+    form = generate_edit_group_form(page)
+    fieldz = Field.query.filter_by(page_id = page.id,
+                                   edit = True).all()
+
+    if request.method == 'POST':
+        update_ldap_object_from_edit_group_form(form,page,group_cn)
+        return redirect(url_for('show_groups', branch=page.label))
+    else:
+        set_edit_group_form_values(form, fieldz, group_cn)
+
+    return render_template('edit_group.html',
+                           form=form,
+                           page=page,
+                           group_cn=group_cn,
+                           fieldz=fieldz)
+
+@app.route('/show_group/<branch>/<cn>')
+@login_required
+def show_group(branch, cn):
+    page = Page.query.filter_by(label = branch).first()
+    page_fieldz = dict(
+        (row.label.lower(), row)
+        for row in Field.query.filter_by(page_id = page.id).all()
+    )
+    ldap_filter='(cn={0})'.format(cn)
+    attributes=['*','+']
+    raw_detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+    if not raw_detailz:
+        flash(u'Groupe non trouvé')
+        return redirect(url_for('show_groups',
+                                branch=branch))
+    cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
+    return render_template('show_group.html',
+                           cn = cn,
+                           cn_attributez=cn_attributez,
+                           page_fieldz=page_fieldz,
+                           branch=branch)
+
+@app.route('/delete_group/<cn>', methods=('GET', 'POST'))
+@login_required
+def delete_group(cn):
+    group_dn = ldap.get_full_dn_from_cn(cn)
+    ldap.delete(group_dn)
+    flash(u'Groupe {0} supprimé'.format(cn))
+    return redirect(url_for('home'))
+
+@app.route('/show_groups/<branch>')
+# @app.route('/show_groups/')
+@login_required
+def show_groups(branch):
+    print(branch)
+    groupz = [group.get_attributes()['cn'][0]
+              for group in  get_posix_groupz(branch)]
+    return render_template('show_groupz.html',
+                           groupz=groupz,
+                           branch=branch)
+
+
+@app.route('/edit_by_group/', methods=('GET', 'POST'))
+@login_required
+def edit_by_group():
+    page = Page.query.filter_by(label='edit_by_group').first()
     view_form = EditGroupViewForm(request.form)
     view_form.attr_form.available_attr.choices = [
         (attr.id, attr.label)
         for attr in Field.query.filter_by(page_id = page.id).all()
     ]
     view_form.attr_form.selected_attr.choices = []
-    if 'edit_group_fieldz_id' in session:
-        attrz_list = session['edit_group_fieldz_id']
+    if 'edit_by_group_fieldz_id' in session:
+        attrz_list = session['edit_by_group_fieldz_id']
     else:
         attrz_list = []
 
-    if 'edit_group_memberz_uid' in session:
-        groupz_memberz = session['edit_group_memberz_uid']
+    if 'edit_by_group_memberz_uid' in session:
+        groupz_memberz = session['edit_by_group_memberz_uid']
     else:
         groupz_memberz = []
     # print('attrz_list : {0}'.format(attrz_list))
-    edit_form = generate_edit_group_form(page, attrz_list)['form']
+    edit_form = generate_kustom_batch_edit_form(page, attrz_list)
     group_form = SelectGroupzForm(request.form)
-    group_form.available_groupz.choices = get_groupz_list()
+    group_form.available_groupz.choices = get_posix_groupz_choices()
     group_form.selected_groupz.choices = []
 
 
@@ -2381,18 +2468,33 @@ def get_work_group_memberz(group):
         memberz.extend(member.get_attributes()['uniqueMember'])
     return memberz
 
-def get_groupz_list():
+def get_posix_groupz(branch=None):
+    print(branch)
     ldap_filter = "(objectClass=posixGroup)"
-    ldap_groupz = ldap.admin_search(ldap_filter=ldap_filter,
-                                    attributes=['cn', 'gidNumber'])
-    ldap_groupz  = ldaphelper.get_search_results(ldap_groupz)
+    base_dn = 'ou=groupePosix,{0}'.format(app.config['LDAP_SEARCH_BASE'])
+
+    if branch:
+        base_dn = ''.join(['ou={0},'.format(branch), base_dn])
+    print(base_dn)
+    groupz = ldaphelper.get_search_results(
+        ldap.admin_search(base_dn=base_dn,
+                          ldap_filter=ldap_filter,
+                          attributes=['cn', 'gidNumber']))
+    return groupz
+
+def get_posix_groupz_choices():
+    ldap_groupz = get_posix_groupz()
     ldap_groupz_list = []
     for group in ldap_groupz:
         group_attrz = group.get_attributes()
         ldap_groupz_list.append((group_attrz['gidNumber'][0],
                                  group_attrz['cn'][0]))
-
     return ldap_groupz_list
+
+def get_shellz_choices():
+    shellz = Shell.query.all()
+    shellz_choices = [ (shell.label, shell.description) for shell in shellz ]
+    return shellz_choices
 
 def get_submission_groupz_list():
     ldap_filter = "(&(objectClass=cinesGrWork)(cinesGrWorkType=1))"

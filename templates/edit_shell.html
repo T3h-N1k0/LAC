@@ -1,0 +1,18 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Modifier le shell {{ shell.label }}{% endblock title %}
+
+{% block body %}
+<a href="{{ url_for(
+   'delete_shell',
+   shell_label=shell.label)}}">Supprimer le système de fichier</a>
+<br/>
+
+<form method="post" action="/edit_shell/{{ shell.label }}">
+  {{ render_formfield(form.label) }}
+  {{ render_formfield(form.path) }}
+  <input id="update" type="submit" value="Editer" >
+</form>
+
+{% endblock body %}

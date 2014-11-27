@@ -1,0 +1,19 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Gérer les shells{% endblock title %}
+
+{% block body %}
+
+<a href="{{ url_for(
+   'add_shell')}}">Ajouter un shell</a>
+<br/>
+<br/>
+shells existants :
+{% for shell in shells %}
+<br/>
+<a href="{{ url_for(
+   'edit_shell',
+   shell_label=shell.label)}}">{{ shell.label }} </a>
+{% endfor %}
+{% endblock body %}
