@@ -21,7 +21,7 @@ import hashlib,binascii
 import redis
 import re
 import os
-
+# from data_modelz import *
 # Custom modulez
 from formz import *
 
@@ -33,7 +33,6 @@ __license__ = "GPL"
 app = Flask(__name__)
 ldap = LDAP(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://lac:omgwtfbbq@localhost/lac'
-
 db = SQLAlchemy(app)
 #Bootstrap(app)
 utc = pytz.utc
@@ -48,7 +47,6 @@ ALLOWED_EXTENSIONS = set(['txt', 'csv'])
 
 
 ### Data Model
-
 
 # One to many : LDAPObjectClass (1)---(n) LDAPAttributes
 # Many to one : LDAPObjectClass (n)---(1) PageObjectClass
@@ -240,7 +238,6 @@ class LDAPObjectTypeObjectClass(db.Model):
         self.ldapobjecttype_id = ldapobjecttype_id
         self.ldapobjectclass_id = ldapobjectclass_id
 
-
 class LDAPObjectType(db.Model):
     __tablename__ = 'ldapobjecttype'
     id = db.Column(db.Integer, primary_key=True)
@@ -388,7 +385,7 @@ def change_password(uid):
 @app.route('/people/<group>')
 @login_required
 def show_group_memberz(group):
-    memberz = get_people_group_memberz(group)
+    memberz = r.smembers("groupz:{0}".format(group))
     return render_template('show_group_memberz.html',
                            memberz=memberz,
                            group=group)
@@ -762,6 +759,7 @@ def hello(name=None):
     return render_template('test.html', name=session['uid'])
 
 
+
 @app.route('/add_user/<page_label>/<uid>', methods=('GET', 'POST'))
 @app.route('/add_user/', methods=('GET', 'POST'))
 @login_required
@@ -776,7 +774,7 @@ def add_user(page_label=None,uid=None):
         AddUserForm, 'uid',[validators.NoneOf(existing_userz)])
 
     add_form = AddUserForm(request.form)
-    add_form.group.choices = get_groupz_list()
+    add_form.group.choices = get_posix_groupz_choices()
     add_form.ldap_object_type.choices = [
         (ldap_object_type.id,
          ldap_object_type.label)
@@ -797,13 +795,15 @@ def add_user(page_label=None,uid=None):
             label = ldap_object_type.label
         ).first()
         fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
+        # fieldz_dict = {field.label: field for field in fieldz}
+        # fieldz_labelz = fieldz_dict.keys()
         fieldz_labelz = [field.label for field in fieldz]
         EditForm = generate_edit_user_form_class(page)
         edit_form = EditForm(request.form)
 
         if add_form.uid.data and add_form.validate():
             print("group from form {0}".format(add_form.ldap_object_type.data))
-            set_edit_user_form_values(edit_form,fieldz_labelz)
+            set_edit_user_form_values(edit_form,fieldz)
             return render_template('add_user.html',
                                    page=page.label,
                                    uid=add_form.uid.data,
@@ -834,7 +834,7 @@ def edit_user(page,uid):
         update_ldap_object_from_edit_user_form(form,fieldz_labelz,uid)
         return redirect(url_for('show_user', page=page.label, uid=uid))
     else:
-        set_edit_user_form_values(form, fieldz_labelz, uid)
+        set_edit_user_form_values(form, fieldz, uid)
 
     return render_template('edit_user.html',
                            form=form,
@@ -994,13 +994,13 @@ def edit_by_group():
 
         if view_form.attr_form.selected_attr.data:
             group_form = SelectGroupzForm(request.form)
-            group_form.available_groupz.choices = get_groupz_list()
+            group_form.available_groupz.choices = get_posix_groupz_choices()
             group_form.selected_groupz.choices = []
 
             session[
-                'edit_group_fieldz_id'
+                'edit_by_group_fieldz_id'
             ] = view_form.attr_form.selected_attr.data
-            return render_template('edit_group.html',
+            return render_template('edit_by_group.html',
                                    group_form=group_form)
 
         elif group_form.selected_groupz.data:
@@ -1010,30 +1010,28 @@ def edit_by_group():
             groupz_memberz = get_posix_groupz_memberz(groupz_label)
 
             session[
-                'edit_group_memberz_uid'
+                'edit_by_group_memberz_uid'
             ] = groupz_memberz
 
             fieldz = Field.query.filter(
-                Field.id.in_(session['edit_group_fieldz_id'])
+                Field.id.in_(session['edit_by_group_fieldz_id'])
             ).all()
             print('fieldz {0}'.format(fieldz))
 
-            raw_edit_form = generate_edit_group_form(
+            edit_form = generate_kustom_batch_edit_form(
                 page,
-                session['edit_group_fieldz_id']
+                session['edit_by_group_fieldz_id']
             )
-            edit_form = raw_edit_form['form']
 
-
-            return render_template('edit_group.html',
+            return render_template('edit_by_group.html',
                                    edit_form=edit_form,
                                    fieldz=fieldz,
                                    attributez=[field.label.encode('utf-8')
                                                       for field in fieldz])
 
-        elif edit_form.group_form.selected_groupz.data :
+        elif edit_form.action.data :
             fieldz = Field.query.filter(
-                Field.id.in_(session['edit_group_fieldz_id'])
+                Field.id.in_(session['edit_by_group_fieldz_id'])
             ).all()
             pre_modlist = []
             for field in fieldz:
@@ -1047,13 +1045,13 @@ def edit_by_group():
             elif edit_form.action.data == '1':
                 for uid in groupz_memberz:
                     ldap.update_uid_attribute(uid, pre_modlist)
-            flash(u'Les groupes {0} ont été mis à jour'.format(groupz_label))
+            flash(u'Les groupes ont été mis à jour')
             # if edit_form.backup.data:
             #     return get_backup_file(
             #         groupz_memberz,
             #         [field.label.encode('utf-8') for field in fieldz])
             return redirect(url_for('home'))
-    return render_template('edit_group.html',
+    return render_template('edit_by_group.html',
                            view_form=view_form)
 
 
@@ -1094,7 +1092,7 @@ def edit_group_submission():
         (group, group)
         for group in get_submission_groupz_list()
     ]
-    form.group_form.available_groupz.choices = get_groupz_list()
+    form.group_form.available_groupz.choices = get_posix_groupz_choices()
     form.group_form.selected_groupz.choices = []
 
     if request.method == 'POST':
@@ -1132,7 +1130,7 @@ def toggle_account(uid):
         disable_account(user)
     else:
         enable_account(user)
-    return redirect(url_for('show',
+    return redirect(url_for('show_user',
                             page = get_group_from_member_uid(uid),
                             uid = uid))
 
@@ -1195,7 +1193,7 @@ def add_quota():
         (storage.get_attributes()['cn'][0],
          storage.get_attributes()['cn'][0])
         for storage in default_storagez ]
-    form.group.choices = get_groupz_list()
+    form.group.choices = get_posix_groupz_choices()
 
     if request.method == 'POST' and form.validate():
         niou_cn = '{0}.{1}'.format(
@@ -1287,14 +1285,14 @@ def edit_file():
     else:
         userz = []
 
-    edit_form = generate_edit_group_form(page, attrz_list)['form']
+    edit_form = generate_kustom_batch_edit_form(page, attrz_list)
     file_form = UserzFileForm(request.form)
 
     if request.method == 'POST':
 
         if view_form.attr_form.selected_attr.data:
             group_form = SelectGroupzForm(request.form)
-            group_form.available_groupz.choices = get_groupz_list()
+            group_form.available_groupz.choices = get_posix_groupz_choices()
             group_form.selected_groupz.choices = []
 
             session[
@@ -1321,11 +1319,10 @@ def edit_file():
                 Field.id.in_(session['edit_file_fieldz_id'])
             ).all()
 
-            raw_edit_form = generate_edit_group_form(
+            edit_form = generate_kustom_batch_edit_form(
                 page,
                 attrz_list
             )
-            edit_form = raw_edit_form['form']
             edit_form.submited.data = 'True'
             return render_template('edit_file.html',
                                    edit_form=edit_form,
@@ -1428,7 +1425,7 @@ def edit_ldap_object_type(ldap_object_type_label):
 @app.route('/add_ldap_object_type/', methods=('GET', 'POST'))
 @login_required
 def add_ldap_object_type():
-    form = LDAPObjectTypeForm(request.form)
+    form = AddObjectTypeForm(request.form)
     if request.method == 'POST' and form.validate():
         ldap_object_type = LDAPObjectType()
         ldap_object_type.label = form.label.data
@@ -1449,7 +1446,7 @@ def delete_ldap_object_types(ldap_object_type_label):
     ).delete()
     db.session.commit()
     flash(u'Objet {0} supprimé de la bdd'.format(ldap_object_type_label))
-    return render_template('show_ldap_object_types.html')
+    return redirect(url_for('show_ldap_object_types'))
 
 
 
@@ -1642,6 +1639,7 @@ def set_quota_form_values(form, storage):
     default_size_unit = form.cinesQuotaSizeHardTemp.unit.default
     # default_storage_cn = get_default_storage_cn(storage['cn'][0])
     default_storage_cn = storage['cn'][0].split('.')[0]
+
     default_storage = get_default_storage(default_storage_cn).get_attributes()
     date_now = datetime.now()
 
@@ -1737,7 +1735,7 @@ def init_populate_grouplist_redis():
     populate_grouplist_redis()
 
 def populate_grouplist_redis():
-    grouplist = get_groupz_list()
+    grouplist = get_posix_groupz_choices()
     for (uid, group) in grouplist:
         r.hset('grouplist', uid, group)
 
@@ -2592,7 +2590,7 @@ def get_user_pwd_policy(uid):
     ldap_filter = "(&(objectClass=posixAccount)(uid={0}))".format(uid)
     user = ldaphelper.get_search_results(
         ldap.admin_search(ldap_filter=ldap_filter,
-                         attributes=['pwdPolicySubentry'])
+                          attributes=['pwdPolicySubentry'])
     )[0].get_attributes()
     if 'pwdPolicySubentry' in user:
         subentry_filter = '(entryDN={0})'.format(user['pwdPolicySubentry'][0])
@@ -2610,6 +2608,8 @@ def get_uid_detailz(uid):
     attributes=['*','+']
     detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
     return detailz
+
+
 
 # def get_lac_admin_memberz():
 #     ldap_filter='(cn=lacadmin)'
@@ -2660,6 +2660,16 @@ def get_all_ppolicies():
     )
     return userz
 
+def get_ppolicy(ppolicy_label):
+    base_dn = "ou=policies,ou=system,{0}".format(app.config['LDAP_SEARCH_BASE'])
+    ldap_filter='(&(objectclass=pwdPolicy)(cn={0}))'.format(ppolicy_label)
+    attributes=['*','+']
+    ppolicy = ldaphelper.get_search_results(
+        ldap.search(ldap_filter=ldap_filter,
+                    attributes=attributes,
+                    base_dn=base_dn)
+    )[0]
+    return ppolicy
 
 def get_subschema():
     ldap_filter='(objectclass=*)'
@@ -2834,17 +2844,34 @@ def datetime_to_timestamp(date):
 def datetime_to_days_number(datetime):
     return int(datetime.strftime("%s"))/86400
 
-app.jinja_env.globals.update(
-    generalized_time_to_datetime=generalized_time_to_datetime
-)
 def days_number_to_datetime(nb):
     return datetime.fromtimestamp(
         # 86400 == nombre de secondes par jour
         int(nb) * 86400
     )
+
+def convert_to_display_mode(value, display_mode):
+    value = value.decode('utf-8')
+    print(value)
+    print(display_mode)
+    if display_mode in  ('Text', 'Filesystem') :
+        print(value)
+        return value
+    elif display_mode == 'Datetime' :
+        return value.strftime(
+            app.config['DATE_FORMAT'])
+    elif display_mode == 'Generalizedtime' :
+        return generalized_time_to_datetime(value)# .strftime(
+            # app.config['DATE_FORMAT'])
+    elif display_mode == 'GIDNumber' :
+        return get_posix_group_cn_by_gid(value)
+    elif display_mode == 'DaysNumber' :
+        return days_number_to_datetime(value)# .strftime(
+            # app.config['DATE_FORMAT'])
 app.jinja_env.globals.update(
-    days_number_to_datetime=days_number_to_datetime
+    convert_to_display_mode = convert_to_display_mode
 )
+
 
 def set_validators_to_form_field(form, field, validators):
     form_field_kwargs = get_attr(
