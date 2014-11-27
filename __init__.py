@@ -1794,6 +1794,30 @@ def create_ldapattr_if_not_exists(label):
     return db_attr
 
 
+def create_ldap_object_from_add_group_form(form):
+    ot = LDAPObjectType.query.filter_by(label = form.group_type.data).first()
+    cn = form.cn.data.encode('utf-8')
+    description = form.description.data.encode('utf-8')
+    filesystem = form.filesystem.data.encode('utf-8')
+    id_number = str(get_next_id_from_ldap_ot(ot))
+    object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8') for oc_ot in
+                      LDAPObjectTypeObjectClass.query.filter_by(
+                          ldapobjecttype_id = ot.id).all()]
+
+    full_dn = "cn={0},ou={1},ou=groupePosix,{2}".format(cn,
+                                         ot.label,
+                                         app.config['LDAP_SEARCH_BASE'])
+    add_record = [('cn', [cn]),
+                  ('description', [description]),
+                  ('gidNumber', [id_number]),
+                  ('fileSystem', [filesystem]),
+                  ('objectClass', object_classes)]
+
+    print(add_record)
+    if ldap.add(full_dn, add_record):
+        flash(u'Groupe créé')
+
+
 def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     ldap_ot = LDAPObjectType.query.filter_by(
         label=page.label
@@ -1937,7 +1961,27 @@ def update_ldap_object_from_edit_user_form(form, attributes, uid):
     print(pre_modlist)
     ldap.update_uid_attribute(uid, pre_modlist)
 
-def generate_edit_group_form(page, attributez):
+
+def update_ldap_object_from_edit_group_form(form, page, group_cn):
+    ldap_filter='(&(cn={0})(objectClass=posixGroup))'.format(group_cn)
+    attributes=['*','+']
+    detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+    group_attributez = ldaphelper.get_search_results(
+        detailz
+    )[0].get_attributes()
+    pagefieldz = Field.query.filter_by(page_id = page.id,
+                                       edit = True).all()
+    pre_modlist = []
+    for field in pagefieldz:
+        form_field_values = [entry.data.encode('utf-8')
+                             for entry in getattr(form, field.label).entries]
+        print('form_field_values : {0}'.format(form_field_values))
+        if group_attributez[field.label] != form_field_values:
+            pre_modlist.append((field.label, form_field_values))
+    print(pre_modlist)
+    ldap.update_cn_attribute(group_cn, pre_modlist)
+
+def generate_kustom_batch_edit_form(page, attributez):
     page_fieldz = dict(
         (row.label, row)
         for row in Field.query.filter_by(page_id = page.id).all()
@@ -1946,20 +1990,28 @@ def generate_edit_group_form(page, attributez):
     class EditGroupForm(EditGroupBaseForm):
         pass
 
-    attr_label_list = []
-    print(attributez)
     for field_id in attributez:
         print('field_id {0}'.format(field_id))
         field = Field.query.filter_by(
             id = field_id
         ).first()
-        attr_label_list.append(field.label)
-        append_field_to_form(page_fieldz,
-                             field.label,
+        append_field_to_form(field,
                              EditGroupForm)
 
     form = EditGroupForm(request.form)
-    return {'form': form }
+    return form
+
+def generate_edit_group_form(page):
+    page_fieldz = Field.query.filter_by(page_id = page.id).all()
+
+    class EditGroupForm(EditGroupBaseForm):
+        pass
+
+    for field in page_fieldz:
+        print('field label {0}'.format(field.label))
+        append_fieldlist_to_form(field,
+                                 EditGroupForm)
+    return EditGroupForm(request.form)
 
 def generate_edit_user_form_class(page):
     page_fieldz = Field.query.filter_by(page_id = page.id,
@@ -2567,6 +2619,17 @@ def get_all_users():
                     base_dn=base_dn)
     )
     return userz
+
+def get_all_groups():
+    base_dn = "{0}".format(app.config['LDAP_SEARCH_BASE'])
+    ldap_filter='(objectclass=posixGroup)'
+    attributes=['*','+']
+    groupz = ldaphelper.get_search_results(
+        ldap.search(ldap_filter=ldap_filter,
+                    attributes=attributes,
+                    base_dn=base_dn)
+    )
+    return groupz
 
 def get_all_ppolicies():
     base_dn = "ou=policies,ou=system,{0}".format(app.config['LDAP_SEARCH_BASE'])

@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+{% block body %}
+Liste des groupes {% if branch %} pour la branche {{ branch }} {% endif %}
+{% for group in groupz %}
+<br/>
+<a href="{{ url_for(
+'show_group',
+branch=branch,
+cn=group)}}">{{ group }}</a>
+{% endfor %}
+{% endblock body %}
