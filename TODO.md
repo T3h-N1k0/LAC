@@ -2,9 +2,8 @@
 - Doit remplir toute les fonctions actuelles de lac
 - Etre plus ergonomique
 - Toolbox niveau prod
-- Création d'utilisateur/groupe.
-  Lorsqu'on crée un groupe pouvoir customiser la liste de système de fichier + vérifier l'unicité de son cn
 - Une toolbox permettant d'integrer les outils courant (warning password expire / expiration des comptes / utilisateurs fantomes / Scrupté les tentative de brutforce)
+- quotas : ajouter les quotas non temp sur les quotas spécifiques
 - regrouper les attributs par classe
 - Profile soumission
 - Incorporer la gestion des listes du C4
@@ -38,6 +37,8 @@
 - Suppression d'un utilisateur. Prendre en compte les groupes le contenant
 - PPolicy par default si pas de ppolicy  pwdPolicySubentry
   Lorsqu'on crée un compte autre et soft il faut par defaut la ppolicy de service.
+  Lorsqu'on crée un groupe pouvoir customiser la liste de système de fichier + vérifier l'unicité de son cn
+- Création d'utilisateur/groupe.
 
 
 ### Remarques transverses :
