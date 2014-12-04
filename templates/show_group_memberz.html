@@ -20,7 +20,9 @@
   {% for member in memberz|sort %}
   <tr>
     <td> <a href="{{
-            url_for('get_account_detailz', uid=member) }}">{{member}}</a> </td>
+            url_for('show_user',
+           page=get_group_from_member_uid(member),
+           uid=member) }}">{{member}}</a> </td>
   </tr>
   {%endfor%}
 </table>

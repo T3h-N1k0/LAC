@@ -1,0 +1,16 @@
+{% from "_formhelpers.html" import render_formfield, render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Gestion de la soumission  {% endblock title %}
+{% block body %}
+<form method="post" action="/edit_submission/{{ uid }}">
+
+  <fieldset>
+    <legend>Gérer la soumission :</legend>
+    {{ render_formfield(form.wrk_group) }}
+    {{ render_formfield(form.member) }}
+    {{ render_formfield(form.submission) }}
+  </fieldset>
+  <input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
+</form>
+{% endblock body %}

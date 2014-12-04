@@ -1,0 +1,62 @@
+{% from "_formhelpers.html" import render_formfield, render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Edition de la soumission pour un groupe  {% endblock title %}
+
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#group_form-available_groupz').dblclick(function() {
+     selectFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#group_form-selected_groupz').dblclick(function() {
+     removeFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#group_form-available_groupz', '#group_form-selected_groupz');
+   });
+   $('#searchGroupzFilter').keyup(function() {
+     var searchArea = $('#group_form-available_groupz');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#group_form-selected_groupz option').prop('selected', true);
+   });
+ });
+</script>
+
+{% endblock head_js %}
+
+{% block body %}
+<form method="post" action="/edit_group_submission/">
+  <fieldset>
+    <legend>Appliquer les modifications aux groupes suivants :</legend>
+    <input id="searchGroupzFilter" type="text"/>
+    {{ render_formfield(form.group_form.available_groupz) }}
+    {{ render_formfield(form.group_form.selected_groupz) }}
+  </fieldset>
+
+  <fieldset>
+    <legend>Gérer la soumission :</legend>
+    {{ render_formfield(form.submission_form.wrk_group) }}
+    {{ render_formfield(form.submission_form.member) }}
+    {{ render_formfield(form.submission_form.submission) }}
+  </fieldset>
+  <input id="update" type="submit" value="Modifier la soumission pour le(s) groupe(s)" >
+</form>
+{% endblock body %}

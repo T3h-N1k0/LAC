@@ -1,0 +1,60 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Edition du type d'ID {{ form.label.data }} {% endblock title %}
+
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#object_classes-available_oc').dblclick(function() {
+     selectFromList('#object_classes-available_oc', '#object_classes-selected_oc');
+   });
+   $('#object_classes-selected_oc').dblclick(function() {
+     removeFromList('#object_classes-available_oc', '#object_classes-selected_oc');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#object_classes-available_oc', '#object_classes-selected_oc');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#object_classes-available_oc', '#object_classes-selected_oc');
+   });
+   $('#searchOCFilter').keyup(function() {
+     var searchArea = $('#object_classes-available_oc');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#object_classes-selected_oc option').prop('selected', true);
+     $('#attr_form-selected_attr option').prop('selected', true);
+   });
+ });
+</script>
+
+{% endblock head_js %}
+
+
+{% block body %}
+<a href="{{
+            url_for('delete_ldap_object_types',
+                    ldap_object_type_label=form.label.data) }}">Supprimer le type d'objet</a>
+<form method="post" action="/edit_ldap_object_type/{{ form.label.data }}">
+  {{ render_formfield(form.label) }}
+  {{ render_formfield(form.description) }}
+  {{ render_formfield(form.ranges) }}
+  {{ render_formfield(form.apply_to) }}
+  <input id="searchOCFilter" type="text"/>
+  {{ render_formfield(form.object_classes) }}
+
+<input id="update" type="submit" value="Modifier le type d'ID pour {{ form.label.data }}" >
+{% endblock body %}

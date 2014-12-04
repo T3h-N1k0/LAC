@@ -11,8 +11,12 @@ LDAP_SEARCH_BASE = 'dc=cines,dc=fr'
 LDAP_LOGIN_VIEW = 'login'
 LDAP_SUCCESS_REDIRECT = 'home'
 LDAP_DOMAIN = 'ou=cines,ou=people,dc=cines,dc=fr'
+LAC_ADMIN_USER = 'chatelain'
+LAC_ADMIN_PASS = 'omgwtfbbqtest!'
 ENCODING = 'utf-8'
 TIMEZONE = 'Europe/Paris'
 DATE_DISPLAY_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
 SQLALCHEMY_DATABASE_URI = 'mysql://lac:omgwtfbbq@localhost/lac'
 PEOPLE_GROUPS = ['ccc', 'cines', 'deci', 'sam', 'autre', 'test', 'soft']
+SHADOW_DURATION = 12
+SAMBA_DOMAIN_NAME = 'PALLAS'

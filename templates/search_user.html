@@ -43,7 +43,7 @@
     {{ render_formfield(form.user_type) }}
     {{ render_formfield(form.user_disabled) }}
   </dl>
-  <p><input type=submit value=Chercher>
+  <p><input type=submit id='submit' value=Chercher>
 </form>
 
 {% if userz %}
@@ -61,7 +61,7 @@
   </thead>
   <tbody>
   {% for user in userz|sort %}
-      <tr onclick="document.location = '{{ url_for('show',
+      <tr onclick="document.location = '{{ url_for('show_user',
            page=get_group_from_member_uid(user.get_attributes()['uid'][0]),
            uid=user.get_attributes()['uid'][0] ) }}'">
         {% for attr in attributes %}

@@ -1,0 +1,11 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Création d'un quota {% endblock title %}
+
+{% block body %}
+<form method="post" action="/add_quota/">
+{{ render_formfield(form.default_quota) }}
+{{ render_formfield(form.group) }}
+<input id="update" type="submit" value="Créer le quota" >
+{% endblock body %}

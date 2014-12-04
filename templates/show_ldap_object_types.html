@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %} Liste des types d'ID {% endblock title %}
+
+{% block body %}
+{% for ldap_object_type in ldap_object_types %}
+<a href="{{ url_for(
+   'edit_ldap_object_type',
+   ldap_object_type_label=ldap_object_type.label)}}">{{ ldap_object_type.description }}</a>
+<br/>
+{% endfor %}
+{% endblock body %}

@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %} Liste des types d'ID {% endblock title %}
+
+{% block body %}
+{% for id_type in id_types %}
+<a href="{{ url_for(
+   'edit_id_type',
+   id_type_label=id_type.label)}}">{{ id_type.label }}</a>
+<br/>
+{% endfor %}
+{% endblock body %}

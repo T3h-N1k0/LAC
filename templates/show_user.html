@@ -1,18 +1,40 @@
 {% from "_formhelpers.html" import render_field %}
 {% extends "layout.html" %}
 
-{% block title %} Recherche de compte {% endblock title %}
+{% block title %} Détails pour le compte {{ uid }} {% endblock title %}
 
 {% block head_js %}
 {% endblock head_js %}
 
 {% block body %}
+{% if session['admin'] or session['uid']==uid %}
 <a href="{{ url_for(
-   'edit',
+   'edit_user',
    page=get_group_from_member_uid(uid),
    uid=uid
    )}}">Editer</a>
+
+<a href="{{ url_for(
+   'change_password',
+   uid=uid
+   )}}">Gérer le mot de passe</a>
+<a href="{{ url_for(
+   'edit_submission',
+   uid=uid
+   )}}">Gérer la soumission</a>
 <br/>
+<a href="{{ url_for(
+   'delete_user',
+   uid=uid
+   )}}">Supprimer l'utilisateur</a>
+<br/>
+{% endif %}
+{% if session['admin'] %}
+<a href="{{ url_for(
+   'toggle_account',
+   uid=uid
+   )}}">{% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
+{% endif %}
 {% for attr_name, attr_values in uid_attributez.iteritems() %}
 {% if attr_name in page_fieldz %}
 

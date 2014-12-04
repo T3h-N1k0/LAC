@@ -1,37 +1,90 @@
 {% extends "layout.html" %}
-{% block body %}
-<h1> Da LDAP Noob Interface </h1>
 
-<a href="{{ url_for(
-   'search_user')}}">Chercher un utilisateur</a>
+{% block title %}
+Accueil
+{% endblock %}
+
+{% block body %}
+<h1> Da LDAP Eazy Interface </h1>
+Mon compte
+<br/>
 <br/>
 <a href="{{ url_for(
    'change_password',
    uid=session['uid'])}}">Changer mon mot de passe</a>
 <br/>
 <a href="{{ url_for(
-   'get_my_infoz')}}">Détails de mon compte</a>
-<br/><br/>
-List des membres par groupe (avec vue complète) :
+   'show_user',
+   page=get_group_from_member_uid(session['uid']),
+   uid=session['uid'])}}">Détails de mon compte</a>
 <br/>
-{% for group in groupz %}
+<hr/>
+Gestion des utilisateurs
+<br/>
+<br/>
 <a href="{{ url_for(
-   'show_group_memberz',
-   group=group)}}">{{ group }}</a>
+   'search_user')}}">Chercher un utilisateur</a>
 <br/>
-{% endfor %}
+<a href="{{ url_for(
+   'add_user')}}">Ajouter un utilisateur</a>
 <br/>
+
+<hr/>
+Gestion par lot
+<br/>
+<br/>
+<a href="{{ url_for(
+   'edit_group_submission')}}">Editer la soumission par groupe(s)</a>
+<br/>
+<a href="{{ url_for(
+   'edit_group')}}">Editer un/des attribut(s) par groupe(s)</a>
+<br/>
+<a href="{{ url_for(
+   'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a>
+<br/>
+<hr/>
+Gestion des quotas
+<br/>
+<br/>
+<a href="{{ url_for(
+   'edit_quota')}}">Gérer les quotas spécifiques</a>
+<br/>
+<a href="{{ url_for(
+   'add_quota')}}">Ajouter un quota spécifique</a>
+<br/>
+<a href="{{ url_for(
+   'edit_default_quota')}}">Gérer les quotas par defaut</a>
+<br/>
+
+{% if session['admin'] %}
+<!-- List des membres par groupe (avec vue complète) :
+<hr/>
+<br/>
+{% for group in config['PEOPLE_GROUPS'] %}
+<a href="{{ url_for(
+'show_group_memberz',
+group=group)}}">{{ group }}</a>
+<br/>
+{% endfor %} -->
+<hr/>
 Administration :
 <br/>
 <br/>
 <a href="{{ url_for(
-   'edit_page')}}">Editer une vue</a>
+   'edit_page')}}">Gérer les vues</a>
 <br/>
 <a href="{{ url_for(
    'add_page')}}">Ajouter une vue</a>
+<br/>
+<a href="{{ url_for(
+   'show_ldap_object_types')}}">Gérer les types d'objets LDAP</a>
+<br/>
+<a href="{{ url_for(
+   'add_ldap_object_type')}}">Ajouter un type d'objet LDAP</a>
 <br/>
 
 <a href="{{ url_for(
    'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a>
 <br/>
+{% endif %}
 {% endblock body %}

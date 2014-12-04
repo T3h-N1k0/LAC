@@ -1,0 +1,17 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Création d'un utilisateur {% endblock title %}
+{% block body %}
+{% if groupz  %}
+Attention, l'utilisateur sera supprimé des groupes suivants :
+{% for group in groupz %}
+<br/>
+{{ group }}
+{% endfor %}
+{% endif %}
+<form method="post" action="/delete_user/{{ uid }}">
+  <input id="update" type="submit" value="Supprimer l'utilisateur" >
+</form>
+
+{% endblock body %}

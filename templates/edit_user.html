@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_formfield, render_fieldlist %}
 {% extends "layout.html" %}
 
-{% block title %} Editer {{ uid }} {% endblock title %}
+{% block title %} Editer le compte {{ uid }} {% endblock title %}
 
 {% block head_js %}
 <script type="text/javascript" src="{{
@@ -15,12 +15,12 @@
 {% endblock head_js %}
 
 {% block body %}
-<form method="post" action="/edit/{{ page.label}}/{{ uid }}">
-  {% for label in attributes %}
-    {% if 'FieldList' in get_type(get_attr(form, label)) %}
-        {{ render_fieldlist(form, label, page_attrz[label].multivalue) }}
+<form method="post" action="/edit_user/{{ page.label}}/{{ uid }}">
+  {% for field in fieldz %}
+    {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
+        {{ render_fieldlist(form, field.label, field.multivalue) }}
     {% else %}
-        {{ render_formfield(get_attr(form, label))}}
+        {{ render_formfield(get_attr(form, field.label))}}
     {% endif  %}
 
   {% endfor  %}
