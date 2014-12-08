@@ -2282,6 +2282,11 @@ def append_field_to_form(field, form):
                 SelectField(field.description,
                             choices=get_filesystem_choices()))
 
+    elif  field.fieldtype.type == 'Checkbox':
+        setattr(form,
+                field.label,
+                BooleanField(field.description))
+
 def append_fieldlist_to_form(field, form):
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
     if field.fieldtype.type == 'Text':
@@ -2307,6 +2312,10 @@ def append_fieldlist_to_form(field, form):
                 field.label,
                 FieldList(SelectField(field.description,
                                       choices=get_filesystem_choices())))
+    elif  field.fieldtype.type == 'Checkbox':
+        setattr(form,
+                field.label,
+                FieldList(BooleanField(field.description)))
 
 
 def generate_edit_page_admin_form(page):
@@ -2762,8 +2771,16 @@ def get_posix_groupz_choices():
 
 def get_shellz_choices():
     shellz = Shell.query.all()
-    shellz_choices = [ (shell.label, shell.description) for shell in shellz ]
+    shellz_choices = [ (shell.path, shell.label) for shell in shellz ]
     return shellz_choices
+
+def get_list_from_submission_attr(sub_attr):
+    sub_list = []
+    for group in sub_attr.split(';'):
+        split_group = group.split('=')
+        if split_group != ['']:
+            sub_list.append((split_group[0],split_group[1]))
+    return sub_list
 
 def get_submission_groupz_list():
     ldap_filter = "(&(objectClass=cinesGrWork)(cinesGrWorkType=1))"
@@ -3057,12 +3074,11 @@ def days_number_to_datetime(nb):
     )
 
 def convert_to_display_mode(value, display_mode):
-    value = value.decode('utf-8')
-    print(value)
-    print(display_mode)
-    if display_mode in  ('Text', 'Filesystem') :
-        print(value)
-        return value
+    # print(value)
+    # print(display_mode)
+    if display_mode in  ('Text', 'Filesystem', 'Shell') :
+        # value = value.decode('utf-8')
+        return value.decode('utf-8')
     elif display_mode == 'Datetime' :
         return value.strftime(
             app.config['DATE_FORMAT'])
@@ -3074,6 +3090,12 @@ def convert_to_display_mode(value, display_mode):
     elif display_mode == 'DaysNumber' :
         return days_number_to_datetime(value)# .strftime(
             # app.config['DATE_FORMAT'])
+    elif display_mode == 'Checkbox' :
+        if value == True:
+            return "Oui"
+        else:
+            return "Non"
+
 app.jinja_env.globals.update(
     convert_to_display_mode = convert_to_display_mode
 )
@@ -3089,7 +3111,7 @@ def set_validators_to_form_field(form, field, validators):
     # else:
     form_field_kwargs['validators'] = validators
 
-    print(form_field_kwargs['validators'])
+    # print(form_field_kwargs['validators'])
 def get_gid_from_posix_group_cn(cn):
     for gid, group_cn in r.hgetall('grouplist').iteritems():
         if group_cn == cn:

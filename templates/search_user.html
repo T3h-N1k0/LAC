@@ -67,7 +67,7 @@
         {% for attr in attributes %}
         <td>
           {% for value in user.get_attributes()[attr.label]  %}
-          {{ render_field(value.decode('utf-8'), attr.fieldtype.type) }}
+          {{ render_field(value, attr.fieldtype.type) }}
           {% endfor %}
         </td>
         {% endfor %}
