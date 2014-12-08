@@ -1,0 +1,72 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Détails pour le compte {{ uid }} {% endblock title %}
+
+{% block head_js %}
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#available_groupz').dblclick(function() {
+     selectFromList('#available_groupz', '#selected_groupz');
+   });
+   $('#selected_groupz').dblclick(function() {
+     removeFromList('#available_groupz', '#selected_groupz');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#available_groupz', '#selected_groupz');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#available_groupz', '#selected_groupz');
+   });
+   $('#searchGroupzFilter').keyup(function() {
+     var searchArea = $('#available_groupz');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#attr_form-available_attr').dblclick(function() {
+     selectFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#attr_form-selected_attr').dblclick(function() {
+     removeFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#attr_form-available_attr', '#attr_form-selected_attr');
+   });
+   $('#searchAttrFilter').keyup(function() {
+     var searchArea = $('#attr_form-available_attr');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#selected_groupz option').prop('selected', true);
+     $('#attr_form-selected_attr option').prop('selected', true);
+   });
+ });
+</script>
+
+{% endblock head_js %}
+
+{% block body %}
+<form method="post" action="/select_work_groups/{{ uid }}">
+  <fieldset>
+    <legend>Selectionner les groupes :</legend>
+    <input id="searchAttrFilter" type="text"/>
+    {{ render_formfield(form.available_groupz) }}
+    {{ render_formfield(form.selected_groupz) }}
+  </fieldset>
+  <input id="update" type="submit" value="Mettre à jour" >
+
+{% endblock %}
