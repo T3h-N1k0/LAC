@@ -444,14 +444,18 @@ def change_password(uid):
                                 form.new_pass.data.encode('utf-8')))
             pre_modlist.append(('pwdReset', 'TRUE'))
             flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
+            return redirect(url_for('show_user',
+                                    page= get_group_from_member_uid(uid),
+                                    uid=uid))
         else:
             ldap.change_passwd(uid, session['password'], form.new_pass.data)
             flash(
                 u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
             )
+            return redirect(url_for('home'))
+
         ldap.update_uid_attribute(uid, pre_modlist)
 
-        return redirect(url_for('home'))
     return render_template('change_password.html',
                            form=form,
                            uid=uid,
