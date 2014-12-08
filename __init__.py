@@ -906,6 +906,8 @@ def add_user(page_label=None,uid=None):
                                                   fieldz_labelz,
                                                   uid,
                                                   page)
+            if app.config['PROD_FLAG']:
+                upsert_otrs_user(uid)
             return redirect(url_for('show_user',
                                     page=page_label,
                                     uid = uid))
@@ -948,13 +950,15 @@ def delete_user(uid):
     groupz = get_posix_groupz_from_member_uid(uid)
 
     if request.method == 'POST':
-        print(uid)
         user_dn = ldap.get_full_dn_from_uid(uid)
         ldap.delete(user_dn)
         for group in groupz:
             # group_dn = ldap.get_full_dn_from_cn(group)
             pre_modlist = [('memberUid', uid.encode('utf-8'))]
             ldap.remove_cn_attribute(group,pre_modlist)
+
+        if app.config['PROD_FLAG']:
+            delete_otrs_user(uid)
         flash(u'Utilisateur {0} supprimé'.format(uid))
         return redirect(url_for('home'))
 
@@ -1020,19 +1024,25 @@ def add_group(page_label=None):
     return render_template('add_group.html',
                            add_form=add_form)
 
-@app.route('/edit_group/<page_label>/<group_cn>', methods=('GET', 'POST'))
+@app.route('/edit_group/<branch>/<group_cn>', methods=('GET', 'POST'))
 @login_required
-def edit_group(page_label, group_cn):
-    page = Page.query.filter_by(label=page_label).first()
+def edit_group(branch, group_cn):
+    page = Page.query.filter_by(label=branch).first()
     form = generate_edit_group_form(page)
     fieldz = Field.query.filter_by(page_id = page.id,
                                    edit = True).all()
 
     if request.method == 'POST':
         update_ldap_object_from_edit_group_form(form,page,group_cn)
+        flash(u'Groupe {0} mis à jour'.format(group_cn))
         return redirect(url_for('show_groups', branch=page.label))
     else:
         set_edit_group_form_values(form, fieldz, group_cn)
+
+    if branch == 'grCcc':
+        comite = C4Ressource.query.filter_by(
+            code_projet = group_cn).first().comite.ct
+        update_group_memberz_cines_c4(group_cn, comite)
 
     return render_template('edit_group.html',
                            form=form,
@@ -1056,11 +1066,15 @@ def show_group(branch, cn):
         return redirect(url_for('show_groups',
                                 branch=branch))
     cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
+    if branch == 'grCcc':
+        comite = C4Ressource.query.filter_by(code_projet = cn).first().comite.ct
+        # update_group_memberz_cines_c4(cn, comite)
     return render_template('show_group.html',
                            cn = cn,
                            cn_attributez=cn_attributez,
                            page_fieldz=page_fieldz,
-                           branch=branch)
+                           branch=branch,
+                           comite=comite)
 
 @app.route('/delete_group/<cn>', methods=('GET', 'POST'))
 @login_required
@@ -2086,14 +2100,69 @@ def update_ldap_object_from_edit_user_form(form, attributes, uid):
     )[0].get_attributes()
     pre_modlist = []
     for attr in attributes:
-        form_field_values = [entry.data.encode('utf-8')
-                             for entry in getattr(form, attr).entries]
-        print('form_field_values : {0}'.format(form_field_values))
-        if uid_attributez[attr] != form_field_values:
-            pre_modlist.append((attr, form_field_values))
-    print(pre_modlist)
+        if attr == 'cinesUserToPurge':
+            form_values = [entry.data
+                           for entry in getattr(form, attr).entries]
+        else:
+            form_values = [entry.data.encode('utf-8')
+                           for entry in getattr(form, attr).entries]
+        # print('form_values : {0}'.format(form_values))
+        if attr not in uid_attributez or uid_attributez[attr] != form_values:
+            if form_values == [''] or (attr == 'cinesUserToPurge'
+                                       and True not in form_values):
+                form_values = None
+            if (
+                    attr == 'cinesUserToPurge'
+                    and form_values
+                    and True in form_values
+            ):
+                form_values = ['1']
+            pre_modlist.append((attr, form_values))
+    # print(pre_modlist)
     ldap.update_uid_attribute(uid, pre_modlist)
 
+def upsert_otrs_user(uid):
+    user_attrz = ldaphelper.get_search_results(
+        get_uid_detailz(uid)
+    )[0].get_attributes()
+    otrs_user = OTRSUser.query.filter_by(login = uid).first()
+    if not otrs_user:
+        otrs_user = OTRSUser(login = uid)
+
+    if 'telephoneNumber' in user_attrz:
+        telephone_number = ';'.join(
+            [phone for phone in user_attrz['telephoneNumber']])
+    else:
+        telephone_number = ''
+    user_type = LDAPObjectType.query.filter_by(
+        label = get_group_from_member_uid(uid)
+    ).first().description
+    first_gr_name = get_posix_group_cn_by_gid(user_attrz['gidNumber'][0])
+    otrs_user.email = user_attrz['mail'][0]
+    otrs_user.customer_id = user_attrz['uidNumber'][0]
+    otrs_user.first_name = user_attrz['givenName'][0]
+    otrs_user.last_name = user_attrz['sn'][0]
+    otrs_user.phone = telephone_number
+    otrs_user.comments = '{0}; {1}'.format(user_type, first_gr_name)
+    otrs_user.valid_id = 1
+    otrs_user.create_time = datetime.now()
+    db.session.add(otrs_user)
+    db.session.commit()
+
+def delete_otrs_user(uid):
+    date = datetime.now().strftime("%Y%m%d%H%M")
+    disabled_login = "".join(['ZDEL', date, "_", uid])
+    # print(disabled_login)
+    otrs_user = OTRSUser.query.filter_by(login = uid).first()
+    otrs_user.login = disabled_login
+    otrs_user.valid_id = 2
+    db.session.add(otrs_user)
+
+    otrs_ticketz = OTRSTicket.query.filter_by(customer_user_id = uid).all()
+    for ticket in otrs_ticketz:
+        ticket.customer_user_id = disabled_login
+        db.session.add(ticket)
+    db.session.commit()
 
 def update_ldap_object_from_edit_group_form(form, page, group_cn):
     ldap_filter='(&(cn={0})(objectClass=posixGroup))'.format(group_cn)
@@ -3039,14 +3108,43 @@ def update_quota(storage_cn, form):
     ]
     ldap.update_cn_attribute(storage_cn, pre_modlist)
 
+def update_group_memberz_cines_c4(group, comite):
+    memberz_uid = get_posix_group_memberz(group)
+    if len(memberz_uid)>1:
+        ldap_filter = '(&(objectClass=posixAccount)(|{0}))'.format(
+            ''.join(['(uid={0})'.format(uid) for uid in memberz_uid]))
+    elif len(memberz_uid)==1:
+        ldap_filter = '(&(objectClass=posixAccount)(uid={0}))'.format(
+            memberz_uid[0])
+    else:
+        return
+    memberz = ldaphelper.get_search_results(ldap.search(
+        ldap_filter=ldap_filter,
+        attributes=['cinesC4', 'dn', 'uid', 'gidNumber']
+    ))
+    for member in memberz:
+        member_attrz = member.get_attributes()
+        if (
+                is_ccc_group(member_attrz)
+                and is_principal_group(member_attrz, group)
+                and (
+                    'cinesC4' not in member_attrz
+                     or member_attrz['cinesC4'][0] != comite
+                )
+        ):
+            print(u"{0} mis à jour à : {1}".format(member_attrz['uid'][0],
+                                                    comite))
+            ldap.update_uid_attribute(
+                member_attrz['uid'][0],
+                [('cinesC4', comite.encode('utf-8'))])
 
-# def get_soumission(uid, group):
-#     submission = ldap.search(
-#         ldap_filter='(uid={0})'.format(uid),
-#         attributes=['cinesSoumission']
-#     ).get_attributes()['cinesSoumission'][0]
-#     m = re.search('(?<={0}=)\d'.format(group), submission)
-#     return m.group(0)
+
+def is_ccc_group(member):
+    return 'ccc' == get_group_from_member_uid(member['uid'][0])
+
+def is_principal_group(member, group):
+    return get_posix_group_cn_by_gid(member['gidNumber'][0]) == group
+
 
 def generalized_time_to_datetime(generalized_time):
     created_datetime = datetime.strptime(
