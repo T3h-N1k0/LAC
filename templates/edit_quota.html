@@ -9,6 +9,10 @@
 {% block body %}
 {% if form %}
 <form method="post" action="/edit_quota/{{ storage_cn }}">
+{{ render_formfield(form.cinesQuotaSizeHard) }}
+{{ render_formfield(form.cinesQuotaSizeSoft) }}
+{{ render_formfield(form.cinesQuotaInodeHard) }}
+{{ render_formfield(form.cinesQuotaInodeSoft) }}
 {{ render_formfield(form.cinesQuotaSizeHardTemp) }}
 {{ render_formfield(form.cinesQuotaSizeSoftTemp) }}
 {{ render_formfield(form.cinesQuotaSizeTempExpire) }}

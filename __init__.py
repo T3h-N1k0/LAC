@@ -33,7 +33,16 @@ __license__ = "GPL"
 app = Flask(__name__)
 ldap = LDAP(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://lac:omgwtfbbq@localhost/lac'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://otrs:LaDBaOTRS@otrstest.cines.fr/otrs'
+
+app.config['SQLALCHEMY_BINDS'] = {
+    'lac': 'mysql://lac:omgwtfbbq@localhost/lac',
+    'otrs': 'mysql://otrs:LaDBaOTRS@otrstest.cines.fr/otrs',
+    'gescli': 'mysql://compta_lac:LacCompta1036M0dule@tarot.cines.fr/gescli'
+
+}
 db = SQLAlchemy(app)
+
 #Bootstrap(app)
 utc = pytz.utc
 r = redis.Redis('localhost')
@@ -52,6 +61,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'csv'])
 # Many to one : LDAPObjectClass (n)---(1) PageObjectClass
 # Many to one : LDAPObjectClass (n)---(1) LDAPObjectType
 class LDAPObjectClass(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'ldapobjectclass'
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(50), unique=True)
@@ -78,6 +88,7 @@ class LDAPObjectClass(db.Model):
 # Many to one : LDAPObjectClassAttribute (n)---(1) LDAPObjectClass
 # Many to one : LDAPObjectClassAttribute (n)---(1) LDAPAttribute
 class LDAPObjectClassAttribute(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'ldapobjectclassattribute'
     id = db.Column(db.Integer, primary_key=True)
     mandatory = db.Column(db.Boolean())
@@ -101,6 +112,7 @@ class LDAPObjectClassAttribute(db.Model):
 # Many to one : LDAPAttributes (n)---(1) LDAPObjectClass
 # One to many : LDAPAttribute (1)---(n) Field
 class LDAPAttribute(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'ldapattribute'
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(50), unique=True)
@@ -123,6 +135,7 @@ class LDAPAttribute(db.Model):
 
 # One to many : Page (1)---(n) Field
 class Page(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'page'
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(50), unique=True)
@@ -148,6 +161,7 @@ class Page(db.Model):
 # Many to one : PageObjectClass (n)---(1) Page
 # Many to one : PageObjectClass (n)---(1) LDAPObjectClass
 class PageObjectClass(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'pageobjectclass'
     id = db.Column(db.Integer, primary_key=True)
     page_id = Column(Integer, ForeignKey('page.id',
@@ -168,6 +182,7 @@ class PageObjectClass(db.Model):
 # Many to one : Field (n)---(1) LDAPAttribute
 # Many to one : Field (n)---(1) FieldType
 class Field(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'field'
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(50))
@@ -214,6 +229,7 @@ class Field(db.Model):
 
 # One to many : FieldType (1)---(n) Field
 class FieldType(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'fieldtype'
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String(80))
@@ -225,6 +241,7 @@ class FieldType(db.Model):
 # Many to one : LDAPObjectTypeObjectClass (n)---(1) LDAPObjectType
 # Many to one : LDAPObjectTypeObjectClass (n)---(1) LDAPObjectClass
 class LDAPObjectTypeObjectClass(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'ldapobjecttypeobjectclass'
     id = db.Column(db.Integer, primary_key=True)
     ldapobjecttype_id = Column(Integer, ForeignKey('ldapobjecttype.id',
@@ -239,6 +256,7 @@ class LDAPObjectTypeObjectClass(db.Model):
         self.ldapobjectclass_id = ldapobjectclass_id
 
 class LDAPObjectType(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'ldapobjecttype'
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(50), unique=True)
@@ -254,6 +272,7 @@ class LDAPObjectType(db.Model):
 
 
 class Filesystem(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'filesystem'
     id = db.Column(db.Integer, primary_key=True)
     label = db.Column(db.String(50), unique=True)
@@ -264,14 +283,71 @@ class Filesystem(db.Model):
         self.label = label
 
 class Shell(db.Model):
+    __bind_key__ = 'lac'
     __tablename__ = 'shell'
     id = db.Column(db.Integer, primary_key=True)
     path = db.Column(db.String(50), unique=True)
     label = db.Column(db.String(50))
 
-    def __init__(self, label, description):
+    def __init__(self, label, path):
         self.path = path
         self.label = label
+
+class OTRSUser(db.Model):
+    __bind_key__ = 'otrs'
+    __tablename__ = 'customer_user'
+    id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String(200), unique=True)
+    email = db.Column(db.String(150))
+    customer_id = db.Column(db.String(150))
+    # pw = db.Column(db.String(64))
+    # title = db.Column(db.String(50))
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    phone = db.Column(db.String(150))
+    # fax = db.Column(db.String(150))
+    # mobile = db.Column(db.String(150))
+    # street = db.Column(db.String(150))
+    # zip = db.Column(db.String(200))
+    # city = db.Column(db.String(200))
+    # country = db.Column(db.String(200))
+    comments = db.Column(db.String(250))
+    valid_id = db.Column(db.Integer)
+    create_time = db.Column(db.DateTime)
+    # create_by = db.Column(db.Integer)
+    # change_time = db.Column(db.DateTime)
+    # change_by = db.Column(db.Integer)
+
+
+class OTRSTicket(db.Model):
+    __bind_key__ = 'otrs'
+    __tablename__ = 'ticket'
+    id = db.Column(db.Integer, primary_key=True)
+    customer_user_id = db.Column(db.String(250))
+
+class UserBind(db.Model):
+    __bind_key__ = 'lac'
+    __tablename__ = 'userbind'
+    id = db.Column(db.Integer, primary_key=True)
+    user_uid = db.Column(db.String(250))
+    bind_date = db.Column(db.DateTime)
+
+class C4Ressource(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'RESSOURCE{0}'.format(datetime.now().strftime('%Y'))
+    code_dossier_ressource = db.Column(db.String(15), primary_key=True)
+    code_comite = db.Column(db.Integer, db.ForeignKey('COMITE.code_comite'))
+    code_projet = db.Column(db.String(8))
+
+class C4Comite(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'COMITE'
+    code_comite = db.Column(db.Integer, primary_key=True)
+    ct = db.Column(db.String(8))
+    intitule_comite = db.Column(db.String(80))
+    ressources = db.relationship('C4Ressource', backref='comite',
+                                 lazy='dynamic')
+
 
 ### Routez
 
@@ -1642,7 +1718,18 @@ def set_quota_form_values(form, storage):
 
     default_storage = get_default_storage(default_storage_cn).get_attributes()
     date_now = datetime.now()
-
+    cinesQuotaSizeHard = int(
+        storage['cinesQuotaSizeHard'][0]
+    ) / default_size_unit
+    cinesQuotaSizeSoft = int(
+        storage['cinesQuotaSizeSoft'][0]
+    ) / default_size_unit
+    cinesQuotaInodeHard = int(
+        storage['cinesQuotaInodeHard'][0]
+    ) / default_inode_unit
+    cinesQuotaInodeSoft = int(
+        storage['cinesQuotaInodeSoft'][0]
+    ) / default_inode_unit
     cinesQuotaSizeHardTemp = str(int(
         storage['cinesQuotaSizeHardTemp'][0] if
         'cinesQuotaSizeHardTemp' in storage
@@ -1673,6 +1760,10 @@ def set_quota_form_values(form, storage):
     # print('cinesQuotaSizeTempExpire {0}'.format(
     #     cinesQuotaSizeTempExpire))
 
+    form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard
+    form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft
+    form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard
+    form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft
     form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp
     form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp
     form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp
@@ -2741,63 +2832,68 @@ def set_group_ppolicy(group, ppolicy):
         ldap.update_uid_attribute(member, pre_modlist)
 
 def update_default_quota(storage_cn, form):
-    cinesQuotaSizeHard = str(
-        int(
-            form.cinesQuotaSizeHard.value.data
-        ) * int(
-            form.cinesQuotaSizeHard.unit.data)
-    ).encode('utf-8')
-    cinesQuotaSizeSoft = str(
-        int(
-            form.cinesQuotaSizeSoft.value.data
-        ) * int(
-            form.cinesQuotaSizeSoft.unit.data)
-    ).encode('utf-8')
-    cinesQuotaInodeHard = str(
-        int(
-            form.cinesQuotaInodeHard.value.data
-        ) * int(
-            form.cinesQuotaInodeHard.unit.data)
-    ).encode('utf-8')
-    cinesQuotaInodeSoft = str(
-        int(
-            form.cinesQuotaInodeSoft.value.data
-        ) * int(
-            form.cinesQuotaInodeSoft.unit.data)
-    ).encode('utf-8')
+    cinesQuotaSizeHard = get_quota_value_from_form(
+        form,
+        'cinesQuotaSizeHard')
+    cinesQuotaSizeSoft = get_quota_value_from_form(
+        form,
+        'cinesQuotaSizeSoft')
+    cinesQuotaInodeHard = get_quota_value_from_form(
+        form,
+        'cinesQuotaInodeHard')
+    cinesQuotaInodeSoft = get_quota_value_from_form(
+        form,
+        'cinesQuotaInodeSoft')
     pre_modlist = [('cinesQuotaSizeHard', cinesQuotaSizeHard),
                    ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
                    ('cinesQuotaInodeHard', cinesQuotaInodeHard),
                    ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
     ldap.update_cn_attribute(storage_cn, pre_modlist)
 
+def get_quota_value_from_form(form, quota):
+    field = getattr(form, quota)
+    value = str(
+        int(
+            field.value.data
+        ) * int(
+            field.unit.data)
+    ).encode('utf-8')
+    return value
 
 def update_quota(storage_cn, form):
-    cinesQuotaSizeHardTemp = str(
-        int(
-            form.cinesQuotaSizeHardTemp.value.data
-        ) * int(
-            form.cinesQuotaSizeHardTemp.unit.data)
-    ).encode('utf-8')
-    cinesQuotaSizeSoftTemp = str(
-        int(
-            form.cinesQuotaSizeSoftTemp.value.data
-        ) * int(
-            form.cinesQuotaSizeSoftTemp.unit.data)
-    ).encode('utf-8')
-    cinesQuotaInodeHardTemp = str(
-        int(
-            form.cinesQuotaInodeHardTemp.value.data
-        ) * int(
-            form.cinesQuotaInodeHardTemp.unit.data)
-    ).encode('utf-8')
-    cinesQuotaInodeSoftTemp = str(
-        int(
-            form.cinesQuotaInodeSoftTemp.value.data
-        ) * int(
-            form.cinesQuotaInodeSoftTemp.unit.data)
-    ).encode('utf-8')
-    pre_modlist = [('cinesQuotaSizeHardTemp',
+    cinesQuotaSizeHard = get_quota_value_from_form(
+        form,
+        'cinesQuotaSizeHard')
+    cinesQuotaSizeSoft = get_quota_value_from_form(
+        form,
+        'cinesQuotaSizeSoft')
+    cinesQuotaInodeHard = get_quota_value_from_form(
+        form,
+        'cinesQuotaInodeHard')
+    cinesQuotaInodeSoft = get_quota_value_from_form(
+        form,
+        'cinesQuotaInodeSoft')
+    cinesQuotaSizeHardTemp = get_quota_value_from_form(
+        form,
+        'cinesQuotaSizeHardTemp')
+    cinesQuotaSizeSoftTemp = get_quota_value_from_form(
+        form,
+        'cinesQuotaSizeSoftTemp')
+    cinesQuotaInodeHardTemp = get_quota_value_from_form(
+        form,
+        'cinesQuotaInodeHardTemp')
+    cinesQuotaInodeSoftTemp = get_quota_value_from_form(
+        form,
+        'cinesQuotaInodeSoftTemp')
+    pre_modlist = [('cinesQuotaSizeHard',
+                    cinesQuotaSizeHard),
+                   ('cinesQuotaSizeSoft',
+                    cinesQuotaSizeSoft),
+                   ('cinesQuotaInodeHard',
+                    cinesQuotaInodeHard),
+                   ('cinesQuotaInodeSoft',
+                    cinesQuotaInodeSoft),
+                   ('cinesQuotaSizeHardTemp',
                     cinesQuotaSizeHardTemp),
                    ('cinesQuotaSizeSoftTemp',
                     cinesQuotaSizeSoftTemp),
