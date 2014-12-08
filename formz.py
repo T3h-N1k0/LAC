@@ -149,5 +149,5 @@ class FilesystemForm(Form):
     description = TextField(u'Description du système de fichiers')
 
 class ShellForm(Form):
-    label = TextField(u'Emplacement du shell')
-    description = TextField(u'Description du shell')
+    label = TextField(u'Libellé du shell')
+    path = TextField(u'Emplacement du shell')
