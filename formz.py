@@ -95,6 +95,10 @@ class EditDefaultQuotaForm(Form):
     cinesQuotaInodeSoft = FormField(InodeQuotaForm)
 
 class EditQuotaForm(Form):
+    cinesQuotaSizeHard = FormField(SizeQuotaForm)
+    cinesQuotaSizeSoft = FormField(SizeQuotaForm)
+    cinesQuotaInodeHard = FormField(InodeQuotaForm)
+    cinesQuotaInodeSoft = FormField(InodeQuotaForm)
     cinesQuotaSizeHardTemp = FormField(SizeQuotaForm)
     cinesQuotaSizeSoftTemp = FormField(SizeQuotaForm)
     cinesQuotaSizeTempExpire = DateField(
