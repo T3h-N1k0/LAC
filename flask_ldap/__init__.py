@@ -51,7 +51,9 @@ class LDAP(object):
         self.login_func = app.config['LDAP_LOGIN_VIEW']
 
     def connect(self):
-        print self.app.config['LDAP_HOST']
+        # print('LDAP_SCHEMA {0}'.format(self.app.config['LDAP_SCHEMA']))
+        # print('LDAP_PORT {0}'.format(self.app.config['LDAP_PORT']))
+        # print('LDAP_HOST {0}'.format(self.app.config['LDAP_HOST']))
         self.conn = ldap.initialize('{0}://{1}:{2}'.format(
             self.app.config['LDAP_SCHEMA'],
             self.app.config['LDAP_HOST'],
@@ -74,6 +76,8 @@ class LDAP(object):
             if base_dn==None:
                 base_dn=self.app.config['LDAP_SEARCH_BASE']
             self.connect()
+            # print(base_dn)
+            # print(attributes)
             self.conn.simple_bind_s("","")
             records = self.conn.search_s(base_dn, scope, filter, attributes)
             self.conn.unbind_s()
@@ -188,11 +192,14 @@ class LDAP(object):
         return result[0][0]
 
     def get_full_dn_from_uid(self, uid):
+        # print('uid {0}'.format(uid))
         filter='(uid={0})'.format(uid)
+        # print(filter)
         # if 'logged_in' in session:
         #     result = self.search(ldap_filter=filter)
         # else:
         result = self.anonymous_search(filter=filter)
+        # print(result)
         return result[0][0]
 
     # def get_ldap_admin_memberz(self):
@@ -270,6 +277,12 @@ class LDAP(object):
         #     print(e)
         #     return self.other_err(e)
 
+    def add_dn_attribute(self, dn, pre_modlist):
+        mod_attrs = [(ldap.MOD_ADD, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
+
+
     def remove_uid_attribute(self, uid, pre_modlist):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_DELETE, name, values)
@@ -307,6 +320,11 @@ class LDAP(object):
         # except Exception as e:
         #     print(e)
         #     return self.other_err(e)
+
+    def remove_dn_attribute(self, dn, pre_modlist):
+        mod_attrs = [(ldap.MOD_DELETE, name, values)
+                     for name, values in pre_modlist]
+        self.generic_modify(dn, mod_attrs)
 
     def update_cn_attribute(self, cn, pre_modlist):
         dn = self.get_full_dn_from_cn(cn)
