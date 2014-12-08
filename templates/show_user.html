@@ -28,6 +28,11 @@
    uid=uid
    )}}">Supprimer l'utilisateur</a>
 <br/>
+<a href="{{ url_for(
+   'select_work_groups',
+   uid=uid
+   )}}">Gérer les groupes de travail</a>
+<br/>
 {% endif %}
 {% if session['admin'] %}
 <a href="{{ url_for(
@@ -36,6 +41,35 @@
    )}}">
 {% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
 {% endif %}
+<br/>
+
+{% if submission_list %}
+Soumission
+<dl>
+{% for group in submission_list %}
+<dt>{{ group[0]}}</dt>
+<dd>{% if group[1] == '1' %}Oui{% else %}Non{% endif %}</dd>
+{% endfor %}
+</dl>
+{% endif %}
+
+<br/>
+{% if work_groupz %}
+<h3>Groupes de travail</h3>
+{% for group in work_groupz %}
+{{ group }}
+{% endfor %}
+{% endif %}
+
+<br/>
+{% if sec_groupz %}
+<h3>Groupes secondaires</h3>
+{% for group in sec_groupz %}
+{{ group }}
+{% endfor %}
+{% endif %}
+
+<br/>
 <br/>
 {% for attr_name, attr_values in uid_attributez.iteritems() %}
 {% if attr_name in page_fieldz %}

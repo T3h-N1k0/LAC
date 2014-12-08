@@ -508,14 +508,25 @@ def show_user(page, uid):
     if not raw_detailz:
         flash(u'Utilisateur non trouvé')
         return redirect(url_for('home'))
-
     uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
     uid_attributez=uid_detailz.get_attributes()
+    work_groupz = get_work_groupz_from_member_uid(uid)
+    sec_groupz = get_posix_groupz_from_member_uid(uid)
+    if 'cinesSoumission' in uid_attributez:
+        submission_list = get_list_from_submission_attr(
+            uid_attributez['cinesSoumission'][0])
+    else:
+        submission_list = []
+
+    print('submission_list {0}'.format(submission_list))
     return render_template('show_user.html',
                            uid = uid,
                            uid_attributez=uid_attributez,
                            page_fieldz=page_fieldz,
-                           is_active=is_active(uid_detailz))
+                           is_active=is_active(uid_detailz),
+                           work_groupz=work_groupz,
+                           sec_groupz=sec_groupz,
+                           submission_list=submission_list)
 
 @app.route('/edit_page/<page_label>', methods=('GET', 'POST'))
 @app.route('/edit_page/')
@@ -910,12 +921,21 @@ def edit_user(page,uid):
     fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
     fieldz_labelz = [field.label for field in fieldz]
 
-    if request.method == 'POST' and form.validate() :
+
+    if request.method == 'POST':
         update_ldap_object_from_edit_user_form(form,fieldz_labelz,uid)
+
+        for group in form.wrk_groupz.selected_groupz.data:
+            add_to_group_if_not_member(group, [uid])
+        for group in get_work_groupz_from_member_uid(uid):
+            if group not in form.wrk_groupz.selected_groupz.data:
+                rem_from_group_if_member(group, [uid])
+
+        if page.label in app.config['OTRS_ACCOUNT'] and app.config['PROD_FLAG']:
+            upsert_otrs_user(uid)
         return redirect(url_for('show_user', page=page.label, uid=uid))
     else:
         set_edit_user_form_values(form, fieldz, uid)
-
     return render_template('edit_user.html',
                            form=form,
                            page=page,
@@ -942,6 +962,24 @@ def delete_user(uid):
                            groupz=groupz,
                            uid=uid)
 
+@app.route('/select_work_groups/<uid>', methods=('GET', 'POST'))
+@login_required
+def select_work_groups(uid):
+    form = generate_select_work_group_form(uid)
+
+    if request.method == 'POST':
+        for group in form.selected_groupz.data:
+            add_to_group_if_not_member(group, [uid])
+        for group in actual_work_groupz:
+            if group not in form.selected_groupz.data:
+                rem_from_group_if_member(group, [uid])
+        flash(u'Groupes de travail mis à jour')
+        return redirect(url_for('show_user',
+                                page=get_group_from_member_uid(uid),
+                                uid=uid))
+    return render_template('select_work_groups.html',
+                           form=form,
+                           uid=uid)
 
 @app.route('/select_edit_group_attributes/', methods=('GET', 'POST'))
 @login_required
@@ -1872,7 +1910,7 @@ def populate_last_used_idz():
     db.session.commit()
 
 def populate_work_group_redis():
-    for group in get_submission_groupz_list():
+    for group in get_work_groupz():
         r.delete('wrk_groupz:{0}'.format(group))
         memberz = get_work_group_memberz(group)
         for member in memberz:
@@ -2103,19 +2141,32 @@ def generate_edit_group_form(page):
         pass
 
     for field in page_fieldz:
-        print('field label {0}'.format(field.label))
+        # print('field label {0}'.format(field.label))
         append_fieldlist_to_form(field,
                                  EditGroupForm)
     return EditGroupForm(request.form)
+
+def generate_select_work_group_form(uid):
+    actual_work_groupz = get_work_groupz_from_member_uid(uid)
+    available_work_groupz = get_work_groupz()
+    selected_choices = [(group, group) for group in actual_work_groupz]
+    available_choices = [(group, group) for group in available_work_groupz
+                         if group not in actual_work_groupz]
+    form = SelectGroupzForm(request.form)
+    form.available_groupz.choices = available_choices
+    form.selected_groupz.choices = selected_choices
+
+    return form
 
 def generate_edit_user_form_class(page):
     page_fieldz = Field.query.filter_by(page_id = page.id,
                                         edit = True).all()
     class EditForm(Form):
-        pass
+        wrk_groupz = FormField(SelectGroupzForm)
 
     for field in page_fieldz:
         append_fieldlist_to_form(field, EditForm)
+
 
     return EditForm
 
@@ -2158,6 +2209,15 @@ def set_edit_group_form_values(form, fieldz, cn=None):
 
 
 def set_edit_user_form_values(form, fieldz, uid=None):
+    actual_work_groupz = get_work_groupz_from_member_uid(uid)
+    available_work_groupz = get_work_groupz()
+    selected_choices = [(group, group) for group in actual_work_groupz]
+    available_choices = [(group, group) for group in available_work_groupz
+                         if group not in actual_work_groupz]
+
+    form.wrk_groupz.available_groupz.choices = available_choices
+    form.wrk_groupz.selected_groupz.choices = selected_choices
+
     if uid:
         uid_attributez = ldaphelper.get_search_results(
             get_uid_detailz(uid)
@@ -2395,12 +2455,15 @@ def add_to_group_if_not_member(group, memberz_uid):
                            if dn not in r.smembers(
                                    "wrk_groupz:{0}".format(group))
     ]
+    # print('memberz_dn_filtered {0}'.format(memberz_dn_filtered))
+    # print(memberz_dn)
     if memberz_dn_filtered:
         pre_modlist = [('uniqueMember', memberz_dn_filtered)]
-        ldap.add_cn_attribute(group, pre_modlist)
-        flash(u'Utilisateur(s) ajoutés au groupe')
-    else:
-        flash(u'Utilisateur(s) déjà membre(s) du groupe')
+        group_dn = get_wrk_group_dn_from_cn(group)
+        ldap.add_dn_attribute(group_dn, pre_modlist)
+    #     flash(u'Utilisateur(s) ajoutés au groupe')
+    # else:
+    #     flash(u'Utilisateur(s) déjà membre(s) du groupe')
 
 def rem_from_group_if_member(group, memberz_uid):
     populate_work_group_redis()
@@ -2413,10 +2476,11 @@ def rem_from_group_if_member(group, memberz_uid):
     ]
     if memberz_dn_filtered:
         pre_modlist = [('uniqueMember', memberz_dn_filtered)]
-        ldap.remove_cn_attribute(group, pre_modlist)
-        flash(u'Utilisateur(s) supprimé(s) du groupe')
-    else:
-        flash(u'Utilisateur(s) déjà supprimé(s) du groupe')
+        group_dn = get_wrk_group_dn_from_cn(group)
+        ldap.remove_dn_attribute(group_dn, pre_modlist)
+    #     flash(u'Utilisateur(s) supprimé(s) du groupe')
+    # else:
+    #     flash(u'Utilisateur(s) déjà supprimé(s) du groupe')
 
 
 def get_default_storage_list():
@@ -2563,13 +2627,17 @@ def get_posix_group_memberz(group):
     base_dn='ou=groupePosix,{0}'.format(
         app.config['LDAP_SEARCH_BASE']
     )
-    print(ldap_filter)
-    print(base_dn)
+    # print(ldap_filter)
+    # print(base_dn)
     records = ldaphelper.get_search_results(
         ldap.search(base_dn,ldap_filter,attributes)
     )
-    print(records)
-    memberz = records[0].get_attributes()['memberUid']
+    # print(records)
+    group_attrz= records[0].get_attributes()
+    if 'memberUid' in group_attrz:
+        memberz = group_attrz['memberUid']
+    else:
+        memberz = []
     return memberz
 
 
@@ -2586,6 +2654,35 @@ def get_posix_groupz_from_member_uid(uid):
     for group in groupz_obj:
         groupz.append(group.get_attributes()['cn'][0])
     return groupz
+
+def get_work_groupz_from_member_uid(uid):
+    dn = ldap.get_full_dn_from_uid(uid)
+    ldap_filter='(&(objectClass=cinesGrWork)(uniqueMember={0}))'.format(dn)
+    attributes=['cn']
+    base_dn='ou=grTravail,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    groupz_obj = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    print('groupz_obj {0}'.format(groupz_obj))
+    groupz = []
+    for group in groupz_obj:
+        groupz.append(group.get_attributes()['cn'][0])
+    return groupz
+
+def get_wrk_group_dn_from_cn(cn):
+    ldap_filter='(&(objectClass=cinesGrWork)(cn={0}))'.format(cn)
+    attributes = ['entryDN']
+    base_dn='ou=grTravail,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    group_obj = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )[0]
+    dn = group_obj.get_attributes()['entryDN'][0]
+    return dn
+
 
 def get_people_dn_from_ou(ou):
     ldap_filter='(ou={0})'.format(ou)
@@ -2632,18 +2729,27 @@ def get_work_group_memberz(group):
     return memberz
 
 def get_posix_groupz(branch=None):
-    print(branch)
+    # print(branch)
     ldap_filter = "(objectClass=posixGroup)"
     base_dn = 'ou=groupePosix,{0}'.format(app.config['LDAP_SEARCH_BASE'])
 
     if branch:
         base_dn = ''.join(['ou={0},'.format(branch), base_dn])
-    print(base_dn)
+    # print(base_dn)
     groupz = ldaphelper.get_search_results(
         ldap.admin_search(base_dn=base_dn,
                           ldap_filter=ldap_filter,
                           attributes=['cn', 'gidNumber']))
     return groupz
+
+def get_work_groupz():
+    ldap_filter = "(objectClass=cinesGrWork)"
+    base_dn = 'ou=grTravail,{0}'.format(app.config['LDAP_SEARCH_BASE'])
+    groupz = ldaphelper.get_search_results(
+        ldap.admin_search(base_dn=base_dn,
+                          ldap_filter=ldap_filter,
+                          attributes=['cn']))
+    return [group.get_attributes()['cn'][0] for group in groupz]
 
 def get_posix_groupz_choices():
     ldap_groupz = get_posix_groupz()

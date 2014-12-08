@@ -12,6 +12,35 @@
          url_for('static', filename='fieldset.js')
          }}"></script>
 
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#wrk_groupz-available_groupz').dblclick(function() {
+     selectFromList('#wrk_groupz-available_groupz', '#wrk_groupz-selected_groupz');
+   });
+   $('#wrk_groupz-selected_groupz').dblclick(function() {
+     removeFromList('#wrk_groupz-available_groupz', '#wrk_groupz-selected_groupz');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#wrk_groupz-available_groupz', '#wrk_groupz-selected_groupz');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#wrk_groupz-available_groupz', '#wrk_groupz-selected_groupz');
+   });
+   $('#searchGroupzFilter').keyup(function() {
+     var searchArea = $('#wrk_groupz-available_groupz');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#wrk_groupz-selected_groupz option').prop('selected', true);
+   });
+ });
+</script>
+
 {% endblock head_js %}
 
 {% block body %}
@@ -22,8 +51,9 @@
     {% else %}
         {{ render_formfield(get_attr(form, field.label))}}
     {% endif  %}
-
   {% endfor  %}
+   <input id="searchGroupzFilter" type="text"/>
+  {{ render_formfield(form.wrk_groupz)}}
   <input id="update" type="submit" value="Mettre à jour" >
 </form>
 
