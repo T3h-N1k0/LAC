@@ -199,8 +199,7 @@ class LDAP(object):
         #     result = self.search(ldap_filter=filter)
         # else:
         result = self.anonymous_search(filter=filter)
-        # print(result)
-        return result[0][0]
+        return result[0][0] if result else None
 
     # def get_ldap_admin_memberz(self):
     #     ldap_filter='(cn=ldapadmin)'
