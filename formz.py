@@ -148,16 +148,25 @@ class AddUserForm(Form):
     ldap_object_type = SelectField(u'Type d\'objet LDAP', coerce=int)
     uid = TextField(u'Login (uid)')
     cn = TextField(u'Common Name')
+    home_directory = TextField(u'Repertoire d\'acceuil (homeDirectory)')
+
 
 class AddPolicyForm(Form):
     cn = TextField(u'Common Name')
 
-class AddGroupForm(Form):
+class SelectGroupTypeForm(Form):
+    group_type = SelectField(u'Type de groupe')
+
+class AddGenericGroupForm(Form):
     cn = TextField(u'Nom (cn)')
     filesystem = SelectField(u'Système de fichier',default='DEFAUT')
     description = TextField(u'Description')
-    group_type = SelectField(u'Type de groupe')
 
+
+class AddC4GroupForm(Form):
+    cn = SelectField(u'Nom (cn)')
+    filesystem = SelectField(u'Système de fichier',default='DEFAUT')
+    description = TextField(u'Description')
 
 class FilesystemForm(Form):
     label = TextField(u'Libellé du système de fichiers')

@@ -30,6 +30,17 @@ group_cn=cn)}}">Editer</a>
 </ul>
 {% endif %}
 {% endif %}
-
 {% endfor %}
+
+{% if manager %}
+Responsable : {{ manager.qualite.libelle_qualite }}  {{ manager.nom_personne }}  {{ manager.prenom_personne }} <br/>
+Comite : {{ comite.intitule_comite }} <br/>
+Site : {{ manager.adresse.organisme_adresse }}<br/>
+Laboratoire : {{ manager.adresse.laboratoire_adresse }} <br/>
+Ville : {{ manager.adresse.ville_adresse}} <br/>
+Téléphone : {{ manager.telephone_personne }} <br>
+Fax : {{ manager.fax_personne }} <br>
+Mail : {{ manager.bal_personne }} <br/>
+{% endif %}
+
 {% endblock body %}

@@ -38,7 +38,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://lac:omgwtfbbq@localhost/lac'
 app.config['SQLALCHEMY_BINDS'] = {
     'lac': 'mysql://lac:omgwtfbbq@localhost/lac',
     'otrs': 'mysql://otrs:LaDBaOTRS@otrstest.cines.fr/otrs',
-    'gescli': 'mysql://compta_lac:LacCompta1036M0dule@tarot.cines.fr/gescli'
+    'gescli': 'mysql://compta_lac:LacCompta1036M0dule@tarot.cines.fr/gescli',
+    'gescpt': 'mysql://compta_lac:LacCompta1036M0dule@tarot.cines.fr/gescpt'
 
 }
 db = SQLAlchemy(app)
@@ -337,7 +338,12 @@ class C4Ressource(db.Model):
     __tablename__ = 'RESSOURCE{0}'.format(datetime.now().strftime('%Y'))
     code_dossier_ressource = db.Column(db.String(15), primary_key=True)
     code_comite = db.Column(db.Integer, db.ForeignKey('COMITE.code_comite'))
-    code_projet = db.Column(db.String(8))
+    code_projet = db.Column(db.String(8),
+                            db.ForeignKey('PROJET.code_projet'))
+    demande_uc_ibm = db.Column(db.Integer)
+    demande_uc_sgi = db.Column(db.Integer)
+    accorde_uc_ibm = db.Column(db.Integer)
+    accorde_uc_sgi = db.Column(db.Integer)
 
 class C4Comite(db.Model):
     __bind_key__ = 'gescli'
@@ -348,6 +354,71 @@ class C4Comite(db.Model):
     ressources = db.relationship('C4Ressource', backref='comite',
                                  lazy='dynamic')
 
+class C4Personne(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'PERSONNE'
+    code_personne = db.Column(db.Integer, primary_key=True)
+    nom_personne = db.Column(db.String(30))
+    prenom_personne = db.Column(db.String(30))
+    code_adresse = db.Column(db.Integer,
+                             db.ForeignKey('ADRESSE.code_adresse'))
+    code_qualite = db.Column(db.String(8),
+                             db.ForeignKey('QUALITE.code_qualite'))
+    code_profil = db.Column(db.String(15),
+                            db.ForeignKey('PROFIL.code_profil'))
+    telephone_personne  = db.Column(db.String(20))
+    fax_personne = db.Column(db.String(20))
+    bal_personne = db.Column(db.String(50))
+    projets = db.relationship('C4Projet', backref='personne',
+                              lazy='dynamic')
+
+class C4Adresse(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'ADRESSE'
+    code_adresse = db.Column(db.Integer, primary_key=True)
+    laboratoire_adresse = db.Column(db.String(50))
+    organisme_adresse = db.Column(db.String(50))
+    adresse1_adresse = db.Column(db.String(50))
+    adresse2_adresse = db.Column(db.String(50))
+    cdpostal_adresse = db.Column(db.String(10))
+    ville_adresse = db.Column(db.String(50))
+    pays_adresse = db.Column(db.String(20))
+    personnes = db.relationship('C4Personne', backref='adresse',
+                                 lazy='dynamic')
+
+class C4Qualite(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'QUALITE'
+    code_qualite = db.Column(db.String(8), primary_key=True)
+    libelle_qualite = db.Column(db.String(50))
+    personnes = db.relationship('C4Personne', backref='qualite',
+                                 lazy='dynamic')
+
+class C4Profil(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'PROFIL'
+    code_profil = db.Column(db.String(15), primary_key=True)
+    libelle_profil = db.Column(db.String(50))
+    personnes = db.relationship('C4Personne', backref='profil',
+                                lazy='dynamic')
+
+class C4Projet(db.Model):
+    __bind_key__ = 'gescli'
+    __tablename__ = 'PROJET{0}'.format(datetime.now().strftime('%Y'))
+    code_projet = db.Column(db.String(8), primary_key=True)
+    code_personne = db.Column(db.Integer,
+                              db.ForeignKey('PERSONNE.code_personne'))
+    intitule_projet = db.Column(db.String(50))
+    # ressources = db.relationship('C4Ressource',
+    #                              backref='projet',
+    #                              lazy='dynamic',
+    #                              uselist=False)
+
+
+# class C4IBM(db.Model):
+#     __bind_key__ = 'gescpt'
+#     __tablename__ = 'IBM{0}'.format(datetime.now().strftime('%Y'))
+#     grpunix = db.Column(db.String(255))
 
 ### Routez
 
@@ -985,37 +1056,47 @@ def select_work_groups(uid):
                            form=form,
                            uid=uid)
 
-@app.route('/select_edit_group_attributes/', methods=('GET', 'POST'))
-@login_required
-def select_edit_group_attributes():
-    view_form = EditGroupViewForm(request.form)
-    view_form.attr_form.available_attr.choices = [
-        (attr.id, attr.label)
-        for attr in LDAPAttribute.query.all()
-    ]
-    view_form.attr_form.selected_attr.choices = []
+# @app.route('/select_edit_group_attributes/', methods=('GET', 'POST'))
+# @login_required
+# def select_edit_group_attributes():
+#     view_form = EditGroupViewForm(request.form)
+#     view_form.attr_form.available_attr.choices = [
+#         (attr.id, attr.label)
+#         for attr in LDAPAttribute.query.all()
+#     ]
+#     view_form.attr_form.selected_attr.choices = []
 
-@app.route('/add_group/', methods=('GET', 'POST'))
+@app.route('/select_group_type/', methods=('GET', 'POST'))
+@login_required
+def select_group_type():
+    ldap_object_types = LDAPObjectType.query.all()
+    form = SelectGroupTypeForm(request.form)
+    form.group_type.choices = [(ot.label, ot.description)
+                                   for ot in ldap_object_types
+                                   if ot.apply_to == 'group']
+
+    if request.method == 'POST':
+        return redirect(url_for('add_group',
+                                page_label = form.group_type.data))
+
+
+# @app.route('/add_group/', methods=('GET', 'POST'))
 @app.route('/add_group/<page_label>', methods=('GET', 'POST'))
 @login_required
 def add_group(page_label=None):
     pages = Page.query.all()
-    ldap_object_types = LDAPObjectType.query.all()
 
-    existing_groupz = [
-        group.get_attributes()['cn'][0] for group in get_all_groups()]
+    if page_label in app.config['C4_TYPE_GROUPZ']:
+        add_form = AddC4GroupForm(request.form)
+        add_form.cn.choices = get_c4_groupz_choices()
+    else:
+        existing_groupz = [
+            group.get_attributes()['cn'][0] for group in get_all_groups()]
 
-    set_validators_to_form_field(
-        AddGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
-
-    add_form = AddGroupForm(request.form)
+        set_validators_to_form_field(
+            AddGenericGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
+        add_form = AddGenericGroupForm(request.form)
     add_form.filesystem.choices = get_filesystem_choices()
-    add_form.group_type.choices = [(ot.label, ot.description)
-                                   for ot in ldap_object_types
-                                   if ot.apply_to == 'group']
-    if page_label:
-        ot = LDAPObjectType.query.filter_by(label = page_label).first()
-        add_form.group_type.default = ot.label
 
     if request.method == 'POST':
         if add_form.cn.data and add_form.validate():
@@ -1047,12 +1128,28 @@ def edit_group(branch, group_cn):
     return render_template('edit_group.html',
                            form=form,
                            page=page,
+                           dn=dn,
                            group_cn=group_cn,
                            fieldz=fieldz)
+
+@app.route('/delete_group/<branch>/<cn>')
+@login_required
+def delete_group(branch, cn):
+    if get_posix_group_memberz(cn):
+        flash(u'Le groupe n\'est pas vide.\nImpossible de supprimer le groupe.')
+    else:
+        dn = ldap.get_full_dn_from_cn(cn)
+        ldap.delete(dn)
+        flash(u'Groupe {0} supprimé'.format(cn))
+    return redirect(url_for('show_group',
+                            branch=branch,
+                            cn=cn))
+
 
 @app.route('/show_group/<branch>/<cn>')
 @login_required
 def show_group(branch, cn):
+    dn = ldap.get_full_dn_from_cn(cn)
     page = Page.query.filter_by(label = branch).first()
     page_fieldz = dict(
         (row.label.lower(), row)
@@ -1067,28 +1164,37 @@ def show_group(branch, cn):
                                 branch=branch))
     cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
     if branch == 'grCcc':
-        comite = C4Ressource.query.filter_by(code_projet = cn).first().comite.ct
-        # update_group_memberz_cines_c4(cn, comite)
+        comite = C4Ressource.query.filter_by(code_projet = cn).first().comite
+        code_personne = C4Projet.query.filter_by(
+            code_projet = cn).first().code_personne
+        manager = C4Personne.query.filter_by(
+            code_personne=code_personne).first()
+    else:
+        comite = None
+        manager = None
+        # update_group_memberz_cines_c4(cn, comite.ct)
     return render_template('show_group.html',
                            cn = cn,
+                           dn=dn,
                            cn_attributez=cn_attributez,
                            page_fieldz=page_fieldz,
                            branch=branch,
-                           comite=comite)
+                           comite=comite,
+                           manager=manager)
 
-@app.route('/delete_group/<cn>', methods=('GET', 'POST'))
-@login_required
-def delete_group(cn):
-    group_dn = ldap.get_full_dn_from_cn(cn)
-    ldap.delete(group_dn)
-    flash(u'Groupe {0} supprimé'.format(cn))
-    return redirect(url_for('home'))
+# @app.route('/delete_group/<cn>', methods=('GET', 'POST'))
+# @login_required
+# def delete_group(cn):
+#     group_dn = ldap.get_full_dn_from_cn(cn)
+#     ldap.delete(group_dn)
+#     flash(u'Groupe {0} supprimé'.format(cn))
+#     return redirect(url_for('home'))
 
 @app.route('/show_groups/<branch>')
 # @app.route('/show_groups/')
 @login_required
 def show_groups(branch):
-    print(branch)
+    # print(branch)
     groupz = [group.get_attributes()['cn'][0]
               for group in  get_posix_groupz(branch)]
     return render_template('show_groupz.html',
@@ -1893,6 +1999,16 @@ def populate_ldap_admin_choices(form):
                         if user.get_attributes()['uid'][0] not in memberz]
     form.available_memberz.choices = available_userz
     form.selected_memberz.choices = selected_memberz
+
+
+def get_c4_groupz_choices():
+    existing_groupz = [
+        group.get_attributes()['cn'][0] for group in get_all_groups()]
+    c4_projectz = C4Projet.query.all()
+    c4_groupz_choices = [(project.code_projet, project.code_projet)
+                         for project in c4_projectz
+                         if project.code_projet not in existing_groupz]
+    return c4_groupz_choices
 
 @app.before_first_request
 def init_populate_grouplist_redis():
