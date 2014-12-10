@@ -3,6 +3,9 @@
 
 {% block title %} Gestion de la soumission  {% endblock title %}
 {% block body %}
+
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+
 <form method="post" action="/edit_submission/{{ uid }}">
 
   <fieldset>

@@ -44,6 +44,9 @@
 {% endblock head_js %}
 
 {% block body %}
+
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+
 <form method="post" action="/edit_user/{{ page.label}}/{{ uid }}">
   {% for field in fieldz %}
     {% if 'FieldList' in get_type(get_attr(form, field.label)) %}

@@ -13,16 +13,17 @@ branch=branch,
 group_cn=cn)}}">Editer</a>
 <a href="{{ url_for(
    'delete_group',
+   branch=branch,
    cn=cn
    )}}">Supprimer</a>
 <br/>
+
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+
 {% for attr_name, attr_values in cn_attributez.iteritems() %}
 {% if attr_name in page_fieldz %}
-
 {% if page_fieldz[attr_name].display %}
-
 {{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :
-
 <ul>
 {% for value in attr_values %}
 <li>{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>

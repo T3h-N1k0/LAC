@@ -22,6 +22,7 @@
    storage_cn=storage_cn
    )}}">Supprimer le quota</a>
 <br/>
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
 <form method="post" action="/edit_quota/{{ storage_cn }}">
 {{ render_formfield(form.cinesQuotaSizeHard, class="quota-size") }}
 {{ render_formfield(form.cinesQuotaSizeSoft, class="quota-size") }}

@@ -7,6 +7,7 @@
 {% endblock head_js %}
 
 {% block body %}
+
 {% if session['admin'] or session['uid']==uid %}
 <a href="{{ url_for(
    'edit_user',
@@ -43,6 +44,8 @@
 {% endif %}
 <br/>
 
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+
 {% if submission_list %}
 Soumission
 <dl>
@@ -52,7 +55,6 @@ Soumission
 {% endfor %}
 </dl>
 {% endif %}
-
 <br/>
 {% if work_groupz %}
 <h3>Groupes de travail</h3>

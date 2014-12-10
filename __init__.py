@@ -570,6 +570,7 @@ def test(uid):
 @app.route('/show_user/<page>/<uid>')
 @login_required
 def show_user(page, uid):
+    dn = ldap.get_full_dn_from_uid(uid)
     page = Page.query.filter_by(label = page).first()
     page_fieldz = dict(
         (row.label.lower(), row)
@@ -588,10 +589,9 @@ def show_user(page, uid):
             uid_attributez['cinesSoumission'][0])
     else:
         submission_list = []
-
-    print('submission_list {0}'.format(submission_list))
     return render_template('show_user.html',
                            uid = uid,
+                           dn=dn,
                            uid_attributez=uid_attributez,
                            page_fieldz=page_fieldz,
                            is_active=is_active(uid_detailz),
@@ -988,6 +988,7 @@ def add_user(page_label=None,uid=None):
 @app.route('/edit_user/<page>/<uid>', methods=('GET', 'POST'))
 @login_required
 def edit_user(page,uid):
+    dn = ldap.get_full_dn_from_uid(uid)
     page = Page.query.filter_by(label=page).first()
     EditForm = generate_edit_user_form_class(page)
     form = EditForm(request.form)
@@ -1013,6 +1014,7 @@ def edit_user(page,uid):
                            form=form,
                            page=page,
                            uid=uid,
+                           dn=dn,
                            fieldz=fieldz)
 
 @app.route('/delete_user/<uid>', methods=('GET', 'POST'))
@@ -1108,6 +1110,7 @@ def add_group(page_label=None):
 @app.route('/edit_group/<branch>/<group_cn>', methods=('GET', 'POST'))
 @login_required
 def edit_group(branch, group_cn):
+    dn = ldap.get_full_dn_from_cn(group_cn)
     page = Page.query.filter_by(label=branch).first()
     form = generate_edit_group_form(page)
     fieldz = Field.query.filter_by(page_id = page.id,
@@ -1296,6 +1299,7 @@ def edit_by_group():
 @app.route('/edit_submission/<uid>', methods=('GET', 'POST'))
 @login_required
 def edit_submission(uid):
+    dn = ldap.get_full_dn_from_uid(uid)
     form = EditSubmissionForm(request.form)
     form.wrk_group.choices = [
         (group, group)
@@ -1320,6 +1324,7 @@ def edit_submission(uid):
 
     return render_template('edit_submission.html',
                            form=form,
+                           dn=dn,
                            uid=uid)
 
 @app.route('/edit_group_submission/', methods=('GET', 'POST'))
@@ -1382,6 +1387,7 @@ def edit_default_quota(storage_cn=None):
                        for storage in storagez]
 
     if storage_cn is not None:
+        dn = ldap.get_full_dn_from_cn(storage_cn)
         storage = get_default_storage(storage_cn).get_attributes()
         form = EditDefaultQuotaForm(request.form)
 
@@ -1391,6 +1397,7 @@ def edit_default_quota(storage_cn=None):
         set_default_quota_form_values(form, storage)
         return render_template('edit_default_quota.html',
                                form=form,
+                               dn=dn,
                                storage_cn=storage_cn)
 
     else:
@@ -1406,6 +1413,7 @@ def edit_quota(storage_cn=None):
                        for storage in storagez]
 
     if storage_cn is not None:
+        dn = ldap.get_full_dn_from_cn(storage_cn)
         storage = get_storage(storage_cn).get_attributes()
         form = EditQuotaForm(request.form)
 
@@ -1415,6 +1423,7 @@ def edit_quota(storage_cn=None):
         set_quota_form_values(form, storage)
         return render_template('edit_quota.html',
                                form=form,
+                               dn=dn,
                                storage_cn=storage_cn)
 
     else:
