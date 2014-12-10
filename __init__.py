@@ -965,6 +965,7 @@ def add_user(page_label=None,uid=None):
 
         if add_form.uid.data and add_form.validate():
             print("group from form {0}".format(add_form.ldap_object_type.data))
+            session['add_user_home_directory'] = add_form.home_directory.data
             set_edit_user_form_values(edit_form,fieldz)
             return render_template('add_user.html',
                                    page=page.label,
@@ -973,10 +974,13 @@ def add_user(page_label=None,uid=None):
                                    edit_form=edit_form)
 
         elif uid:
-            create_ldap_object_from_add_user_form(edit_form,
-                                                  fieldz_labelz,
-                                                  uid,
-                                                  page)
+            create_ldap_object_from_add_user_form(
+                edit_form,
+                fieldz_labelz,
+                uid,
+                page,
+                session['add_user_home_directory'])
+
             if app.config['PROD_FLAG']:
                 upsert_otrs_user(uid)
             return redirect(url_for('show_user',
@@ -2102,12 +2106,12 @@ def create_ldap_object_from_add_group_form(form):
                   ('fileSystem', [filesystem]),
                   ('objectClass', object_classes)]
 
-    print(add_record)
+    # print(add_record)
     if ldap.add(full_dn, add_record):
         flash(u'Groupe créé')
 
 
-def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
+def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page, home):
     ldap_ot = LDAPObjectType.query.filter_by(
         label=page.label
     ).first()
@@ -2122,7 +2126,8 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
         form_field_values = [entry.data.encode('utf-8')
                              for entry in getattr(form, field_label).entries]
         print('form_field_values : {0}'.format(form_field_values))
-        form_attributez.append((field_label, form_field_values))
+        if field_label != 'cinesUserToPurge':
+            form_attributez.append((field_label, form_field_values))
 
     uid_number = get_next_id_from_ldap_ot(ldap_ot)
     add_record = [('uid', [uid.encode('utf-8')]),
@@ -2130,6 +2135,8 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
                   ('objectClass', ot_oc_list)]
 
     add_record.extend(form_attributez)
+    add_record.append(
+        ('homeDirectory', [home.encode('utf-8')]))
 
     if 'cinesusr' in ot_oc_list:
         add_record.append(
@@ -2924,9 +2931,14 @@ def get_people_group_memberz(group):
     attributes=['uid']
     base_dn='ou={0},ou=people,{1}'.format(group,app.config['LDAP_SEARCH_BASE'])
 
-    records = ldaphelper.get_search_results(
-        ldap.admin_search(base_dn,ldap_filter,attributes)
-    )
+    raw_result = ldap.admin_search(base_dn,ldap_filter,attributes)
+    if raw_result:
+        records = ldaphelper.get_search_results(
+            raw_result
+        )
+    else:
+        return None
+
     memberz = [ member.get_attributes()['uid'][0] for member in records]
     return memberz
 
