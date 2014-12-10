@@ -76,37 +76,52 @@ class EditGroupSubmissionForm(Form):
 class SizeQuotaForm(Form):
     value = TextField('Valeur')
     unit = SelectField(u'Unité',
-                       choices=[(1, 'ko'), (1000, 'Mo'), (1000000, 'Go')],
+                       choices=[(1, 'Ko'),
+                                (1000, 'Mo'),
+                                (1000000, 'Go'),
+                                (1000000000, 'Po')],
                        default=1000,
                        coerce=int)
 
 class InodeQuotaForm(Form):
     value = TextField('Valeur')
     unit = SelectField(u'Unité',
-                       choices=[(1000000, 'Million'), (1000000000, 'Milliard')],
-                       default=1000000,
+                       choices=[(1000, 'Millier'),(1000000, 'Million'), (1000000000, 'Milliard')],
+                       default=1000,
                        coerce=int)
 
 
 class EditDefaultQuotaForm(Form):
-    cinesQuotaSizeHard = FormField(SizeQuotaForm)
-    cinesQuotaSizeSoft = FormField(SizeQuotaForm)
-    cinesQuotaInodeHard = FormField(InodeQuotaForm)
-    cinesQuotaInodeSoft = FormField(InodeQuotaForm)
+    cinesQuotaSizeHard = FormField(SizeQuotaForm,
+                                   label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
+    cinesQuotaSizeSoft = FormField(SizeQuotaForm,
+                                    label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
+    cinesQuotaInodeHard = FormField(InodeQuotaForm,
+                                    label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
+    cinesQuotaInodeSoft = FormField(InodeQuotaForm,
+                                    label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
 
 class EditQuotaForm(Form):
-    cinesQuotaSizeHard = FormField(SizeQuotaForm)
-    cinesQuotaSizeSoft = FormField(SizeQuotaForm)
-    cinesQuotaInodeHard = FormField(InodeQuotaForm)
-    cinesQuotaInodeSoft = FormField(InodeQuotaForm)
-    cinesQuotaSizeHardTemp = FormField(SizeQuotaForm)
-    cinesQuotaSizeSoftTemp = FormField(SizeQuotaForm)
+    cinesQuotaSizeHard = FormField(SizeQuotaForm,
+                                   label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
+    cinesQuotaSizeSoft = FormField(SizeQuotaForm,
+                                    label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
+    cinesQuotaInodeHard = FormField(InodeQuotaForm,
+                                    label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
+    cinesQuotaInodeSoft = FormField(InodeQuotaForm,
+                                    label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
+    cinesQuotaSizeHardTemp = FormField(SizeQuotaForm,
+                                       label=u'Valeur temporaire de quota (taille) maximale avant blocage écriture (cinesQuotaSizeHardTemp)')
+    cinesQuotaSizeSoftTemp = FormField(SizeQuotaForm,
+                                       label=u'Valeur temporaire de quota (taille) maximale avant avertissement (cinesQuotaSizeSoftTemp)')
     cinesQuotaSizeTempExpire = DateField(
-        u'Date d\'expiration pour cinesQuotaSizeSoftTemp')
-    cinesQuotaInodeHardTemp = FormField(InodeQuotaForm)
-    cinesQuotaInodeSoftTemp = FormField(InodeQuotaForm)
+        label=u'Date expiration du quota temporaire (cinesQuotaSizeTempExpire)')
+    cinesQuotaInodeHardTemp = FormField(InodeQuotaForm,
+                                        label=u'Valeur temporaire de quota (nombre inodes) maximale avant blocage ecriture (cinesQuotaInodeHardTemp)')
+    cinesQuotaInodeSoftTemp = FormField(InodeQuotaForm,
+                                        label=u'Valeur temporaire de quota (nombre inodes) maximale avant avertissement (cinesQuotaInodeSoftTemp)')
     cinesQuotaInodeTempExpire = DateField(
-        u'Date d\'expiration pour cinesQuotaInodeSoftTemp')
+        label=u'Date expiration du quota temporaire (cinesQuotaInodeTempExpire)')
 
 class UserzFileForm(Form):
     userz_file = FileField('Fichier contenant les logins utilisateur')

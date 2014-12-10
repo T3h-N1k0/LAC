@@ -1370,6 +1370,15 @@ def add_quota():
 
     return render_template('add_quota.html', form=form)
 
+
+@app.route('/delete_quota/<storage_cn>')
+@login_required
+def delete_quota(storage_cn):
+    storage_dn = ldap.get_full_dn_from_cn(storage_cn)
+    ldap.delete(storage_dn)
+    flash(u'Quota {0} supprimé'.format(storage_cn))
+    return redirect(url_for('edit_quota'))
+
 @app.route('/get_backup_file/<userz>/<attributez>')
 @login_required
 def get_backup_file(userz, attributez):
@@ -1775,16 +1784,24 @@ def set_quota_form_values(form, storage):
     default_storage = get_default_storage(default_storage_cn).get_attributes()
     date_now = datetime.now()
     cinesQuotaSizeHard = int(
-        storage['cinesQuotaSizeHard'][0]
+        storage['cinesQuotaSizeHard'][0] if
+        'cinesQuotaSizeHard' in storage
+        else default_storage['cinesQuotaSizeHard'][0]
     ) / default_size_unit
     cinesQuotaSizeSoft = int(
-        storage['cinesQuotaSizeSoft'][0]
+        storage['cinesQuotaSizeSoft'][0] if
+        'cinesQuotaSizeSoft' in storage
+        else default_storage['cinesQuotaSizeSoft'][0]
     ) / default_size_unit
     cinesQuotaInodeHard = int(
-        storage['cinesQuotaInodeHard'][0]
+        storage['cinesQuotaInodeHard'][0] if
+        'cinesQuotaInodeHard' in storage
+        else default_storage['cinesQuotaInodeHard'][0]
     ) / default_inode_unit
     cinesQuotaInodeSoft = int(
-        storage['cinesQuotaInodeSoft'][0]
+        storage['cinesQuotaInodeSoft'][0] if
+        'cinesQuotaInodeSoft' in storage
+        else default_storage['cinesQuotaInodeSoft'][0]
     ) / default_inode_unit
     cinesQuotaSizeHardTemp = str(int(
         storage['cinesQuotaSizeHardTemp'][0] if

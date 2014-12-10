@@ -4,21 +4,35 @@
 {% block title %} Gestion des quotas {% endblock title %}
 
 {% block head_js %}
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='quota.js')
+         }}"></script>
+
 {% endblock head_js %}
 
 {% block body %}
 {% if form %}
+<a href="{{ url_for(
+   'delete_quota',
+   storage_cn=storage_cn
+   )}}">Supprimer le quota</a>
+<br/>
 <form method="post" action="/edit_quota/{{ storage_cn }}">
-{{ render_formfield(form.cinesQuotaSizeHard) }}
-{{ render_formfield(form.cinesQuotaSizeSoft) }}
-{{ render_formfield(form.cinesQuotaInodeHard) }}
-{{ render_formfield(form.cinesQuotaInodeSoft) }}
-{{ render_formfield(form.cinesQuotaSizeHardTemp) }}
-{{ render_formfield(form.cinesQuotaSizeSoftTemp) }}
-{{ render_formfield(form.cinesQuotaSizeTempExpire) }}
-{{ render_formfield(form.cinesQuotaInodeHardTemp) }}
-{{ render_formfield(form.cinesQuotaInodeSoftTemp) }}
-{{ render_formfield(form.cinesQuotaInodeTempExpire) }}
+{{ render_formfield(form.cinesQuotaSizeHard, class="quota-size") }}
+{{ render_formfield(form.cinesQuotaSizeSoft, class="quota-size") }}
+{{ render_formfield(form.cinesQuotaInodeHard, class="quota-inode") }}
+{{ render_formfield(form.cinesQuotaInodeSoft, class="quota-inode") }}
+{{ render_formfield(form.cinesQuotaSizeHardTemp, class="quota-size") }}
+{{ render_formfield(form.cinesQuotaSizeSoftTemp, class="quota-size") }}
+{{ render_formfield(form.cinesQuotaSizeTempExpire, class="quota-inode") }}
+{{ render_formfield(form.cinesQuotaInodeHardTemp, class="quota-size") }}
+{{ render_formfield(form.cinesQuotaInodeSoftTemp, class="quota-size") }}
+{{ render_formfield(form.cinesQuotaInodeTempExpire, class="quota-inode") }}
 
 <input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
 {% else %}

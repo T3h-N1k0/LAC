@@ -1,6 +1,6 @@
-{% macro render_formfield(field) %}
+{% macro render_formfield(field, class) %}
   <dt>{{ field.label }}</dt>
-  <dd>{{ field(**kwargs)|safe }}
+  <dd>{{ field(class_=class)|safe }}
   {% if field.errors %}
     <ul class=errors>
     {% for error in field.errors %}
