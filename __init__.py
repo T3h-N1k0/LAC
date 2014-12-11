@@ -4,7 +4,7 @@ from flask.ext.ldap import LDAP, login_required, admin_login_required
 from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug import secure_filename
 #from flask_bootstrap import Bootstrap
-from sqlalchemy import Table, Column, Integer, ForeignKey
+from sqlalchemy import Table, Column, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField
@@ -409,16 +409,28 @@ class C4Projet(db.Model):
     code_personne = db.Column(db.Integer,
                               db.ForeignKey('PERSONNE.code_personne'))
     intitule_projet = db.Column(db.String(50))
+
     # ressources = db.relationship('C4Ressource',
     #                              backref='projet',
     #                              lazy='dynamic',
     #                              uselist=False)
 
 
-# class C4IBM(db.Model):
-#     __bind_key__ = 'gescpt'
-#     __tablename__ = 'IBM{0}'.format(datetime.now().strftime('%Y'))
-#     grpunix = db.Column(db.String(255))
+class C4SGI(db.Model):
+    __bind_key__ = 'gescpt'
+    __tablename__ = 'SGI{0}'.format(datetime.now().strftime('%Y'))
+    grpunix = db.Column(db.String(255), primary_key=True)
+    walltime = db.Column(db.Float())
+    nbcoeurs = db.Column(db.Integer)
+
+
+class C4IBM(db.Model):
+    __bind_key__ = 'gescpt'
+    __tablename__ = 'IBM{0}'.format(datetime.now().strftime('%Y'))
+    grpunix = db.Column(db.String(255), primary_key=True)
+    walltime = db.Column(db.Float())
+    nbcoeurs = db.Column(db.Integer)
+
 
 ### Routez
 
@@ -1171,14 +1183,26 @@ def show_group(branch, cn):
                                 branch=branch))
     cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
     if branch == 'grCcc':
-        comite = C4Ressource.query.filter_by(code_projet = cn).first().comite
+        ressource = C4Ressource.query.filter_by(code_projet = cn).first()
         code_personne = C4Projet.query.filter_by(
             code_projet = cn).first().code_personne
         manager = C4Personne.query.filter_by(
             code_personne=code_personne).first()
+        sgi_computed = db.session.query(
+            func.sum(C4SGI.walltime * C4SGI.nbcoeurs) / 3600
+        ).filter_by(grpunix=cn).group_by(C4SGI.grpunix).first()
+        ibm_computed = db.session.query(
+            func.sum(C4IBM.walltime * C4IBM.nbcoeurs) / 3600
+        ).filter_by(grpunix=cn).group_by(C4IBM.grpunix).first()
+        if ibm_computed:
+            ibm_computed = int(ibm_computed[0])
+        if sgi_computed:
+            sgi_computed = int(sgi_computed[0])
     else:
-        comite = None
+        ressource = None
         manager = None
+        sgi_computed = None
+        ibm_computed = None
         # update_group_memberz_cines_c4(cn, comite.ct)
     return render_template('show_group.html',
                            cn = cn,
@@ -1186,8 +1210,10 @@ def show_group(branch, cn):
                            cn_attributez=cn_attributez,
                            page_fieldz=page_fieldz,
                            branch=branch,
-                           comite=comite,
-                           manager=manager)
+                           ressource=ressource,
+                           manager=manager,
+                           sgi_computed=sgi_computed,
+                           ibm_computed=ibm_computed)
 
 # @app.route('/delete_group/<cn>', methods=('GET', 'POST'))
 # @login_required
