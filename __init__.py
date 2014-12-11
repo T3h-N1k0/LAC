@@ -1422,13 +1422,14 @@ def edit_quota(storage_cn=None):
         form = EditQuotaForm(request.form)
 
         if request.method == 'POST' and form.validate():
-            update_quota(storage_cn, form)
+            update_quota(storage, form)
             return redirect(url_for('home'))
-        set_quota_form_values(form, storage)
+        default_fieldz = set_quota_form_values(form, storage)
         return render_template('edit_quota.html',
                                form=form,
                                dn=dn,
-                               storage_cn=storage_cn)
+                               storage_cn=storage_cn,
+                               default_fieldz=default_fieldz)
 
     else:
         return render_template('edit_quota.html',
@@ -1894,54 +1895,73 @@ def set_default_quota_form_values(form, storage):
     form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard
     form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft
 
-def set_quota_form_values(form, storage):
+def get_default_quota_form_value(storage, default_storage, form, field_name):
     default_inode_unit = form.cinesQuotaInodeHardTemp.unit.default
     default_size_unit = form.cinesQuotaSizeHardTemp.unit.default
-    # default_storage_cn = get_default_storage_cn(storage['cn'][0])
-    default_storage_cn = storage['cn'][0].split('.')[0]
 
+    if field_name in storage:
+        stored_value = storage[field_name][0]
+        default = False
+    else:
+        stored_value = default_storage[
+            app.config['QUOTA_FIELDZ'][field_name]['default']
+        ][0]
+        default = True
+
+    display_value = int(stored_value) / (
+        default_size_unit if app.config[
+            'QUOTA_FIELDZ'][field_name]['type'] == 'size'
+        else default_inode_unit
+    )
+
+    return (display_value, default)
+
+def set_quota_form_values(form, storage):
+    default_storage_cn = storage['cn'][0].split('.')[0]
     default_storage = get_default_storage(default_storage_cn).get_attributes()
     date_now = datetime.now()
-    cinesQuotaSizeHard = int(
-        storage['cinesQuotaSizeHard'][0] if
-        'cinesQuotaSizeHard' in storage
-        else default_storage['cinesQuotaSizeHard'][0]
-    ) / default_size_unit
-    cinesQuotaSizeSoft = int(
-        storage['cinesQuotaSizeSoft'][0] if
-        'cinesQuotaSizeSoft' in storage
-        else default_storage['cinesQuotaSizeSoft'][0]
-    ) / default_size_unit
-    cinesQuotaInodeHard = int(
-        storage['cinesQuotaInodeHard'][0] if
-        'cinesQuotaInodeHard' in storage
-        else default_storage['cinesQuotaInodeHard'][0]
-    ) / default_inode_unit
-    cinesQuotaInodeSoft = int(
-        storage['cinesQuotaInodeSoft'][0] if
-        'cinesQuotaInodeSoft' in storage
-        else default_storage['cinesQuotaInodeSoft'][0]
-    ) / default_inode_unit
-    cinesQuotaSizeHardTemp = str(int(
-        storage['cinesQuotaSizeHardTemp'][0] if
-        'cinesQuotaSizeHardTemp' in storage
-        else default_storage['cinesQuotaSizeHard'][0]
-    ) / default_size_unit)
-    cinesQuotaSizeSoftTemp = str(int(
-        storage['cinesQuotaSizeSoftTemp'][0]if
-        'cinesQuotaSizeSoftTemp' in storage
-        else default_storage['cinesQuotaSizeSoft'][0]
-    ) / default_size_unit)
-    cinesQuotaInodeHardTemp = str(int(
-        storage['cinesQuotaInodeHardTemp'][0]if
-        'cinesQuotaInodeHardTemp' in storage
-        else default_storage['cinesQuotaInodeHard'][0]
-    ) / default_inode_unit)
-    cinesQuotaInodeSoftTemp = str(int(
-        storage['cinesQuotaInodeSoftTemp'][0]if
-        'cinesQuotaInodeSoftTemp' in storage
-        else default_storage['cinesQuotaInodeSoft'][0]
-    ) / default_inode_unit)
+
+    default_fieldz = []
+    cinesQuotaSizeHard = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaSizeHard')
+    cinesQuotaSizeSoft = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaSizeSoft')
+    cinesQuotaInodeHard = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaInodeHard')
+    cinesQuotaInodeSoft = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaInodeSoft')
+    cinesQuotaSizeHardTemp = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaSizeHardTemp')
+    cinesQuotaSizeSoftTemp = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaSizeSoftTemp')
+    cinesQuotaInodeHardTemp = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaInodeHardTemp')
+    cinesQuotaInodeSoftTemp = get_default_quota_form_value(
+        storage,
+        default_storage,
+        form,
+        'cinesQuotaInodeSoftTemp')
     cinesQuotaSizeTempExpire = datetime.fromtimestamp(
         float(storage['cinesQuotaSizeTempExpire'][0])
     ) if 'cinesQuotaSizeTempExpire' in storage else date_now
@@ -1949,19 +1969,34 @@ def set_quota_form_values(form, storage):
         float(storage['cinesQuotaInodeTempExpire'][0])
     ) if 'cinesQuotaInodeTempExpire' in storage else date_now
 
-    # print('cinesQuotaSizeTempExpire {0}'.format(
-    #     cinesQuotaSizeTempExpire))
-
-    form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard
-    form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft
-    form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard
-    form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft
-    form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp
-    form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp
-    form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp
-    form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp
+    form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard[0]
+    form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft[0]
+    form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard[0]
+    form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft[0]
+    form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp[0]
+    form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp[0]
+    form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp[0]
+    form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp[0]
     form.cinesQuotaSizeTempExpire.data = cinesQuotaSizeTempExpire
     form.cinesQuotaInodeTempExpire.data = cinesQuotaInodeTempExpire
+    if cinesQuotaSizeHard[1]:
+        default_fieldz.append('cinesQuotaSizeHard')
+    if cinesQuotaSizeSoft[1]:
+        default_fieldz.append('cinesQuotaSizeSoft')
+    if cinesQuotaInodeHard[1]:
+        default_fieldz.append('cinesQuotaInodeHard')
+    if cinesQuotaInodeSoft[1]:
+        default_fieldz.append('cinesQuotaInodeSoft')
+    if cinesQuotaSizeHardTemp[1]:
+        default_fieldz.append('cinesQuotaSizeHardTemp')
+    if cinesQuotaSizeSoftTemp[1]:
+        default_fieldz.append('cinesQuotaSizeSoftTemp')
+    if cinesQuotaInodeHardTemp[1]:
+         default_fieldz.append('cinesQuotaInodeHardTemp')
+    if cinesQuotaInodeSoftTemp[1]:
+        default_fieldz.append('cinesQuotaInodeSoftTemp')
+
+    return default_fieldz
 
 def disable_account(user):
     user_attr = user.get_attributes()
@@ -3210,57 +3245,41 @@ def get_quota_value_from_form(form, quota):
     ).encode('utf-8')
     return value
 
-def update_quota(storage_cn, form):
-    cinesQuotaSizeHard = get_quota_value_from_form(
-        form,
-        'cinesQuotaSizeHard')
-    cinesQuotaSizeSoft = get_quota_value_from_form(
-        form,
-        'cinesQuotaSizeSoft')
-    cinesQuotaInodeHard = get_quota_value_from_form(
-        form,
-        'cinesQuotaInodeHard')
-    cinesQuotaInodeSoft = get_quota_value_from_form(
-        form,
-        'cinesQuotaInodeSoft')
-    cinesQuotaSizeHardTemp = get_quota_value_from_form(
-        form,
-        'cinesQuotaSizeHardTemp')
-    cinesQuotaSizeSoftTemp = get_quota_value_from_form(
-        form,
-        'cinesQuotaSizeSoftTemp')
-    cinesQuotaInodeHardTemp = get_quota_value_from_form(
-        form,
-        'cinesQuotaInodeHardTemp')
-    cinesQuotaInodeSoftTemp = get_quota_value_from_form(
-        form,
-        'cinesQuotaInodeSoftTemp')
-    pre_modlist = [('cinesQuotaSizeHard',
-                    cinesQuotaSizeHard),
-                   ('cinesQuotaSizeSoft',
-                    cinesQuotaSizeSoft),
-                   ('cinesQuotaInodeHard',
-                    cinesQuotaInodeHard),
-                   ('cinesQuotaInodeSoft',
-                    cinesQuotaInodeSoft),
-                   ('cinesQuotaSizeHardTemp',
-                    cinesQuotaSizeHardTemp),
-                   ('cinesQuotaSizeSoftTemp',
-                    cinesQuotaSizeSoftTemp),
-                   ('cinesQuotaInodeHardTemp',
-                    cinesQuotaInodeHardTemp),
-                   ('cinesQuotaInodeSoftTemp',
-                    cinesQuotaInodeSoftTemp),
-                   ('cinesQuotaSizeTempExpire',
-                    datetime_to_timestamp(
-                        form.cinesQuotaSizeTempExpire.data
-                    ).encode('utf-8')),
-                   ('cinesQuotaInodeTempExpire',
-                    datetime_to_timestamp(
-                        form.cinesQuotaInodeTempExpire.data
-                    ).encode('utf-8'))
-    ]
-    ldap.update_cn_attribute(storage_cn, pre_modlist)
+def update_quota(storage, form):
+    default_storage_cn = storage['cn'][0].split('.')[0]
+    default_storage = get_default_storage(default_storage_cn).get_attributes()
+
+    pre_modlist = []
+
+    for field_name in app.config['QUOTA_FIELDZ']:
+        form_value = get_quota_value_from_form(
+            form,
+            field_name)
+        default_field = app.config['QUOTA_FIELDZ'][field_name]['default']
+        if (
+                form_value != default_storage[default_field][0]
+                and (field_name not in storage
+                     or  form_value != storage[field_name][0])
+        ):
+            print('form_value : {0} field_name : {1}  default_storage[default_field] : {2}'.format(form_value, field_name,  default_storage[default_field]))
+            pre_modlist.append((field_name, form_value))
+
+
+    cinesQuotaSizeTempExpire = datetime_to_timestamp(
+        form.cinesQuotaSizeTempExpire.data
+    ).encode('utf-8')
+    if cinesQuotaSizeTempExpire != storage['cinesQuotaSizeTempExpire']:
+        pre_modlist.append(('cinesQuotaSizeTempExpire',
+                            cinesQuotaSizeTempExpire))
+
+    cinesQuotaInodeTempExpire = datetime_to_timestamp(
+        form.cinesQuotaInodeTempExpire.data
+    ).encode('utf-8')
+
+    if cinesQuotaInodeTempExpire != storage['cinesQuotaInodeTempExpire']:
+        pre_modlist.append(('cinesQuotaInodeTempExpire',
+                            cinesQuotaInodeTempExpire))
+    ldap.update_cn_attribute(storage['cn'][0], pre_modlist)
 
 def update_group_memberz_cines_c4(group, comite):
     memberz_uid = get_posix_group_memberz(group)

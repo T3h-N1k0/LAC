@@ -24,16 +24,40 @@
 <br/>
 <div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
 <form method="post" action="/edit_quota/{{ storage_cn }}">
-{{ render_formfield(form.cinesQuotaSizeHard, class="quota-size") }}
-{{ render_formfield(form.cinesQuotaSizeSoft, class="quota-size") }}
-{{ render_formfield(form.cinesQuotaInodeHard, class="quota-inode") }}
-{{ render_formfield(form.cinesQuotaInodeSoft, class="quota-inode") }}
-{{ render_formfield(form.cinesQuotaSizeHardTemp, class="quota-size") }}
-{{ render_formfield(form.cinesQuotaSizeSoftTemp, class="quota-size") }}
-{{ render_formfield(form.cinesQuotaSizeTempExpire, class="quota-inode") }}
-{{ render_formfield(form.cinesQuotaInodeHardTemp, class="quota-size") }}
-{{ render_formfield(form.cinesQuotaInodeSoftTemp, class="quota-size") }}
-{{ render_formfield(form.cinesQuotaInodeTempExpire, class="quota-inode") }}
+{{ render_formfield(
+  form.cinesQuotaSizeHard,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaSizeHard' in default_fieldz else "")) }}
+{{ render_formfield(
+  form.cinesQuotaSizeSoft,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaSizeSoft' in default_fieldz else "")) }}
+{{ render_formfield(
+  form.cinesQuotaInodeHard,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaInodeHard' in default_fieldz else "")) }}
+{{ render_formfield(
+  form.cinesQuotaInodeSoft,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaInodeSoft' in default_fieldz else "")) }}
+{{ render_formfield(
+  form.cinesQuotaSizeHardTemp,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaSizeHardTemp' in default_fieldz else "")) }}
+{{ render_formfield(
+  form.cinesQuotaSizeSoftTemp,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaSizeSoftTemp' in default_fieldz else "")) }}
+{{ render_formfield(form.cinesQuotaSizeTempExpire) }}
+{{ render_formfield(
+  form.cinesQuotaInodeHardTemp,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaInodeHardTemp' in default_fieldz else "")) }}
+{{ render_formfield(
+  form.cinesQuotaInodeSoftTemp,
+  class="quota-size{0}".format(
+  " default-value" if 'cinesQuotaInodeSoftTemp' in default_fieldz else "")) }}
+{{ render_formfield(form.cinesQuotaInodeTempExpire) }}
 
 <input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
 {% else %}
