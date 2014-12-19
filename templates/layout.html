@@ -1,37 +1,146 @@
-<!doctype html>
-<html>
+{% block doc -%}
+<!DOCTYPE html>
+<html{% block html_attribs %}{% endblock html_attribs %}>
+{%- block html %}
   <head>
-    {% block head %}
-    <title>LAC - LDAP Au CINES - {% block title %} {% endblock title %} </title>
-    {% block head_js %}
-    {% endblock head_js %}
+    {%- block head %}
+    <title>LAC - LDAP Au CINES - {% block title %}{% endblock title %}</title>
 
-    {% endblock head %}
+    {%- block metas %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {%- endblock metas %}
 
+    {%- block styles %}
+    <!-- Bootstrap -->
+    <link href="{{bootstrap_find_resource('css/bootstrap.css', cdn='bootstrap')}}" rel="stylesheet" media="screen">
+    {%- endblock styles %}
+
+    <script src="{{bootstrap_find_resource('jquery.js', cdn='jquery')}}"></script>
+    <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
+
+    {%- block head_js %}
+
+    {%- endblock head_js %}
+
+    {%- endblock head %}
   </head>
+  <body{% block body_attribs %}{% endblock body_attribs %}>
+    <div class="container">
 
-  <body>
-    <div class=metanav>
-      {% if not session.logged_in %}
-      <a href="{{ url_for('login') }}">Se connecter</a>
-      {% else %}
-      Connecté en tant que "{{ session['uid']}}"   <a href="{{ url_for('logout') }}">Déconnecter</a>  <a href="{{ url_for('home') }}">Accueil</a>
+      {% if session['logged_in'] %}
+      <nav class="nav navbar-default navbar-static-top " role="navigation">
+
+        <div class="navbar-header">
+        <a class="navbar-brand" href="{{ url_for('home')}}">{{ session['uid']}}</a>
+        </div>
+        <ul class="nav navbar-nav">
+          <li class="dropdown">
+            <a data-toggle="dropdown" href="#">Utilisateurs<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="{{ url_for('search_user')}}">Chercher un compte</a></li>
+              <li><a href="{{ url_for('add_user')}}">Ajouter un compte</a></li>
+              <li><a href="{{ url_for(
+   'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a data-toggle="dropdown" href="#">Groupes<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="#">Chercher un groupe</a></li>
+              <li><a href="{{ url_for(
+   'edit_group_submission')}}">Editer la soumission par groupe(s)</a></li>
+              <li><a href="{{ url_for(
+   'edit_by_group')}}">Editer un/des attribut(s) par groupe(s)</a></li>
+            </ul>
+          </li>
+
+          <li class="dropdown">
+            <a data-toggle="dropdown" href="#">Mon compte<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="{{ url_for(
+                     'change_password',
+                     uid=session['uid'])}}">Changer mon mot de passe</a></li>
+              <li><a href="{{ url_for(
+                     'show_user',
+                     page=get_group_from_member_uid(session['uid']),
+                     uid=session['uid'])}}">Détails de mon compte</a></li>
+              <li><a href="{{ url_for('logout')}}">Déconnecter</a></li>
+            </ul>
+          </li>
+
+
+          <li class="dropdown">
+            <a data-toggle="dropdown" href="#">Autres<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li class="dropdown-header">Quotas</li>
+              <li><a href="{{ url_for('edit_quota')}}">Quotas spécifiques</a> </li>
+              <li><a href="{{ url_for('edit_default_quota')}}">Quotas par defaut</a></li>
+              <li class="divider"></li>
+              <li><a href="{{ url_for('show_filesystems')}}">Systèmes de fichier</a></li>
+            </ul>
+
+          </li>
+          {% if session['admin'] %}
+          <li class="dropdown">
+            <a data-toggle="dropdown" href="#">Administration<b class="caret"></b></a>
+            <ul class="dropdown-menu">
+              <li><a href="{{ url_for(
+                 'edit_page')}}">Gérer les vues</a></li>
+              <li><a href="{{ url_for(
+                 'add_page')}}">Ajouter une vue</a></li>
+              <li><a href="{{ url_for(
+                 'show_ppolicies')}}">Gérer les ppolicies</a></li>
+              <li><a href="{{ url_for(
+                 'add_ppolicy')}}">Ajouter une ppolicy</a></li>
+              <li><a href="{{ url_for(
+                 'show_ldap_object_types')}}">Gérer les types d'objets LDAP</a></li>
+              <li><a href="{{ url_for(
+                 'add_ldap_object_type')}}">Ajouter un type d'objet LDAP</a></li>
+              <li><a href="{{ url_for(
+                 'show_shells')}}">Gérer les types de shell</a></li>
+              <li><a href="{{ url_for(
+                 'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a></li>
+            </ul>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
       {% endif %}
-      <div style="background-color: {{ 'red' if config['PROD_FLAG'] else 'green' }}">
-        {{ config['LDAP_HOST'] }}
-      </div>
+      <br>
+      <br>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <ul class='flashes list-unstyled'>
+        {% for category, message in messages %}
+        {% if category == 'message' %}
+        <li class="alert alert-info">{{ message }}</li>
+        {% elif category == 'success' %}
+        <li class="alert alert-success">{{ message }}</li>
+        {% elif category == 'warning' %}
+        <li class="alert alert-warning">{{ message }}</li>
+        {% elif category == 'error' %}
+        <li class="alert alert-danger">{{ message }}</li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% endwith %}
+
+      {% block body -%}
+
+      {% block navbar %}
+      {%- endblock navbar %}
+      {% block content -%}
+      {%- endblock content %}
+
+
+      {% block scriptz %}
+
+      {%- endblock scriptz %}
+      {%- endblock body %}
     </div>
-    {% with messages = get_flashed_messages() %}
-    {% if messages %}
-    <ul class=flashes>
-      {% for message in messages %}
-      <li>{{ message }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-    {% endwith %}
-
-    {% block body %}{% endblock body %}
-
   </body>
+{%- endblock html %}
 </html>
+{% endblock doc -%}

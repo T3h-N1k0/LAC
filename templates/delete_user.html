@@ -1,17 +1,27 @@
 {% from "_formhelpers.html" import render_formfield, render_fieldlist %}
 {% extends "layout.html" %}
 
-{% block title %} Création d'un utilisateur {% endblock title %}
+{% block title %} Suppression de l'utilisateur {{ uid }}{% endblock title %}
 {% block body %}
-{% if groupz  %}
-Attention, l'utilisateur sera supprimé des groupes suivants :
-{% for group in groupz %}
-<br/>
-{{ group }}
-{% endfor %}
-{% endif %}
-<form method="post" action="/delete_user/{{ uid }}">
-  <input id="update" type="submit" value="Supprimer l'utilisateur" >
-</form>
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+  <header class="row text-center">
+    <h2>Suppression de l'utilisateur {{ uid }}</h2>
+  </header>
+  <section class="row text-center">
+    {% if groupz  %}
+    <div class="alert alert-warning col-lg-offset-3 col-lg-6">
+      Attention, l'utilisateur sera supprimé des groupes suivants :
+      {% for group in groupz %}
+      <br/>
+      {{ group[0] }}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+  <section class="row text-center">
+    <form method="post" action="/delete_user/{{ uid }}">
+      <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-minus-sign"> Supprimer</button>
+    </form>
+  </section>
 
 {% endblock body %}

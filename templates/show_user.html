@@ -3,90 +3,112 @@
 
 {% block title %} Détails pour le compte {{ uid }} {% endblock title %}
 
-{% block head_js %}
-{% endblock head_js %}
 
 {% block body %}
+<header class="row text-center">
+  <h2>Détails pour le compte {{ uid }}</h2>
+</header>
 
-{% if session['admin'] or session['uid']==uid %}
-<a href="{{ url_for(
-   'edit_user',
-   page=get_group_from_member_uid(uid),
-   uid=uid
-   )}}">Editer</a>
+<section class="row">
+  <div class="col-sm-6">
+    <!-- <h4>Attributs</h4> -->
+    {% for attr_name, attr_values in uid_attributez.iteritems() %}
+    {% if attr_name in page_fieldz %}
+    {% if page_fieldz[attr_name].display %}
 
-<a href="{{ url_for(
-   'change_password',
-   uid=uid
-   )}}">Gérer le mot de passe</a>
-<a href="{{ url_for(
-   'edit_submission',
-   uid=uid
-   )}}">Gérer la soumission</a>
-<br/>
-<a href="{{ url_for(
-   'delete_user',
-   uid=uid
-   )}}">Supprimer l'utilisateur</a>
-<br/>
-<a href="{{ url_for(
-   'select_work_groups',
-   uid=uid
-   )}}">Gérer les groupes de travail</a>
-<br/>
-{% endif %}
-{% if session['admin'] %}
-<a href="{{ url_for(
-   'toggle_account',
-   uid=uid
-   )}}">
-{% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
-{% endif %}
-<br/>
+    <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
 
-<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+    <ul class="list-group">
+      {% for value in attr_values %}
+      <li class="list-group-item">{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+  </div>
 
-{% if submission_list %}
-Soumission
-<dl>
-{% for group in submission_list %}
-<dt>{{ group[0]}}</dt>
-<dd>{% if group[1] == '1' %}Oui{% else %}Non{% endif %}</dd>
-{% endfor %}
-</dl>
-{% endif %}
-<br/>
-{% if work_groupz %}
-<h3>Groupes de travail</h3>
-{% for group in work_groupz %}
-{{ group }}
-{% endfor %}
-{% endif %}
+  <div class="col-sm-offset-2 col-sm-4" >
 
-<br/>
-{% if sec_groupz %}
-<h3>Groupes secondaires</h3>
-{% for group in sec_groupz %}
-{{ group }}
-{% endfor %}
-{% endif %}
+    <aside class="row">
+      <div id='dn'> Nom LDAP : {{ dn }}</div>
+      <h4>Actions</h4>
+      {% if session['admin'] or session['uid']==uid %}
+      <a href="{{ url_for(
+         'edit_user',
+         page=get_group_from_member_uid(uid),
+         uid=uid
+         )}}">Editer</a>
+      <br/>
+      <a href="{{ url_for(
+         'change_password',
+         uid=uid
+         )}}">Gérer le mot de passe</a>
+      <br/>
+      <a href="{{ url_for(
+         'edit_submission',
+         uid=uid
+         )}}">Gérer la soumission</a>
+      <br/>
+      <a href="{{ url_for(
+         'delete_user',
+         uid=uid
+         )}}">Supprimer l'utilisateur</a>
+      <br/>
+      <a href="{{ url_for(
+         'select_work_groups',
+         uid=uid
+         )}}">Gérer les groupes de travail</a>
+      <br/>
+      {% endif %}
+      {% if session['admin'] %}
+      <a href="{{ url_for(
+         'toggle_account',
+         uid=uid
+         )}}">
+        {% if is_active %}Désactiver{% else %}Activer{% endif %} le compte</a>
+      {% endif %}
+    </aside>
 
-<br/>
-<br/>
-{% for attr_name, attr_values in uid_attributez.iteritems() %}
-{% if attr_name in page_fieldz %}
+    {% if submission_list  %}
+    <aside class="row">
+      <h4>Soumission</h4>
+      <ul class='list-group'>
+        {% for group in submission_list %}
+        {% if group[1] == '1' %}
+        <li class="list-group-item">{{ group[0]}}</li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+    </aside>
+    {% endif %}
 
-{% if page_fieldz[attr_name].display %}
+    {% if work_groupz %}
+    <aside class="row">
+      <h4>Groupes de travail</h4>
+      <ul class='list-group'>
+        {% for group in work_groupz %}
+        <li class="list-group-item">{{ group }}</li>
+        {% endfor %}
+      </ul>
+    </aside>
+    {% endif %}
 
-{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :
-
-<ul>
-{% for value in attr_values %}
-<li>{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
-{% endfor %}
-</ul>
-{% endif %}
-{% endif %}
-
-{% endfor %}
+    {% if sec_groupz %}
+    <aside class="row">
+      <h4>Groupes secondaires</h4>
+      {% for group in sec_groupz %}
+      <a class="list-group-item" href="{{ url_for(
+         'show_group',
+         branch=group[1],
+         cn=group[0]
+         )}}">{{ group[0] }}</a>
+        {% endfor %}
+      </ul>
+    </aside>
+    {% endif %}
+  </div>
+  <br/>
+  </div>
+</section>
 {% endblock body %}

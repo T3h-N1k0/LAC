@@ -62,24 +62,48 @@
 
 {% block body %}
 
-<h1>Edition de la vue {{ page.label }}</h1>
+<header class="row">
+  <div class="text-center">
+    <h2>Edition de la vue {{ page.label }}</h2>
+</header>
+<section class="row">
+  <div class="well">
+    <form method="post" action="/edit_page/{{ page.label}}">
+      <section class="row">
+        <div class="col-sm-7">
+          <fieldset>
+            <legend>Configuration des attributs :</legend>
+            {% for label in attr_label_list %}
+            <dl class="dl-horizontal">
+              {{ render_formfield(get_attr(form, label)) }}
+              {% endfor  %}
+          </fieldset>
+        </div>
+        <div class="col-sm-4">
 
-<form method="post" action="/edit_page/{{ page.label}}">
-  <fieldset>
-    <legend>Configuration par ObjectClass :</legend>
-    <input id="searchOCFilter" type="text"/>
-    {{ render_formfield(form.oc_form.available_oc) }}
-    {{ render_formfield(form.oc_form.selected_oc) }}
-    {% for label in attr_label_list %}
-    {{ render_formfield(get_attr(form, label)) }}
-    {% endfor  %}
-  </fieldset>
-  <fieldset>
-    <legend>Configuration par Attributs :</legend>
-    <input id="searchAttrFilter" type="text"/>
-    {{ render_formfield(form.attr_form.available_attr) }}
-    {{ render_formfield(form.attr_form.selected_attr) }}
-  </fieldset>
-  <input id="update" type="submit" value="Mettre à jour" >
-</form>
+          <fieldset>
+            <legend>Configuration par ObjectClass :</legend>
+            <input id="searchOCFilter" type="text"/>
+            {{ render_formfield(form.oc_form.available_oc) }}
+            {{ render_formfield(form.oc_form.selected_oc) }}
+          </fieldset>
+
+          <fieldset>
+            <legend>Configuration par Attributs :</legend>
+            <input id="searchAttrFilter" type="text"/>
+            {{ render_formfield(form.attr_form.available_attr) }}
+            {{ render_formfield(form.attr_form.selected_attr) }}
+          </fieldset>
+
+        </div>
+      </section>
+      <section class="row">
+        <div class="text-center">
+          <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</button>
+        </div>
+      </section>
+
+    </form>
+  </div>
+</section>
 {% endblock body %}

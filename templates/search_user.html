@@ -34,36 +34,59 @@
 {% endblock head_js %}
 
 {% block body %}
-<form method=post action="/search_user">
-  <dl>
-    {{ render_formfield(form.uid_number) }}
-    {{ render_formfield(form.sn) }}
-    {{ render_formfield(form.uid) }}
-    {{ render_formfield(form.mail) }}
-    {{ render_formfield(form.user_type) }}
-    {{ render_formfield(form.user_disabled) }}
-  </dl>
-  <p><input type=submit id='submit' value=Chercher>
-</form>
+<section class="row">
+  <div class="col-md-offset-3 col-md-5">
+    <div class="text-center"><h2>Recherche de compte</h2></div>
+    <form method=post action="/search_user" class="well">
+      <section class="row">
 
-{% if userz %}
-<h1>Liste des utilisateurs : </h1>
-<a download="user_list_{{ timestamp }}.xls" href="#" onclick="return ExcellentExport.excel(this, 'userz', 'Comptes');">Exporter vers Excel</a>
-<a download="user_list_{{ timestamp }}.csv" href="#" onclick="return ExcellentExport.csv(this, 'userz');">Export vers CSV</a>
+        <dl>
+          {{ render_formfield(form.uid_number) }}
+          {{ render_formfield(form.sn) }}
+          {{ render_formfield(form.uid) }}
+          {{ render_formfield(form.mail) }}
+          {{ render_formfield(form.user_type) }}
+          {{ render_formfield(form.user_disabled) }}
+        </dl>
+      </section>
+      <section class="row text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-eye-open"> Chercher</button>
+      </section>
 
-<table  class="tablesorter" id="userz"  >
-  <thead>
-  <tr>
-    {% for attribute in attributes %}
-    <th>{{ attribute.description }}</th>
-    {% endfor %}
-  </tr>
-  </thead>
-  <tbody>
-  {% for user in userz|sort %}
+
+
+
+
+    </form>
+  </div>
+</section>
+
+<div class="row">
+
+  {% if userz %}
+  <div class="row">
+    <section class="col-md-4">
+      <h4>Liste des utilisateurs : </h4>
+    </section>
+
+    <section class="col-md-offset-4 col-md-4 text-right">
+      <a download="user_list_{{ timestamp }}.xls" href="#" onclick="return ExcellentExport.excel(this, 'userz', 'Comptes');">Exporter vers Excel</a><br>
+      <a download="user_list_{{ timestamp }}.csv" href="#" onclick="return ExcellentExport.csv(this, 'userz');">Export vers CSV</a>
+    </section>
+  </div>
+  <table  class="tablesorter" id="userz"  >
+    <thead>
+      <tr>
+        {% for attribute in attributes %}
+        <th>{{ attribute.description }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in userz|sort %}
       <tr onclick="document.location = '{{ url_for('show_user',
-           page=get_group_from_member_uid(user.get_attributes()['uid'][0]),
-           uid=user.get_attributes()['uid'][0] ) }}'">
+          page=get_group_from_member_uid(user.get_attributes()['uid'][0]),
+          uid=user.get_attributes()['uid'][0] ) }}'">
         {% for attr in attributes %}
         <td>
           {% for value in user.get_attributes()[attr.label]  %}
@@ -73,12 +96,11 @@
         {% endfor %}
       </tr>
       {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<h1>Aucun résultat</h1>
-{% endif %}
-
-
+    </tbody>
+  </table>
+  {% else %}
+  <h4>Aucun résultat</h4>
+  {% endif %}
+</div>
 {{ search_resultz  }}
 {% endblock %}

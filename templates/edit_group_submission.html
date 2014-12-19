@@ -43,20 +43,33 @@
 {% endblock head_js %}
 
 {% block body %}
-<form method="post" action="/edit_group_submission/">
-  <fieldset>
-    <legend>Appliquer les modifications aux groupes suivants :</legend>
-    <input id="searchGroupzFilter" type="text"/>
-    {{ render_formfield(form.group_form.available_groupz) }}
-    {{ render_formfield(form.group_form.selected_groupz) }}
-  </fieldset>
 
-  <fieldset>
-    <legend>Gérer la soumission :</legend>
-    {{ render_formfield(form.submission_form.wrk_group) }}
-    {{ render_formfield(form.submission_form.member) }}
-    {{ render_formfield(form.submission_form.submission) }}
-  </fieldset>
-  <input id="update" type="submit" value="Modifier la soumission pour le(s) groupe(s)" >
-</form>
+
+
+  <form method="post" action="/edit_group_submission/">
+    <div class="row well">
+      <fieldset class="col-md-6">
+        <legend>Appliquer les modifications aux groupes suivants :</legend>
+        <p class="help-block">Filtrer les groupes :
+          <input id="searchGroupFilter" type="text"/>
+        </p>
+        {{ render_formfield(form.group_form.available_groupz) }}
+        {{ render_formfield(form.group_form.selected_groupz) }}
+      </fieldset>
+
+      <fieldset class="col-md-6">
+        <legend>Gérer la soumission :</legend>
+        {{ render_formfield(form.submission_form.wrk_group) }}
+        {{ render_formfield(form.submission_form.member) }}
+        {{ render_formfield(form.submission_form.submission) }}
+      </fieldset>
+    </div>
+    <div class="row text-center">
+      <button id="update" type="submit"  class="btn btn-primary">
+        <span class="glyphicon glyphicon-ok-sign"> Modifier la soumission pour le(s) groupe(s)</span>
+      </button>
+    </div>
+  </form>
+
+</div>
 {% endblock body %}

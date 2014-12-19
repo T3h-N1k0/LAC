@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block title %} Historique des bind pour  {{ user.uid }} {% endblock title %}
+
+{% block body %}
+{% for bind in user.binds %}
+{{ bind.time }}<br>
+{% endfor %}
+{% endblock body %}

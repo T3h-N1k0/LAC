@@ -1,6 +1,8 @@
 {% macro render_formfield(field, class) %}
+<dl class="dl-horizontal">
   <dt>{{ field.label }}</dt>
   <dd>{{ field(class_=class)|safe }}
+</dl>
   {% if field.errors %}
     <ul class=errors>
     {% for error in field.errors %}
@@ -15,15 +17,17 @@
 {% endmacro %}
 {% macro render_fieldlist(form, pagefield) %}
   <div data-toggle="fieldset" id="{{ pagefield.label }}-fieldset" >
-
-    <dt>{{ get_attr(form, pagefield.label)[0].label }}</dt>
-    {% if multivalue %}<button type="button" data-toggle="fieldset-add-row" data-target="#{{ pagefield.label }}-fieldset">+</button>
+    <dl class="dl-horizontal">
+    <dt>{{ get_attr(form, pagefield.label)[0].label }}
+    {% if pagefield.multivalue %}
+      <button type="button" data-toggle="fieldset-add-row" data-target="#{{ pagefield.label }}-fieldset" class="btn"><span class="glyphicon glyphicon-plus"></button>
     {% endif %}
-    <dd><ul>
+    </dt>
+    <dd><ul class="list-unstyled">
       {% for field in get_attr(form, pagefield.label) %}
-      <li data-toggle="fieldset-entry">  {{ field(**kwargs)|safe }}
+      <li  data-toggle="fieldset-entry">  {{ field(**kwargs)|safe }}
       {% if pagefield.multivalue %}
-        <button type="button" data-toggle="fieldset-remove-row" id="{{ pagefield.label }}-{{loop.index0}}-remove">-</button></li>
+        <button type="button" data-toggle="fieldset-remove-row" id="{{ pagefield.label }}-{{loop.index0}}-remove" class="btn"><span class="glyphicon glyphicon-remove"></button></li>
       {% endif %}
       {% if field.errors %}
         <ul class=errors>
@@ -34,6 +38,7 @@
       {% endif %}
       {% endfor %}
     </ul></dd>
+    </dl>
   </div>
 
 {% endmacro %}

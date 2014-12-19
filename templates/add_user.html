@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_formfield, render_fieldlist %}
 {% extends "layout.html" %}
 
-{% block title %} Création d'un utilisateur {% endblock title %}
+{% block title %} Création d'un compte {% endblock title %}
 
 {% block head_js %}
 <script type="text/javascript" src="{{
@@ -10,6 +10,10 @@
 
 <script type="text/javascript" src="{{
          url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='fieldset.js')
          }}"></script>
 
 <script type="text/javascript" id="js">
@@ -25,32 +29,36 @@ $(document).ready(function(){
 {% endblock head_js %}
 
 {% block body %}
+<div class="well col-md-offset-3 col-md-6 text-center">
+  {% if add_form  %}
+  <form method="post" action="/add_user/">
+    <p class="help-block">Filtrer les groupes :
+    <input id="searchGroupFilter" type="text"/></p>
+    {{ render_formfield(add_form.group) }}
+    {{ render_formfield(add_form.ldap_object_type) }}
+    {{ render_formfield(add_form.uid) }}
+    {{ render_formfield(add_form.home_directory) }}
+    <button id="update" type="submit"  class="btn btn-primary">
+      <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
+    </button>
+    {% endif %}
 
-{% if add_form  %}
-<form method="post" action="/add_user/">
-Filtrer les groupes :
-<input id="searchGroupFilter" type="text"/>
-{{ render_formfield(add_form.group) }}
-{{ render_formfield(add_form.ldap_object_type) }}
-{{ render_formfield(add_form.uid) }}
-{{ render_formfield(add_form.home_directory) }}
-<input id="update" type="submit" value="Suivant" >
-{% endif %}
+    {% if edit_form  %}
+    <form method="post" action="/add_user/{{ page}}/{{ uid }}">
+      {% for field in fieldz %}
+      {% if 'FieldList' in get_type(get_attr(edit_form, field.label)) %}
+      {{ render_fieldlist(edit_form, field) }}
+      {% else %}
+      {{ render_formfield(get_attr(edit_form, field.label))}}
+      {% endif  %}
 
-{% if edit_form  %}
-<form method="post" action="/add_user/{{ page}}/{{ uid }}">
-  {% for field in fieldz %}
-    {% if 'FieldList' in get_type(get_attr(edit_form, field.label)) %}
-        {{ render_fieldlist(edit_form, field) }}
-    {% else %}
-        {{ render_formfield(get_attr(edit_form, field.label))}}
-    {% endif  %}
-
-  {% endfor  %}
-  <input id="update" type="submit" value="Créer l'utilisateur" >
-</form>
+      {% endfor  %}
+      <button id="update" type="submit"  class="btn btn-primary">
+        <span class="glyphicon glyphicon-ok-sign"> Créer le compte</span>
+      </button>
+    </form>
 
 
-{% endif %}
-
+    {% endif %}
+</div>
 {% endblock body %}
