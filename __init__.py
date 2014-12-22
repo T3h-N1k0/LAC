@@ -2397,6 +2397,15 @@ def delete_otrs_user(uid):
     for ticket in otrs_ticketz:
         ticket.customer_user_id = disabled_login
         db.session.add(ticket)
+
+    if is_cines_group(uid):
+        OTRSUser.query.filter_by(login=uid).update(
+            {
+                'valid_id': 2,
+                'login': disabled_login,
+                'change_time': datetime.now()
+            }, synchronize_session=False
+        )
     db.session.commit()
 
 def update_ldap_object_from_edit_group_form(form, page, group_cn):
@@ -3349,7 +3358,7 @@ def update_group_memberz_cines_c4(group, comite):
     for member in memberz:
         member_attrz = member.get_attributes()
         if (
-                is_ccc_group(member_attrz)
+                is_ccc_group(member_attrz['uid'][0])
                 and is_principal_group(member_attrz, group)
                 and (
                     'cinesC4' not in member_attrz
@@ -3365,6 +3374,9 @@ def update_group_memberz_cines_c4(group, comite):
 
 def is_ccc_group(member):
     return 'ccc' == get_group_from_member_uid(member['uid'][0])
+
+def is_cines_group(uid):
+    return 'cines' == get_group_from_member_uid(uid)
 
 def is_principal_group(member, group):
     return get_posix_group_cn_by_gid(member['gidNumber'][0]) == group
