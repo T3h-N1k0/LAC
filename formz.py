@@ -148,7 +148,7 @@ class AddUserForm(Form):
     ldap_object_type = SelectField(u'Type d\'objet LDAP', coerce=int)
     uid = TextField(u'Login (uid)')
     cn = TextField(u'Common Name')
-    home_directory = TextField(u'Repertoire d\'acceuil (homeDirectory)')
+    # home_directory = TextField(u'Repertoire d\'acceuil (homeDirectory)')
 
 
 class AddPolicyForm(Form):
