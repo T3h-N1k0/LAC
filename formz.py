@@ -14,7 +14,7 @@ class SearchUserForm(Form):
                                      ('deci','Compte DECI'),
                                      ('sam','Compte S.A.M.'),
                                      ('autre','Compte divers')])
-
+    ip = TextField('Adresse IP (cinesIpClient)')
     user_disabled = BooleanField('Uniquement les comptes inactifs : ')
 
 
