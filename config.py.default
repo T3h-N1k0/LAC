@@ -1,0 +1,72 @@
+### Put this in configuration file
+DEBUG = True
+SECRET_KEY = 'development-key_omgwtfbbq'
+LDAP_HOST = 'ldapone.cines.fr'
+LDAP_SEARCH_BASE = 'dc=cines,dc=fr'
+LDAP_LOGIN_VIEW = 'login'
+LDAP_SUCCESS_REDIRECT = 'home'
+LDAP_DOMAIN = 'ou=cines,ou=people,dc=cines,dc=fr'
+LAC_ADMIN_USER = '<INSERT USER>'
+LAC_ADMIN_PASS = '<INSERT PASS>'
+ENCODING = 'utf-8'
+TIMEZONE = 'Europe/Paris'
+DATE_DISPLAY_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
+LAC_DB_URI = 'mysql://<lac_user>:<lac_pass>@<lac_host>/lac'
+OTRS_DB_URI = 'mysql://<otrs_user>:<otrs_pass>@<otrs_host>/otrs'
+GESCLI_DB_URI = 'mysql://<gescli_user>:<gescli_pass>@<gescli_host>/gescli'
+GESCPT_DB_URI = 'mysql://<gescpt_user>:<gescpt_pass>@<gescpt_host>/gescpt'
+SQLALCHEMY_DATABASE_URI = LAC_DB_URI
+BRANCHZ = ({'account': 'cines',
+           'group': 'grCines'},
+           {'account': 'ccc',
+            'group': 'grCcc'},
+           {'account': 'deci',
+            'group': 'grDeci'},
+           {'account': 'sam',
+            'group': 'grSam'},
+           {'account': 'soft',
+            'group': 'grSoft'},
+           {'account': 'autre',
+            'group': 'grAutre'},
+           {'account': 'test',
+            'group': 'grTest'})
+SHADOW_DURATION = 12
+SAMBA_DOMAIN_NAME = 'PALLAS'
+PROD_FLAG = False
+DATE_FORMAT = '%d-%m-%Y'
+OTRS_ACCOUNT = ['cines', 'sam', 'ccc']
+C4_TYPE_GROUPZ = ['grCcc', 'grSam']
+QUOTA_FIELDZ = {
+    'cinesQuotaSizeHard': {
+        'type': 'size',
+        'default': 'cinesQuotaSizeHard'
+    },
+    'cinesQuotaSizeSoft': {
+        'type': 'size',
+        'default': 'cinesQuotaSizeSoft'
+    },
+    'cinesQuotaInodeHard': {
+        'type': 'inode',
+        'default': 'cinesQuotaInodeHard'
+        },
+    'cinesQuotaInodeSoft': {
+        'type': 'inode',
+        'default': 'cinesQuotaInodeSoft'
+    },
+    'cinesQuotaSizeHardTemp': {
+        'type': 'size',
+        'default': 'cinesQuotaSizeHard'
+    },
+    'cinesQuotaSizeSoftTemp': {
+        'type': 'size',
+        'default': 'cinesQuotaSizeSoft'
+    },
+    'cinesQuotaInodeHardTemp': {
+        'type': 'inode',
+        'default': 'cinesQuotaInodeHard'
+    },
+    'cinesQuotaInodeSoftTemp': {
+        'type': 'inode',
+        'default': 'cinesQuotaInodeSoft'
+    }
+}
