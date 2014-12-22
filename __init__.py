@@ -2212,7 +2212,7 @@ def create_ldap_object_from_add_group_form(form):
         flash(u'Groupe créé')
 
 
-def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page, home):
+def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     ldap_ot = LDAPObjectType.query.filter_by(
         label=page.label
     ).first()
@@ -2237,7 +2237,7 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page, home):
 
     add_record.extend(form_attributez)
     add_record.append(
-        ('homeDirectory', [home.encode('utf-8')]))
+        ('homeDirectory', "/home/{0}".format(uid).encode('utf-8')))
 
     if 'cinesusr' in ot_oc_list:
         add_record.append(
