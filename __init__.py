@@ -1354,6 +1354,18 @@ def edit_submission(uid):
         (group, group)
         for group in get_submission_groupz_list()
     ]
+    raw_detailz = get_uid_detailz(uid)
+    if not raw_detailz:
+        flash(u'Utilisateur non trouvé')
+        return redirect(url_for('home'))
+    uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
+    uid_attributez=uid_detailz.get_attributes()
+    if 'cinesSoumission' in uid_attributez:
+        submission_list = get_list_from_submission_attr(
+            uid_attributez['cinesSoumission'][0])
+    else:
+        submission_list = []
+
     if request.method == 'POST':
         wrk_group = form.wrk_group.data
         is_submission = form.submission.data
@@ -1374,7 +1386,8 @@ def edit_submission(uid):
     return render_template('edit_submission.html',
                            form=form,
                            dn=dn,
-                           uid=uid)
+                           uid=uid,
+                           submission_list=submission_list)
 
 @app.route('/edit_group_submission/', methods=('GET', 'POST'))
 @login_required
