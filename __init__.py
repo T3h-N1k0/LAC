@@ -33,14 +33,14 @@ __license__ = "GPL"
 
 app = Flask(__name__)
 ldap = LDAP(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://lac:omgwtfbbq@localhost/lac'
-# app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://otrs:LaDBaOTRS@otrstest.cines.fr/otrs'
+
+app.config.from_object('config')
 
 app.config['SQLALCHEMY_BINDS'] = {
-    'lac': 'mysql://lac:omgwtfbbq@localhost/lac',
-    'otrs': 'mysql://otrs:LaDBaOTRS@otrstest.cines.fr/otrs',
-    'gescli': 'mysql://compta_lac:LacCompta1036M0dule@tarot.cines.fr/gescli',
-    'gescpt': 'mysql://compta_lac:LacCompta1036M0dule@tarot.cines.fr/gescpt'
+    'lac': app.config['LAC_DB_URI'],
+    'otrs': app.config['OTRS_DB_URI'],
+    'gescli': app.config['GESCLI_DB_URI'],
+    'gescpt': app.config['GESCPT_DB_URI']
 
 }
 db = SQLAlchemy(app)
