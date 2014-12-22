@@ -17,10 +17,7 @@
 - Quota dois aussi  être accessible aussi directement depuis le groupe (affichage de la liste de quota spécifique+ajout+modifier)
 - Moteur de recherche pour les groupes
 
-- Flask-DebugToolbar
 
-- Bug Compte DECI : Bug  affichage manquant Decinationality / Decisubjectdn
-=> lo po compri : y'avait 2 entrées pour ce champs là, dont les derniers sont vides
 
 
 
@@ -61,6 +58,10 @@
 - afficher par défaut les valeurs du quota standard + enregistrer que les champs modifiés + indicateur si valeur spécifique
 - Récupération info compta du groupe (base mysql)
 - Penser a la gestion des comptes clients otrs (2° requete uniquement pour utilisateur CINES)
+- création du repertoire home automatiquement
+- Flask-DebugToolbar
+
+
 
 ### Bugz :
 - Si le changement de mot de passe n'est pas possible pour cause de violation de la ppolicy il faut :
