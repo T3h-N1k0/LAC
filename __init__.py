@@ -2989,8 +2989,21 @@ def get_posix_groupz_from_member_uid(uid):
     )
     groupz = []
     for group in groupz_obj:
-        groupz.append(group.get_attributes()['cn'][0])
+        group_attrz = group.get_attributes()
+        cn = group_attrz['cn'][0]
+        dn = group_attrz['entryDN'][0]
+        branch = get_branch_from_posix_group_dn(dn)
+        groupz.append(
+            (cn, branch))
     return groupz
+
+def  get_branch_from_posix_group_dn(dn):
+    search_pattern = "cn=(.+?),ou=(.+?),"
+    m = re.search(search_pattern, dn)
+    if m:
+        return m.group(2)
+    else:
+        return ''
 
 def get_work_groupz_from_member_uid(uid):
     dn = ldap.get_full_dn_from_uid(uid)
