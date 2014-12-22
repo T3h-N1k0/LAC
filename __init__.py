@@ -1056,7 +1056,7 @@ def edit_user(page,uid):
 @login_required
 def delete_user(uid):
     groupz = get_posix_groupz_from_member_uid(uid)
-
+    dn = ldap.get_full_dn_from_uid(uid)
     if request.method == 'POST':
         user_dn = ldap.get_full_dn_from_uid(uid)
         ldap.delete(user_dn)
@@ -1072,7 +1072,8 @@ def delete_user(uid):
 
     return render_template('delete_user.html',
                            groupz=groupz,
-                           uid=uid)
+                           uid=uid,
+                           dn=dn)
 
 @app.route('/select_work_groups/<uid>', methods=('GET', 'POST'))
 @login_required
