@@ -1,0 +1,14 @@
+.large-label .dl-horizontal dt {
+    width: 250px;
+}
+.large-label .dl-horizontal  dd {
+    margin-left: 260px;
+}
+.quota .dl-horizontal dt {
+  white-space: normal;
+  font-style: italic;
+}
+.upload-file .dl-horizontal dt {
+  white-space: normal;
+  font-style: italic;
+}
