@@ -2490,11 +2490,10 @@ def generate_edit_user_form_class(page):
     page_fieldz = Field.query.filter_by(page_id = page.id,
                                         edit = True).all()
     class EditForm(Form):
-        wrk_groupz = FormField(SelectGroupzForm)
+        wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
 
     for field in page_fieldz:
         append_fieldlist_to_form(field, EditForm)
-
 
     return EditForm
 
@@ -2980,7 +2979,7 @@ def get_posix_group_memberz(group):
 
 def get_posix_groupz_from_member_uid(uid):
     ldap_filter='(&(objectClass=posixGroup)(memberUid={0}))'.format(uid)
-    attributes=['cn']
+    attributes=['cn', 'entryDN']
     base_dn='ou=groupePosix,{0}'.format(
         app.config['LDAP_SEARCH_BASE']
     )
