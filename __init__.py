@@ -970,15 +970,12 @@ def add_user(page_label=None,uid=None):
             label = ldap_object_type.label
         ).first()
         fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
-        # fieldz_dict = {field.label: field for field in fieldz}
-        # fieldz_labelz = fieldz_dict.keys()
         fieldz_labelz = [field.label for field in fieldz]
         EditForm = generate_edit_user_form_class(page)
         edit_form = EditForm(request.form)
 
         if add_form.uid.data and add_form.validate():
             print("group from form {0}".format(add_form.ldap_object_type.data))
-            session['add_user_home_directory'] = add_form.home_directory.data
             set_edit_user_form_values(edit_form,fieldz)
             return render_template('add_user.html',
                                    page=page.label,
@@ -991,8 +988,7 @@ def add_user(page_label=None,uid=None):
                 edit_form,
                 fieldz_labelz,
                 uid,
-                page,
-                session['add_user_home_directory'])
+                page)
 
             if app.config['PROD_FLAG']:
                 upsert_otrs_user(uid)
