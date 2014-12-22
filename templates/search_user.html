@@ -34,7 +34,7 @@
 {% endblock head_js %}
 
 {% block body %}
-<section class="row">
+<section class="row large-label">
   <div class="col-md-offset-3 col-md-5">
     <div class="text-center"><h2>Recherche de compte</h2></div>
     <form method=post action="/search_user" class="well">
@@ -46,6 +46,7 @@
           {{ render_formfield(form.uid) }}
           {{ render_formfield(form.mail) }}
           {{ render_formfield(form.user_type) }}
+          {{ render_formfield(form.ip) }}
           {{ render_formfield(form.user_disabled) }}
         </dl>
       </section>

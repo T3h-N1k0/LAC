@@ -490,6 +490,8 @@ def search_user():
             filter_list.append("(mail={0})".format(form.mail.data))
         if form.user_disabled.data :
             filter_list.append("(shadowExpire=0)")
+        if form.ip.data :
+            filter_list.append("(cinesIpClient={0})".vormat(form.ip.data))
         if form.user_type.data == "":
             base_dn = "ou=people,{0}".format(app.config['LDAP_SEARCH_BASE'])
         else:
