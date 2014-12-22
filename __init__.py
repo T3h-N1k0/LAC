@@ -295,7 +295,26 @@ class Shell(db.Model):
         self.path = path
         self.label = label
 
-class OTRSUser(db.Model):
+class User(db.Model):
+    __bind_key__ = 'lac'
+    __tablename__ = 'user'
+    id = db.Column(db.Integer, primary_key=True)
+    uid = db.Column(db.String(200), unique=True)
+    binds = db.relationship('UserBind',
+                            backref="user",
+                            lazy='dynamic')
+
+class UserBind(db.Model):
+    __bind_key__ = 'lac'
+    __tablename__ = 'userbind'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey('user.id',
+                                               onupdate="CASCADE",
+                                               ondelete="CASCADE"))
+    time = db.Column(db.DateTime)
+
+
+class OTRSCustomerUser(db.Model):
     __bind_key__ = 'otrs'
     __tablename__ = 'customer_user'
     id = db.Column(db.Integer, primary_key=True)
@@ -327,12 +346,13 @@ class OTRSTicket(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     customer_user_id = db.Column(db.String(250))
 
-class UserBind(db.Model):
-    __bind_key__ = 'lac'
-    __tablename__ = 'userbind'
+class OTRSUser(db.Model):
+    __bind_key__ = 'otrs'
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    user_uid = db.Column(db.String(250))
-    bind_date = db.Column(db.DateTime)
+    valid_id = db.Column(db.Integer)
+    login = db.Column(db.String(200), unique=True)
+    change_time = db.Column(db.DateTime)
 
 class C4Ressource(db.Model):
     __bind_key__ = 'gescli'
@@ -1889,6 +1909,14 @@ def delete_shell(shell_label):
     flash(u'Shell {0} supprimé'.format(shell_label))
     return redirect(url_for('show_shells'))
 
+@app.route('/show_bind_history/<uid>')
+@login_required
+def show_bind_history(uid):
+    user = User.query.filter_by(uid=uid).first()
+    return render_template('show_bind_history.html',
+                           user = user)
+
+
 ### Helperz
 
 def allowed_file(filename):
@@ -2332,9 +2360,9 @@ def upsert_otrs_user(uid):
     user_attrz = ldaphelper.get_search_results(
         get_uid_detailz(uid)
     )[0].get_attributes()
-    otrs_user = OTRSUser.query.filter_by(login = uid).first()
+    otrs_user = OTRSCustomerUser.query.filter_by(login = uid).first()
     if not otrs_user:
-        otrs_user = OTRSUser(login = uid)
+        otrs_user = OTRSCustomerUser(login = uid)
 
     if 'telephoneNumber' in user_attrz:
         telephone_number = ';'.join(
@@ -2360,7 +2388,7 @@ def delete_otrs_user(uid):
     date = datetime.now().strftime("%Y%m%d%H%M")
     disabled_login = "".join(['ZDEL', date, "_", uid])
     # print(disabled_login)
-    otrs_user = OTRSUser.query.filter_by(login = uid).first()
+    otrs_user = OTRSCustomerUser.query.filter_by(login = uid).first()
     otrs_user.login = disabled_login
     otrs_user.valid_id = 2
     db.session.add(otrs_user)
