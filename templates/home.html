@@ -10,42 +10,44 @@ Accueil
 </header> -->
 
 <div class="row">
-  <section class="col-sm-5">
+  <section class="col-sm-8">
 
     <h4>Liste des membres par branche :</h4>
     {% for branch in config['BRANCHZ'] %}
-    <div class="panel panel-default">
-      <div class="panel-heading text-center">{{ branch['account'].upper() }}</div>
-      <div class="panel-body">
-        <div class="row">
-          <div class="col-sm-4">Compte {{ branch['account'] }}</div>
-          <div class="col-sm-4"><a href="{{ url_for(
-                                   'show_group_memberz',
-                                   group=branch['account'])}}">Consulter/Modifier</a></div>
-          {% if session['admin'] %}
-          <div class="col-sm-4"><a href="{{ url_for(
-                                   'add_user')}}">Ajouter</a></div>
-          {% endif %}
+    <div class="col-sm-6">
+      <div class="panel panel-default">
+        <div class="panel-heading text-center"><strong>{{ branch['account'].upper() }}</strong></div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-sm-3">Compte <!-- {{ branch['account'] }} --></div>
+            <div class="col-sm-5"><a href="{{ url_for(
+                                     'show_group_memberz',
+                                     group=branch['account'])}}">Consulter/Modifier</a></div>
+            {% if session['admin'] %}
+            <div class="col-sm-4"><a href="{{ url_for(
+                                     'add_user')}}">Ajouter</a></div>
+            {% endif %}
+          </div>
+          <div class="row">
+            <div class="col-sm-3">Groupe <!-- {{ branch['group'] }} --></div>
+            <div class="col-sm-5"><a href="{{ url_for(
+                                     'show_groups',
+                                     branch=branch['group'])}}">Consulter/Modifier</a></div>
+            {% if session['admin'] %}
+            <div class="col-sm-4"><a href="{{ url_for(
+                                     'add_group',
+                                     page_label=branch['group'])}}">Ajouter</a></div>
+            {% endif %}
+          </div>
         </div>
-        <div class="row">
-          <div class="col-sm-4">Groupe {{ branch['group'] }}</div>
-          <div class="col-sm-4"><a href="{{ url_for(
-                                   'show_groups',
-                                   branch=branch['group'])}}">Consulter/Modifier</a></div>
-          {% if session['admin'] %}
-          <div class="col-sm-4"><a href="{{ url_for(
-                                   'add_group',
-                                   page_label=branch['group'])}}">Ajouter</a></div>
-          {% endif %}
-        </div>
-      </div>
 
+      </div>
     </div>
-      {% endfor %}
+    {% endfor %}
 
   </section>
 
-  <section class="col-sm-offset-2 col-sm-4">
+  <section class="col-sm-4">
     <div class="panel panel-default">
       <div class="panel-heading">Mon compte</div>
       <div class="panel-body">

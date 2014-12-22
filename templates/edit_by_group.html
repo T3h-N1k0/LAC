@@ -1,7 +1,7 @@
 {% from "_formhelpers.html" import render_formfield, render_field %}
 {% extends "layout.html" %}
 
-{% block title %} Edition d'un groupe  {% endblock title %}
+{% block title %} Edition par groupe(s)  {% endblock title %}
 
 {% block head_js %}
 
@@ -61,45 +61,71 @@
 {% endblock head_js %}
 
 {% block body %}
-<form method="post" action="/edit_by_group/">
+
+
 {% if view_form %}
-  <fieldset>
-    <legend>Attributs à modifier :</legend>
-    <input id="searchAttrFilter" type="text"/>
-    {{ render_formfield(view_form.attr_form.available_attr) }}
-    {{ render_formfield(view_form.attr_form.selected_attr) }}
-  </fieldset>
-  <input id="update" type="submit" value="Suivant" >
+<div class="well">
+  <form method="post" action="/edit_by_group/" class="col-md-4 col-md-offset-4">
+    <fieldset>
+      <legend>Attributs à modifier :</legend>
+      <input id="searchAttrFilter" type="text"/>
+      {{ render_formfield(view_form.attr_form.available_attr) }}
+      {{ render_formfield(view_form.attr_form.selected_attr) }}
+    </fieldset>
+    <div class="text-center">
+      <button id="update" type="submit"  class="btn btn-primary">
+        <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
+      </button>
+    </div>
+  </form>
+</div>
 {% endif %}
 
 {% if group_form %}
-
-  <fieldset>
-    <legend>Appliquer les modifications aux groupes suivants :</legend>
-    <input id="searchGroupzFilter" type="text"/>
-    {{ render_formfield(group_form.available_groupz) }}
-    {{ render_formfield(group_form.selected_groupz) }}
-  </fieldset>
-  <input id="update" type="submit" value="Suivant" >
+<div class="well">
+  <form method="post" action="/edit_by_group/" class="col-md-4 col-md-offset-4">
+    <fieldset>
+      <legend>Appliquer les modifications aux groupes suivants :</legend>
+      <input id="searchGroupzFilter" type="text"/>
+      {{ render_formfield(group_form.available_groupz) }}
+      {{ render_formfield(group_form.selected_groupz) }}
+    </fieldset>
+    <div class="text-center">
+      <button id="update" type="submit"  class="btn btn-primary">
+        <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
+      </button>
+    </div>
+  </form>
+</div>
 {% endif %}
 {% if edit_form %}
-  </br>
-    <a href="{{ url_for('get_backup_file',
-               userz = ','.join(session['edit_by_group_memberz_uid']),
-               attributez = ','.join(attributez)) }}">Récupérer une sauvegarde</a>
-  <div {% if not session['admin']  %}style="display: none;"{% endif %}>{{ render_formfield(edit_form.action) }}</div>
-  </br>
-<form method="post" action="/edit_by_group/">
-  <fieldset>
-    <legend>Attributs à modifier :</legend>
-    {% for field in fieldz %}
-    <dt>{{ field.label }}</dt>
-    <dd>{{ render_formfield(get_attr(edit_form, field.label)) }}</dd>
-    {{ render_formfield(edit_form.submited) }}
-    {% endfor  %}
-  </fieldset>
-  <input id="update" type="submit" value="Modifier le(s) groupe(s)" >
+<div class="row text-right">
+  <a class="btn-sm btn-info" href="{{ url_for('get_backup_file',
+     userz = ','.join(session['edit_by_group_memberz_uid']),
+     attributez = ','.join(attributez)) }}"><span class="glyphicon glyphicon-download-alt"> Récupérer une sauvegarde</span></a>
+</div><br>
+<form method="post" action="/edit_by_group/" class="col-md-5 col-md-offset-3">
+  <div class="well">
+
+    <div {% if not session['admin']  %}style="display: none;"{% endif %}>{{ render_formfield(edit_form.action) }}</div>
+
+    <fieldset>
+      <legend>Attributs à modifier :</legend>
+      {% for field in fieldz %}
+      <dl class="dl-horizontal">
+        <dt>{{ field.label }}</dt>
+        <dd>{{ get_attr(edit_form, field.label) }}</dd>
+      </dl>
+      {{ edit_form.submited }}
+      {% endfor  %}
+    </fieldset>
+    <div class="text-center">
+      <button id="update" type="submit"  class="btn btn-primary">
+        <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
+      </button>
+    </div>
+  </div>
+</form>
 {% endif %}
 
-</form>
 {% endblock body %}

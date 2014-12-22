@@ -79,7 +79,7 @@
 {% endif %}
 
 {% if file_form %}
-<form method="post" action="/edit_file/" enctype=multipart/form-data class="well col-md-6 col-md-offset-3">
+<form method="post" action="/edit_file/" enctype=multipart/form-data class="well col-md-6 col-md-offset-3 upload-file">
   <fieldset>
     <legend>Uploader le fichier contenant les utilisateurs à modifier :</legend>
     {{ render_formfield(file_form.userz_file) }}
@@ -89,20 +89,22 @@
       <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
     </button>
   </div>
-
+</form>
 {% endif %}
-{% if edit_form %}
-<form method="post" action="/edit_file/" class="well col-md-6 col-md-offset-3">
-  <div class="row">
-
-    <div class="col-md-5" {% if not session['admin']  %}style="display: none;"{% endif %}style="border-style: solid;border-color: #ff0000 #0000ff;">{{ render_formfield(edit_form.action) }}</div>
+  {% if edit_form %}
+  <div class='text-right row'>
     <a href="{{ url_for('get_backup_file',
        userz = ','.join(session['edit_file_memberz_uid']),
-       attributez = ','.join(attributez)) }}" class="btn-sm btn-info col-md-5">
-      <span class="glyphicon glyphicon-download">
-        Récupérer une sauvegarde</span></a>
+       attributez = ','.join(attributez)) }}" class="btn-sm btn-info">
+      <span class="glyphicon glyphicon-download">Récupérer une sauvegarde</span>
+    </a>
   </div>
-  </br>
+  <form method="post" action="/edit_file/" class="well col-md-6 col-md-offset-3">
+  <div class="row">
+
+    <div class="col-md-5" {% if not session['admin']  %}style="display: none;"{% endif %}>{{ render_formfield(edit_form.action) }}</div>
+
+  </div>
   <fieldset class="row">
     <legend>Attributs à modifier :</legend>
     {% for field in fieldz %}
@@ -115,8 +117,8 @@
     <button id="update" type="submit"  class="btn btn-primary">
       <span class="glyphicon glyphicon-ok"> Modifier le(s) groupe(s)</span>
     </button>
-  </div>
+  </div
+</form>
 {% endif %}
 
-</form>
 {% endblock body %}

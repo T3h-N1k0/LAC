@@ -7,21 +7,43 @@
 {% endblock head_js %}
 
 {% block body %}
+
 {% if form %}
-<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
-<form method="post" action="/edit_default_quota/{{ storage_cn }}">
-{{ render_formfield(form.cinesQuotaSizeHard) }}
-{{ render_formfield(form.cinesQuotaSizeSoft) }}
-{{ render_formfield(form.cinesQuotaInodeHard) }}
-{{ render_formfield(form.cinesQuotaInodeSoft) }}
-<input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
+<header class="row text-center">
+  <h2>Edition du quota {{ storage_cn }}</h2>
+</header>
+
+<section class="row">
+  <div class='row text-right'>
+      <div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+  </div>
+  <div class="well quota col-sm-6 col-sm-offset-3  large-label">
+    <form method="post" action="/edit_default_quota/{{ storage_cn }}">
+      {{ render_formfield(form.cinesQuotaSizeHard) }}
+      {{ render_formfield(form.cinesQuotaSizeSoft) }}
+      {{ render_formfield(form.cinesQuotaInodeHard) }}
+      {{ render_formfield(form.cinesQuotaInodeSoft) }}
+
+      <div class="row text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button></div>
+  </div>
+</section>
 {% else %}
-{% for storage in storagez  %}
-<a href="{{ url_for(
-   'edit_default_quota',
-   storage_cn=storage
-   )}}">Gérer les quotas pour {{ storage }}</a>
-<br/>
-{% endfor %}
+<header class="row text-center">
+  <h2>Gérer les quotas pour :</h2>
+</header>
+<section class="row">
+  <div class="col-md-offset-4 col-md-4">
+    <ul class="list-group">
+      {% for storage in storagez  %}
+      <a class="list-group-item text-center" href="{{ url_for(
+         'edit_default_quota',
+         storage_cn=storage
+         )}}">{{ storage.upper() }}</a>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
 {% endif %}
+
 {% endblock body %}

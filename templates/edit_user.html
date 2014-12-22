@@ -54,7 +54,7 @@
   <div class="well">
     <form method="post" action="/edit_user/{{ page.label}}/{{ uid }}" >
       <section class="row">
-        <div class="col-sm-7">
+        <div class="col-sm-6  large-label">
           {% for field in fieldz %}
           {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
           {{ render_fieldlist(form, field) }}
@@ -63,8 +63,8 @@
           {% endif  %}
           {% endfor  %}
         </div>
-        <div class="col-sm-4">
-          <p class="help-block">Rechercher un groupe:
+        <div class="col-sm-6">
+          <p class="help-block">Filtrer les groupes :
             <input id="searchGroupzFilter" type="text"/><p/>
             {{ render_formfield(form.wrk_groupz)}}
         </div>

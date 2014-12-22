@@ -16,57 +16,70 @@
 {% endblock head_js %}
 
 {% block body %}
-{% if form %}
-<a href="{{ url_for(
-   'delete_quota',
-   storage_cn=storage_cn
-   )}}">Supprimer le quota</a>
-<br/>
-<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
-<form method="post" action="/edit_quota/{{ storage_cn }}">
-{{ render_formfield(
-  form.cinesQuotaSizeHard,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaSizeHard' in default_fieldz else "")) }}
-{{ render_formfield(
-  form.cinesQuotaSizeSoft,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaSizeSoft' in default_fieldz else "")) }}
-{{ render_formfield(
-  form.cinesQuotaInodeHard,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaInodeHard' in default_fieldz else "")) }}
-{{ render_formfield(
-  form.cinesQuotaInodeSoft,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaInodeSoft' in default_fieldz else "")) }}
-{{ render_formfield(
-  form.cinesQuotaSizeHardTemp,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaSizeHardTemp' in default_fieldz else "")) }}
-{{ render_formfield(
-  form.cinesQuotaSizeSoftTemp,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaSizeSoftTemp' in default_fieldz else "")) }}
-{{ render_formfield(form.cinesQuotaSizeTempExpire) }}
-{{ render_formfield(
-  form.cinesQuotaInodeHardTemp,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaInodeHardTemp' in default_fieldz else "")) }}
-{{ render_formfield(
-  form.cinesQuotaInodeSoftTemp,
-  class="quota-size{0}".format(
-  " default-value" if 'cinesQuotaInodeSoftTemp' in default_fieldz else "")) }}
-{{ render_formfield(form.cinesQuotaInodeTempExpire) }}
 
-<input id="update" type="submit" value="Modifier la soumission pour {{ uid }}" >
-{% else %}
-{% for storage in storagez  %}
-<a href="{{ url_for(
-   'edit_quota',
-   storage_cn=storage
-   )}}">Gérer les quotas pour {{ storage }}</a>
-<br/>
-{% endfor %}
-{% endif %}
+<header class="row text-center">
+  <h2>Edition du quota {{ storage_cn }}</h2>
+</header>
+
+<section class="row">
+  {% if form %}
+  <div class='row text-right'>
+    <div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+    <a class="btn btn-danger" href="{{ url_for(
+       'delete_quota',
+       storage_cn=storage_cn
+       )}}"><span class="glyphicon glyphicon-minus-sign"> Supprimer le quota</span></a><br><br>
+  </div>
+  <div class="well quota col-sm-6 col-sm-offset-3  large-label">
+    <form method="post" action="/edit_quota/{{ storage_cn }}">
+
+      {{ render_formfield(
+      form.cinesQuotaSizeHard,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaSizeHard' in default_fieldz else "")) }}
+      {{ render_formfield(
+      form.cinesQuotaSizeSoft,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaSizeSoft' in default_fieldz else "")) }}
+      {{ render_formfield(
+      form.cinesQuotaInodeHard,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaInodeHard' in default_fieldz else "")) }}
+      {{ render_formfield(
+      form.cinesQuotaInodeSoft,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaInodeSoft' in default_fieldz else "")) }}
+      {{ render_formfield(
+      form.cinesQuotaSizeHardTemp,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaSizeHardTemp' in default_fieldz else "")) }}
+      {{ render_formfield(
+      form.cinesQuotaSizeSoftTemp,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaSizeSoftTemp' in default_fieldz else "")) }}
+      {{ render_formfield(form.cinesQuotaSizeTempExpire) }}
+      {{ render_formfield(
+      form.cinesQuotaInodeHardTemp,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaInodeHardTemp' in default_fieldz else "")) }}
+      {{ render_formfield(
+      form.cinesQuotaInodeSoftTemp,
+      class="quota-size{0}".format(
+      " default-value" if 'cinesQuotaInodeSoftTemp' in default_fieldz else "")) }}
+      {{ render_formfield(form.cinesQuotaInodeTempExpire) }}
+      <div class="row text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button></div>
+      {% else %}
+      <div class="col-md-offset-4 col-md-4">
+        Gérer les quotas pour :<br><br>
+        <ul class="list-group">
+          {% for storage in storagez  %}
+          <a  class="list-group-item text-center" href="{{ url_for(
+             'edit_quota',
+             storage_cn=storage
+             )}}">{{ storage.upper() }}</a>
+          {% endfor %}
+        </ul>
+      {% endif %}
+</div>
 {% endblock body %}

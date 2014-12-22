@@ -55,11 +55,11 @@
          uid=uid
          )}}">Supprimer l'utilisateur</a>
       <br/>
-      <a href="{{ url_for(
-         'select_work_groups',
-         uid=uid
-         )}}">Gérer les groupes de travail</a>
-      <br/>
+      <!-- <a href="{{ url_for(
+      'select_work_groups',
+      uid=uid
+      )}}">Gérer les groupes de travail</a>
+      <br/> -->
       {% endif %}
       {% if session['admin'] %}
       <a href="{{ url_for(
