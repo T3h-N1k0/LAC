@@ -302,7 +302,8 @@ class User(db.Model):
     uid = db.Column(db.String(200), unique=True)
     binds = db.relationship('UserBind',
                             backref="user",
-                            lazy='dynamic')
+                            lazy='dynamic',
+                            order_by='desc(UserBind.time)')
 
 class UserBind(db.Model):
     __bind_key__ = 'lac'
@@ -1932,8 +1933,39 @@ def show_bind_history(uid):
     return render_template('show_bind_history.html',
                            user = user)
 
+@app.route('/show_history/<uid>')
+@login_required
+def show_history(uid):
+    raw_logz = get_uid_logz(uid)
+
+    for raw_log in raw_logz:
+        log = raw_log.get_attributes()
+        if 'reqMod' in log:
+            raw_new_valuez = log['reqMod']
+        if 'reqOld' in log:
+            raw_old_valuez = log['reqOld']
+        # print(log)
+        new_valuez_dict = get_dict_from_raw_log_valuez(raw_new_valuez)
+        old_valuez_dict = get_dict_from_raw_log_valuez(raw_old_valuez)
+
 
 ### Helperz
+
+def get_dict_from_raw_log_valuez(raw_valuez):
+    valuez = {}
+    for raw_value in raw_valuez:
+        # print(raw_value)
+        raw_value_split = raw_value.split(":")
+        attr_name = raw_value_split[0]
+        attr_operation = raw_value_split[1][:1]
+        attr_value = raw_value_split[1][2:]
+        if attr_name in valuez:
+            valuez[attr_name].append(
+                (attr_value, attr_operation)
+            )
+        else:
+            valuez[attr_name] = [(attr_value, attr_operation)]
+    return valuez
 
 def allowed_file(filename):
     print("filename : {0}".format(filename))
@@ -2872,9 +2904,15 @@ def get_storage(cn):
     )[0]
     return storage
 
-
-
-
+def get_uid_logz(uid):
+    dn = ldap.get_full_dn_from_uid(uid)
+    ldap_filter="(&(objectClass=auditModify)(reqDN={0}))".format(dn)
+    attributes=['*']
+    base_dn=app.config['LDAP_LOG_BASE']
+    logz = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    return logz
 
 def get_display_mode_choices():
     field_types = FieldType.query.all()
