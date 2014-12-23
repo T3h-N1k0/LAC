@@ -3,6 +3,7 @@ DEBUG = True
 SECRET_KEY = 'development-key_omgwtfbbq'
 LDAP_HOST = 'ldapone.cines.fr'
 LDAP_SEARCH_BASE = 'dc=cines,dc=fr'
+LDAP_LOG_BASE = 'cn=log'
 LDAP_LOGIN_VIEW = 'login'
 LDAP_SUCCESS_REDIRECT = 'home'
 LDAP_DOMAIN = 'ou=cines,ou=people,dc=cines,dc=fr'
