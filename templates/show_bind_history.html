@@ -3,7 +3,17 @@
 {% block title %} Historique des bind pour  {{ user.uid }} {% endblock title %}
 
 {% block body %}
-{% for bind in user.binds %}
-{{ bind.time }}<br>
-{% endfor %}
+<header class="row text-center">
+  <h4>Historique des connexions pour {{ user.uid }}</h4>
+</header>
+<section class="row">
+  <ul class='list-group col-md-2 col-md-offset-5 text-center'>
+    {% for bind in user.binds %}
+    <li class="list-group-item">
+      {{ bind.time }}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
 {% endblock body %}
