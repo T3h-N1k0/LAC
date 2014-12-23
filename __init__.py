@@ -3554,7 +3554,6 @@ def get_sambasid_prefix():
 ### Run !
 
 if __name__ == '__main__':
-    app.config.from_object('config')
     app.debug = app.config['DEBUG']
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
     toolbar = DebugToolbarExtension(app)
