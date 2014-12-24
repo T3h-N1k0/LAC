@@ -69,6 +69,14 @@
                      page=get_group_from_member_uid(session['uid']),
                      uid=session['uid'])}}">Détails de mon compte</a></li>
               <li><a href="{{ url_for('logout')}}">Déconnecter</a></li>
+              <li><a href="{{ url_for(
+                     'show_bind_history',
+                     uid=session['uid']
+                     )}}">Afficher l'historique des connexions</a></li>
+              <li><a href="{{ url_for(
+                     'show_history',
+                     uid=session['uid']
+                     )}}">Afficher l'historique des modifications</a></li>
             </ul>
           </li>
 

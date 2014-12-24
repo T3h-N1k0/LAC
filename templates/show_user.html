@@ -51,6 +51,16 @@
          )}}">Gérer la soumission</a>
       <br/>
       <a href="{{ url_for(
+         'show_bind_history',
+         uid=uid
+         )}}">Afficher l'historique des connexions</a>
+      <br/>
+      <a href="{{ url_for(
+         'show_history',
+         uid=uid
+         )}}">Afficher l'historique des modifications</a>
+      <hr>
+      <a href="{{ url_for(
          'delete_user',
          uid=uid
          )}}">Supprimer l'utilisateur</a>

@@ -59,6 +59,16 @@ Accueil
            'show_user',
            page=get_group_from_member_uid(session['uid']),
            uid=session['uid'])}}">Détails de mon compte</a>
+        <br>
+        <a href="{{ url_for(
+           'show_bind_history',
+           uid=session['uid']
+           )}}">Afficher l'historique des connexions</a>
+        <br>
+        <a href="{{ url_for(
+           'show_history',
+           uid=session['uid']
+           )}}">Afficher l'historique des modifications</a>
       </div>
     </div>
 
@@ -67,7 +77,7 @@ Accueil
       <div class="panel-body">
         <a href="{{ url_for(
            'search_user')}}">Chercher un utilisateur</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'add_user')}}">Ajouter un utilisateur</a>
       </div>
@@ -79,10 +89,10 @@ Accueil
       <div class="panel-body">
         <a href="{{ url_for(
            'edit_group_submission')}}">Editer la soumission par groupe(s)</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'edit_by_group')}}">Editer un/des attribut(s) par groupe(s)</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a>
       </div>
@@ -93,14 +103,14 @@ Accueil
       <div class="panel-body">
         <a href="{{ url_for(
            'edit_quota')}}">Gérer les quotas spécifiques</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'add_quota')}}">Ajouter un quota spécifique</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'edit_default_quota')}}">Gérer les quotas par defaut</a>
-        <br/>
-        <br/>
+        <br>
+        <br>
 
         <a href="{{ url_for(
            'show_filesystems')}}">Gérer les systèmes de fichier</a>
@@ -115,29 +125,29 @@ Accueil
       <div class="panel-body">
         <a href="{{ url_for(
            'edit_page')}}">Gérer les vues</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'add_page')}}">Ajouter une vue</a>
-        <br/>
-        <br/>
+        <br>
+        <br>
         <a href="{{ url_for(
            'show_ppolicies')}}">Gérer les ppolicies</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'add_ppolicy')}}">Ajouter une ppolicy</a>
-        <br/>
-        <br/>
+        <br>
+        <br>
         <a href="{{ url_for(
            'show_ldap_object_types')}}">Gérer les types d'objets LDAP</a>
-        <br/>
+        <br>
         <a href="{{ url_for(
            'add_ldap_object_type')}}">Ajouter un type d'objet LDAP</a>
-        <br/>
-        <br/>
+        <br>
+        <br>
         <a href="{{ url_for(
            'show_shells')}}">Gérer les types de shell</a>
-        <br/>
-        <br/>
+        <br>
+        <br>
         <a href="{{ url_for(
            'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a>
       </div>
