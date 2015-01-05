@@ -2177,10 +2177,10 @@ def populate_people_group_redis():
         print(people_group)
         r.delete('groupz:{0}'.format(people_group))
         memberz = get_people_group_memberz(people_group)
-        for member in memberz:
-            r.sadd("groupz:{0}".format(people_group), member)
-
-
+        print("memberz : {0}".format(memberz))
+        if memberz:
+            for member in memberz:
+                r.sadd("groupz:{0}".format(people_group), member)
 
 @app.before_first_request
 def init_populate_work_group_redis():
