@@ -1937,19 +1937,29 @@ def show_bind_history(uid):
 @login_required
 def show_history(uid):
     raw_logz = get_uid_logz(uid)
-
+    print(raw_logz[0])
+    logz = []
     for raw_log in raw_logz:
-        log = raw_log.get_attributes()
-        if 'reqMod' in log:
-            raw_new_valuez = log['reqMod']
-        if 'reqOld' in log:
-            raw_old_valuez = log['reqOld']
-        # print(log)
+        log_attrz = raw_log.get_attributes()
+        if 'reqMod' in log_attrz:
+            raw_new_valuez = log_attrz['reqMod']
+        if 'reqOld' in log_attrz:
+            raw_old_valuez = log_attrz['reqOld']
         new_valuez_dict = get_dict_from_raw_log_valuez(raw_new_valuez)
         old_valuez_dict = get_dict_from_raw_log_valuez(raw_old_valuez)
+        log = {'modified_by': log_attrz['reqAuthzID'][0],
+               'modified_date': generalized_time_sec_to_datetime(
+                   log_attrz['reqStart'][0] ),
+               'new_valuez': new_valuez_dict,
+               'old_valuez': old_valuez_dict}
+        logz.append(log)
+    ordered_logz = sorted(logz, key=lambda k: k['modified_date'], reverse=True)
 
+    return render_template('show_history.html',
+                               uid = uid,
+                               logz=ordered_logz)
 
-### Helperz
+    ### Helperz
 
 def get_dict_from_raw_log_valuez(raw_valuez):
     valuez = {}
@@ -1958,13 +1968,36 @@ def get_dict_from_raw_log_valuez(raw_valuez):
         raw_value_split = raw_value.split(":")
         attr_name = raw_value_split[0]
         attr_operation = raw_value_split[1][:1]
-        attr_value = raw_value_split[1][2:]
-        if attr_name in valuez:
-            valuez[attr_name].append(
-                (attr_value, attr_operation)
-            )
-        else:
-            valuez[attr_name] = [(attr_value, attr_operation)]
+        attr_value = raw_value_split[1][1:]
+        if attr_name in [
+                'userPassword',
+                'sambaNTPassword',
+                'pwdHistory'
+        ]:
+            attr_value = '<PASSWORD_HASH>'
+        elif attr_name in [
+        'pwdChangedTime',
+        'modifyTimestamp',
+        'pwdFailureTime',
+        ]:
+            if attr_value != "":
+                attr_value = generalized_time_to_datetime(
+                    attr_value.strip())
+
+
+        if attr_name not in [
+                'entryCSN',
+                'modifiersName',
+                'modifyTimestamp',
+                'uidNumber'
+        ]:
+            if attr_name in valuez:
+                valuez[attr_name].append(
+                    (attr_value ,
+                     attr_operation)
+                )
+            else:
+                valuez[attr_name] = [(attr_value, attr_operation)]
     return valuez
 
 def allowed_file(filename):
@@ -3451,6 +3484,18 @@ def is_principal_group(member, group):
 def generalized_time_to_datetime(generalized_time):
     created_datetime = datetime.strptime(
         generalized_time, "%Y%m%d%H%M%SZ"
+    )
+    created_datetime = utc.localize(created_datetime)
+    created_datetime = created_datetime.astimezone(
+        timezone(app.config['TIMEZONE'])
+    )
+    return created_datetime
+
+
+
+def generalized_time_sec_to_datetime(generalized_time):
+    created_datetime = datetime.strptime(
+        generalized_time, "%Y%m%d%H%M%S.%fZ"
     )
     created_datetime = utc.localize(created_datetime)
     created_datetime = created_datetime.astimezone(

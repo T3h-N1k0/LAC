@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block title %} Historique des modification pour  {{ uid }} {% endblock title %}
+
+{% block body %}
+<header class="row text-center">
+  <h3>Historique des modification pour {{ uid }}</h3>
+</header>
+<div class="row">
+  <section class="col-md-12">
+    <ul>
+      {% for log in logz %}
+      <div class="row">
+        <li><h4>Modifications du {{ log['modified_date']}} par {{ log['modified_by']}}</h4>
+          <div class="col-md-8">
+            <div class="panel panel-default">
+              <div class="panel-heading">Nouvelles valeurs</div>
+              <table class="table">
+                <tr><th>Attribut</th><th>Valeur</th><th>Action</th></tr>
+                {% for attr_name in log['new_valuez'] %}
+                {% for value in  log['new_valuez'][attr_name] %}
+                <tr>
+                  <td>{{ attr_name }}</td>
+                  <td>{{ value[0] }}</td>
+                  <td>{% if value[1] == '=' %}Modification{% elif value[1] =='-'%}Suppression{% else %}Ajout{% endif %}</td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+              </table>
+            </div>
+          </div>
+          <div class="col-md-4">
+            {% if  log['old_valuez'] %}
+            <div class="panel panel-default">
+              <div class="panel-heading">Anciennes valeurs</div>
+              <table class="table">
+                <tr><th>Attribut</th><th>Valeur</th></tr>
+                {% for attr_name in log['old_valuez'] %}
+                {% for value in  log['old_valuez'][attr_name] %}
+                <tr>
+                  <td>{{ attr_name }}</td>
+                  <td>{{ value[0] }}</td>
+                </tr>
+                {% endfor %}
+                {% endfor %}
+              </table>
+            </div>
+            {% endif %}
+          </div>
+        </li>
+      </div>
+      {% endfor %}
+    </ul>
+  </section>
+  <aside class="col-md-2">
+  </aside>
+</div>
+{% endblock body %}
