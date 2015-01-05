@@ -1,0 +1,103 @@
+{% from "_formhelpers.html" import render_formfield, render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Recherche de groupe {% endblock title %}
+
+{% block head_js %}
+
+<link rel="stylesheet" href="{{
+      url_for('static', filename='themes/blue/style.css')
+      }}" type="text/css" id="" media="print, projection, screen" />
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery.tablesorter.min.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+        url_for('static', filename='excellentexport.min.js')
+        }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function() {
+   $("#groupz").tablesorter({widthFixed: true, widgets: ['zebra']});
+ }
+ );
+
+</script>
+
+
+{% endblock head_js %}
+
+{% block body %}
+<section class="row large-label">
+  <div class="col-md-offset-3 col-md-5">
+    <div class="text-center"><h2>Recherche de groupe</h2></div>
+    <form method=post action="/search_group" class="well">
+      <section class="row">
+
+        <dl>
+          {{ render_formfield(form.gid_number) }}
+          {{ render_formfield(form.cn) }}
+          {{ render_formfield(form.description) }}
+        </dl>
+      </section>
+      <section class="row text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-search"> Chercher</button>
+      </section>
+
+
+
+
+
+    </form>
+  </div>
+</section>
+
+<div class="row">
+
+  {% if groupz %}
+  <div class="row">
+    <section class="col-md-4">
+      <h4>Liste des groupes : </h4>
+    </section>
+
+    <section class="col-md-offset-4 col-md-4 text-right">
+      <a download="group_list_{{ timestamp }}.xls" href="#" onclick="return ExcellentExport.excel(this, 'groupz', 'Groupes');">Exporter vers Excel</a><br>
+      <a download="group_list_{{ timestamp }}.csv" href="#" onclick="return ExcellentExport.csv(this, 'groupz');">Export vers CSV</a>
+    </section>
+  </div>
+  <table  class="tablesorter" id="groupz"  >
+    <thead>
+      <tr>
+        {% for attribute in attributes %}
+        <th>{{ attribute.description }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for group in groupz|sort %}
+      <tr onclick="document.location = '{{ url_for('show_group',
+          branch=get_branch_from_posix_group_dn(group.dn),
+          cn=group.get_attributes()['cn'][0] ) }}'">
+        {% for attr in attributes %}
+        <td>
+          {% for value in group.get_attributes()[attr.label]  %}
+          {{ render_field(value, attr.fieldtype.type) }}
+          {% endfor %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <h4>Aucun résultat</h4>
+  {% endif %}
+</div>
+{{ search_resultz  }}
+{% endblock %}
