@@ -17,6 +17,10 @@ class SearchUserForm(Form):
     ip = TextField('Adresse IP (cinesIpClient)')
     user_disabled = BooleanField('Uniquement les comptes inactifs : ')
 
+class SearchGroupForm(Form):
+    gid_number = TextField(u'Numéro du groupe (gidNumber)')
+    cn = TextField(u'Nom du groupe (cn)')
+    description = TextField(u'Description')
 
 class ChangePassForm(Form):
     new_pass = PasswordField('Nouveau mot de passe', [

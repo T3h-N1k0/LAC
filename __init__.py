@@ -524,6 +524,57 @@ def search_user():
                            timestamp=time.strftime("%Y%m%d_%H%M") )
 
 
+@app.route('/search_group', methods=['POST', 'GET'])
+@login_required
+def search_group():
+    """
+    Search for a posixAccount in the entire LDAP tree
+    """
+    form = SearchGroupForm(request.form)
+    search_resultz=""
+    page = Page.query.filter_by(label = "search_group").first()
+    page_attributez = Field.query.filter_by(page_id = page.id, display=True).all()
+    search_attributez = [attr.label.encode('utf-8')
+                         for attr in page_attributez]
+    print("Search attributez : {0}".format(search_attributez))
+
+    if request.method == 'POST' and form.validate():
+        filter_list =[]
+        if form.gid_number.data != "" :
+            filter_list.append("(gidNumber={0})".format(form.gid_number.data))
+        if form.cn.data != "" :
+            filter_list.append("(cn={0})".format(form.cn.data))
+        if form.description.data :
+            filter_list.append(
+                "(description={0})".format(form.description.data)
+            )
+        base_dn = "ou=groupePosix,{0}".format(app.config['LDAP_SEARCH_BASE'])
+
+        if filter_list != [] :
+            ldap_filter = "(&(objectClass=posixGroup){0})".format("".join(
+                filter_list
+            ))
+        else:
+            ldap_filter = "(objectClass=posixGroup)"
+
+        print("Search filter : {0}".format(ldap_filter))
+        print("ROOT_DN : {0}".format(base_dn))
+
+        print(search_attributez)
+        raw_resultz = ldap.search(ldap_filter=ldap_filter,
+                                  attributes=search_attributez,
+                                  base_dn=base_dn)
+
+        print(raw_resultz)
+        search_resultz = ldaphelper.get_search_results(raw_resultz)
+
+    return render_template('search_group.html',
+                           groupz=search_resultz,
+                           form=form,
+                           attributes=page_attributez,
+                           timestamp=time.strftime("%Y%m%d_%H%M") )
+
+
 @app.route('/change_password/<uid>', methods=['POST', 'GET'])
 @login_required
 def change_password(uid):
@@ -3088,6 +3139,10 @@ def  get_branch_from_posix_group_dn(dn):
         return m.group(2)
     else:
         return ''
+app.jinja_env.globals.update(
+    get_branch_from_posix_group_dn=get_branch_from_posix_group_dn
+)
+
 
 def get_work_groupz_from_member_uid(uid):
     dn = ldap.get_full_dn_from_uid(uid)
