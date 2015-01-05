@@ -618,6 +618,11 @@ def show_user(page, uid):
         return redirect(url_for('home'))
     uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
     uid_attributez=uid_detailz.get_attributes()
+    if 'cinesIpClient' in uid_attributez:
+        uid_attributez['cinesIpClient'] = [
+            ip for ip in uid_attributez['cinesIpClient'][0].split(";")
+        ]
+    # print(uid_attributez)
     work_groupz = get_work_groupz_from_member_uid(uid)
     sec_groupz = get_posix_groupz_from_member_uid(uid)
     if 'cinesSoumission' in uid_attributez:
@@ -2419,10 +2424,14 @@ def update_ldap_object_from_edit_user_form(form, attributes, uid):
         if attr == 'cinesUserToPurge':
             form_values = [entry.data
                            for entry in getattr(form, attr).entries]
+        elif attr == 'cinesIpClient':
+            form_values = [ ';'.join(
+                [entry.data.encode('utf-8')
+                 for entry in getattr(form, attr).entries]
+            )]
         else:
             form_values = [entry.data.encode('utf-8')
                            for entry in getattr(form, attr).entries]
-        # print('form_values : {0}'.format(form_values))
         if attr not in uid_attributez or uid_attributez[attr] != form_values:
             if form_values == [''] or (attr == 'cinesUserToPurge'
                                        and True not in form_values):
@@ -2623,8 +2632,12 @@ def set_edit_user_form_values(form, fieldz, uid=None):
         while(len(form_field.entries)>0):
             form_field.pop_entry()
         if field.label in uid_attributez and len(uid_attributez[field.label]):
+            if field.label == "cinesIpClient":
+                uid_attributez[field.label] = [
+                    ip_address
+                    for ip_address in uid_attributez[field.label][0].split(";")
+                ]
             for field_value in uid_attributez[field.label]:
-                print(field_value)
                 form_field.append_entry(
                     convert_to_display_mode(field_value,
                                             field.fieldtype.type))

@@ -5,15 +5,12 @@
 - Une toolbox permettant d'integrer les outils courant (warning password expire / expiration des comptes / utilisateurs fantomes / Scrupté les tentative de brutforce)
 - regrouper les attributs par classe
 - Profile soumission
-- History des modifications du compte
-- History lastbind script local récupérant l'historique de tous les bind utilisateurs -−> mis dans une databases locale
 - PPolicy mettre en place le maxage :
 - Vérifier la moulinette de warning pour les comptes cines + comptes service pwdmaxage (ppolicies) et pwdChangedTime (usr)) : PPolicy par default si pas de ppolicy  pwdPolicySubentry : que les comptes cines / soft / service
   Remettre a zero tous les attributs
 - email : proposer alias-
  Script modification soumission utilisateur lors de la suppression d'un groupe de soumission
 - Conteneur
-- CHAMP IPS MULTIPLE --> un seul champ avec ip séparé ";"
 - Quota dois aussi  être accessible aussi directement depuis le groupe (affichage de la liste de quota spécifique+ajout+modifier)
 - Moteur de recherche pour les groupes
 
@@ -60,7 +57,9 @@
 - Penser a la gestion des comptes clients otrs (2° requete uniquement pour utilisateur CINES)
 - création du repertoire home automatiquement
 - Flask-DebugToolbar
-
+- History lastbind script local récupérant l'historique de tous les bind utilisateurs -−> mis dans une databases locale
+- History des modifications du compte
+- CHAMP IPS MULTIPLE --> un seul champ avec ip séparé ";"
 
 
 ### Bugz :
