@@ -24,8 +24,10 @@ Accueil
                                      'show_group_memberz',
                                      group=branch['account'])}}">Consulter/Modifier</a></div>
             {% if session['admin'] %}
-            <div class="col-sm-4"><a href="{{ url_for(
-                                     'add_user')}}">Ajouter</a></div>
+            <div class="col-sm-4"><a href="{{url_for(
+                                     'add_user',
+                                     page_label=branch['account'])
+                                     }}">Ajouter</a></div>
             {% endif %}
           </div>
           <div class="row">
@@ -77,9 +79,6 @@ Accueil
       <div class="panel-body">
         <a href="{{ url_for(
            'search_user')}}">Chercher un utilisateur</a>
-        <br>
-        <a href="{{ url_for(
-           'add_user')}}">Ajouter un utilisateur</a>
       </div>
     </div>
 

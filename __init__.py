@@ -1015,11 +1015,14 @@ def hello(name=None):
 
 
 @app.route('/add_user/<page_label>/<uid>', methods=('GET', 'POST'))
-@app.route('/add_user/', methods=('GET', 'POST'))
+@app.route('/add_user/<page_label>', methods=('GET', 'POST'))
+# @app.route('/add_user/', methods=('GET', 'POST'))
 @login_required
-def add_user(page_label=None,uid=None):
+def add_user(page_label, uid=None):
     pages = Page.query.all()
-    ldap_object_types = LDAPObjectType.query.all()
+    ldap_object_type = LDAPObjectType.query.filter_by(
+        label = page_label
+    ).first()
 
     existing_userz = [
         user.get_attributes()['uid'][0] for user in get_all_users()]
@@ -1029,22 +1032,8 @@ def add_user(page_label=None,uid=None):
 
     add_form = AddUserForm(request.form)
     add_form.group.choices = get_posix_groupz_choices()
-    add_form.ldap_object_type.choices = [
-        (ldap_object_type.id,
-         ldap_object_type.label)
-        for ldap_object_type in ldap_object_types
-        if ldap_object_type.apply_to == "user"]
-
 
     if request.method == 'POST':
-        if add_form.ldap_object_type.data:
-            page_label = LDAPObjectType.query.filter_by(
-                id = add_form.ldap_object_type.data
-            ).first().label
-        print(page_label)
-        ldap_object_type = LDAPObjectType.query.filter_by(
-            label = page_label
-        ).first()
         page = Page.query.filter_by(
             label = ldap_object_type.label
         ).first()
@@ -1054,7 +1043,6 @@ def add_user(page_label=None,uid=None):
         edit_form = EditForm(request.form)
 
         if add_form.uid.data and add_form.validate():
-            print("group from form {0}".format(add_form.ldap_object_type.data))
             set_edit_user_form_values(edit_form,fieldz)
             return render_template('add_user.html',
                                    page=page.label,
@@ -1075,7 +1063,8 @@ def add_user(page_label=None,uid=None):
                                     page=page_label,
                                     uid = uid))
     return render_template('add_user.html',
-                           add_form=add_form)
+                           add_form=add_form,
+                           page=page_label)
 
 @app.route('/edit_user/<page>/<uid>', methods=('GET', 'POST'))
 @login_required

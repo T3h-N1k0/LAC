@@ -147,13 +147,8 @@ class LDAPObjectTypeForm(Form):
     set_ppolicy = BooleanField(u'Appliquer la ppolicy aux objets déjà créés')
 
 class AddUserForm(Form):
-    # display_type = SelectField(u'Type d\'affichage pour le compte')
     group = SelectField(u'Groupe')
-    ldap_object_type = SelectField(u'Type d\'objet LDAP', coerce=int)
     uid = TextField(u'Login (uid)')
-    cn = TextField(u'Common Name')
-    # home_directory = TextField(u'Repertoire d\'acceuil (homeDirectory)')
-
 
 class AddPolicyForm(Form):
     cn = TextField(u'Common Name')

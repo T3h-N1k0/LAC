@@ -29,13 +29,15 @@ $(document).ready(function(){
 {% endblock head_js %}
 
 {% block body %}
+<div class="row text-center">
+  <h3>{% if uid %}Création de l'utilisateur {{ uid}} {% else %} Création d'un utilisateur{% endif %}</h3>
+</div>
 <div class="well col-md-offset-3 col-md-6 text-center">
   {% if add_form  %}
-  <form method="post" action="/add_user/">
+  <form method="post" action="/add_user/{{ page }}">
     <p class="help-block">Filtrer les groupes :
     <input id="searchGroupFilter" type="text"/></p>
     {{ render_formfield(add_form.group) }}
-    {{ render_formfield(add_form.ldap_object_type) }}
     {{ render_formfield(add_form.uid) }}
     <button id="update" type="submit"  class="btn btn-primary">
       <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
