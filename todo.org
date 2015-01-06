@@ -1,0 +1,71 @@
+* P1 avant MEP
+** TODO Doit remplir toute les fonctions actuelles de lac
+** TODO Etre plus ergonomique
+** TODO Toolbox
+   - [ ] warning password expire
+     - [ ] les comptes cines
+     - [ ] comptes service pwdmaxage (ppolicies) et pwdChangedTime (usr))
+   - [ ] expiration des comptes
+   - [ ] utilisateurs fantomes
+   - [ ] Scruter les tentatives de bruteforce
+** TODO regrouper les attributs par classe
+** TODO Profile soumission
+** TODO PPolicy mettre en place le maxage
+** TODO email : proposer alias
+** TODO Propager la suppression d'un groupe de soumission sur les utilisateurs
+** TODO Gestion soumission depuis pages utilisateur
+** TODO Conteneur
+** TODO Quota doit aussi  être accessible directement depuis le groupe
+   (affichage de la liste de quota spécifique+ajout+modifier)
+** TODO Rendre cliquable les objet ldap
+   - [ ] Utilisateurs
+   - [ ] Groupes
+** TODO Ajout utilisateur
+ - [ ] 2° ecran rappeler le login
+ - [ ] Rester sur la page en cas d'erreur a l'ajout
+ - [ ] filtrer les groupes : uniquement ceux de la branche en cours
+   (ex: si add user cines * TODO−> groupe cines uniquement)
+ - [ ] Virer le champ "type d'objet" déjà selectionné sur le home
+** TODO Faire ressortir graphiquement l'etat d'un compte 'désactiver / activer'
+   Mettre en surbrillance rouge le lien quand le compte est désactivé.
+** TODO Réorganiser l'ordre suivant le formulaire ldap
+** TODO Date Picker pour les champs date
+** TODO Problème redirection apres creation du groupe
+** TODO Bug edition soumission utilisateur
+** TODO Séparer groupe secondaire /
+** TODO Ajouter un bouton d'accueil à la place du <USER> dans la navbar
+* P2
+** Divers
+*** TODO Conteneur
+
+** Moteur
+*** TODO Identifiant du serveur LDAP dans un fichier, tous les autres serveur sous forme d'objet ldap dans la branche system
+*** TODO Afficher les infos serveur: sybase / otrs
+
+** Interface d'administration
+*** TODO Forcer ppolicy pour un user (uniquement les admins lac)
+*** TODO Validateur par champs
+*** TODO Deplacer la gestion des vues dans le type d'objet
+
+** Utilisateur
+*** TODO Checker l'obligation du telephone?
+*** TODO Rajouter lien whois
+*** TODO History lastbind récupéré l'existant --> afficher l'heure
+*** TODO History modif compte : bug champ gidnumber / shell --> interpretation des resultats.
+*** TODO Rappel affichage info du groupe : Membres à titre secondaire
+*** TODO Suggestion uid
+*** TODO Profile soumission
+
+** Groupe
+*** TODO Groupe secondaire : exclure le groupe principal
+*** TODO Quota dois aussi  être accessible directement depuis le groupe (affichage de la liste de quota pécifique+ajout+modifier)
+*** TODO Affichage groupe par odre alphabétique
+*** TODO Ajout des groupes de travail
+*** TODO Gestion de la suppression du groupe de travail (sgi/ibm...)+ intégrité cinessoumission
+*** TODO Rajouter la gestion des groupes arcsys dans LAC, (modificaiton des contenu uniquement.)
+
+** Toolbox
+*** TODO warning password expire (cines/soft/service) : prendre en compte si ppolicies specigique ou non (pwdPolicySubentry)
+*** TODO péremption des comptes (shadowexpire) --> envoi mail a prod@cines.fr
+*** TODO utilisateurs fantomes
+*** TODO Scrupter les tentative de brutforce
