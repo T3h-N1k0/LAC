@@ -1413,6 +1413,15 @@ def edit_submission(uid):
     else:
         submission_list = []
 
+    print('submission_list {0}'.format(submission_list))
+    work_groupz = {}
+    for group in get_submission_groupz_list():
+        is_member = dn in r.smembers( "wrk_groupz:{0}".format(group))
+        is_submission = (group, '1') in submission_list
+        work_groupz[group] = {'is_member': is_member,
+                              'is_submission': is_submission}
+
+    print("work_groupz {0}".format(work_groupz))
     if request.method == 'POST':
         wrk_group = form.wrk_group.data
         is_submission = form.submission.data
@@ -1434,7 +1443,7 @@ def edit_submission(uid):
                            form=form,
                            dn=dn,
                            uid=uid,
-                           submission_list=submission_list)
+                           work_groupz=work_groupz)
 
 @app.route('/edit_group_submission/', methods=('GET', 'POST'))
 @login_required

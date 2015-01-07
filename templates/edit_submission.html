@@ -21,16 +21,24 @@
     </div>
   </form>
 </section>
-{% if submission_list  %}
+{% if work_groupz %}
 <aside class="row col-md-4 col-md-offset-1">
   <h4>Droits de soumission actuels :</h4>
-  <ul class='list-group'>
-    {% for group in submission_list %}
-    {% if group[1] == '1' %}
-    <li class="list-group-item">{{ group[0]}}</li>
-    {% endif %}
+
+  <table class='table'>
+    <tr>
+      <th>Groupe</th>
+      <th>Membre</th>
+      <th>Soumission</th>
+    </tr>
+    {% for group in work_groupz %}
+    <tr>
+      <td>{{ group }}</td>
+      <td>{% if work_groupz[group]['is_member'] %}Oui{% else %}Non{% endif %}</td>
+      <td>{% if work_groupz[group]['is_submission'] %}Oui{% else %}Non{% endif %}</td>
+    </tr>
     {% endfor %}
-  </ul>
+  </table>
 </aside>
 {% endif %}
 
