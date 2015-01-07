@@ -31,6 +31,9 @@
   <div class="col-sm-offset-2 col-sm-4" >
 
     <aside class="row">
+      {% if not is_active %}
+      <div class="text-center alert alert-danger" role="alert">Compte désactivé</div>
+      {% endif %}
       <div id='dn'> Nom LDAP : {{ dn }}</div>
       <h4>Actions</h4>
       {% if session['admin'] or session['uid']==uid %}
