@@ -1031,7 +1031,8 @@ def add_user(page_label, uid=None):
         AddUserForm, 'uid',[validators.NoneOf(existing_userz)])
 
     add_form = AddUserForm(request.form)
-    add_form.group.choices = get_posix_groupz_choices()
+    add_form.group.choices = get_posix_groupz_choices(
+        get_group_branch(page_label))
 
     if request.method == 'POST':
         page = Page.query.filter_by(
@@ -3220,6 +3221,12 @@ def get_work_group_memberz(group):
         memberz.extend(member.get_attributes()['uniqueMember'])
     return memberz
 
+
+def get_group_branch(account_type):
+    for branch in app.config['BRANCHZ']:
+        if branch['account'] == account_type:
+            return branch['group']
+
 def get_posix_groupz(branch=None):
     # print(branch)
     ldap_filter = "(objectClass=posixGroup)"
@@ -3243,8 +3250,8 @@ def get_work_groupz():
                           attributes=['cn']))
     return [group.get_attributes()['cn'][0] for group in groupz]
 
-def get_posix_groupz_choices():
-    ldap_groupz = get_posix_groupz()
+def get_posix_groupz_choices(branch=None):
+    ldap_groupz = get_posix_groupz(branch)
     ldap_groupz_list = []
     for group in ldap_groupz:
         group_attrz = group.get_attributes()
