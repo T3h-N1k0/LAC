@@ -2920,15 +2920,10 @@ def add_to_group_if_not_member(group, memberz_uid):
                            if dn not in r.smembers(
                                    "wrk_groupz:{0}".format(group))
     ]
-    # print('memberz_dn_filtered {0}'.format(memberz_dn_filtered))
-    # print(memberz_dn)
     if memberz_dn_filtered:
         pre_modlist = [('uniqueMember', memberz_dn_filtered)]
         group_dn = get_wrk_group_dn_from_cn(group)
         ldap.add_dn_attribute(group_dn, pre_modlist)
-    #     flash(u'Utilisateur(s) ajoutés au groupe')
-    # else:
-    #     flash(u'Utilisateur(s) déjà membre(s) du groupe')
 
 def rem_from_group_if_member(group, memberz_uid):
     populate_work_group_redis()
