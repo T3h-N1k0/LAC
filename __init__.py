@@ -1426,7 +1426,7 @@ def edit_submission(uid):
         elif not is_member:
             rem_from_group_if_member(wrk_group, [uid])
             set_submission(uid, wrk_group, '0')
-        return redirect(url_for('show',
+        return redirect(url_for('show_user',
                                 page = get_group_from_member_uid(uid),
                                 uid = uid))
 
