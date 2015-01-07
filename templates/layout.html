@@ -34,9 +34,13 @@
       <nav class="nav navbar-default navbar-static-top " role="navigation">
 
         <div class="navbar-header">
-        <a class="navbar-brand" href="{{ url_for('home')}}">{{ session['uid']}}</a>
+        <a class="navbar-brand" href="{{ url_for(
+                     'show_user',
+                     page=get_group_from_member_uid(session['uid']),
+                     uid=session['uid'])}}">{{ session['uid']}}</a>
         </div>
         <ul class="nav navbar-nav">
+          <li><a href="{{ url_for('home')}}">Accueil</a></li>
           <li class="dropdown">
             <a data-toggle="dropdown" href="#">Utilisateurs<b class="caret"></b></a>
             <ul class="dropdown-menu">
