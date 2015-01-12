@@ -111,12 +111,27 @@
     <aside class="row">
       <h4>Groupes secondaires</h4>
       {% for group in sec_groupz %}
+      {% if group[1] != 'grProjet' %}
       <a class="list-group-item" href="{{ url_for(
          'show_group',
          branch=group[1],
          cn=group[0]
          )}}">{{ group[0] }}</a>
-        {% endfor %}
+      {% endif %}
+      {% endfor %}
+      </ul>
+    </aside>
+    <aside class="row">
+      <h4>Groupes projet</h4>
+      {% for group in sec_groupz %}
+      {% if group[1] == 'grProjet' %}
+      <a class="list-group-item" href="{{ url_for(
+         'show_group',
+         branch=group[1],
+         cn=group[0]
+         )}}">{{ group[0] }}</a>
+      {% endif %}
+      {% endfor %}
       </ul>
     </aside>
     {% endif %}

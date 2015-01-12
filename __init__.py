@@ -674,8 +674,11 @@ def show_user(page, uid):
             ip for ip in uid_attributez['cinesIpClient'][0].split(";")
         ]
     # print(uid_attributez)
+    group_princ = get_posix_group_cn_by_gid(uid_attributez['gidNumber'][0])
+    print('group_princ {0}'.format(group_princ))
     work_groupz = get_work_groupz_from_member_uid(uid)
-    sec_groupz = get_posix_groupz_from_member_uid(uid)
+    sec_groupz = [ group for group in get_posix_groupz_from_member_uid(uid)
+                   if group[0] != group_princ]
     if 'cinesSoumission' in uid_attributez:
         submission_list = get_list_from_submission_attr(
             uid_attributez['cinesSoumission'][0])
@@ -1023,7 +1026,6 @@ def add_user(page_label, uid=None):
     ldap_object_type = LDAPObjectType.query.filter_by(
         label = page_label
     ).first()
-
     existing_userz = [
         user.get_attributes()['uid'][0] for user in get_all_users()]
 
