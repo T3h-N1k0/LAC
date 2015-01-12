@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, make_response
-from flask.ext.ldap import LDAP, login_required, admin_login_required
+from flask_ldap import LDAP, login_required, admin_login_required
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug import secure_filename
