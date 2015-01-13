@@ -15,12 +15,14 @@
     <link href="{{bootstrap_find_resource('css/bootstrap.css', cdn='bootstrap')}}" rel="stylesheet" media="screen">
     <link rel="stylesheet" type="text/css" href="{{
          url_for('static', filename='css/custom.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{
+         url_for('static', filename='css/datepicker.css')}}">
 
     {%- endblock styles %}
 
     <script src="{{bootstrap_find_resource('jquery.js', cdn='jquery')}}"></script>
     <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
-
+    <script type="text/javascript" src="{{url_for('static', filename='js/bootstrap-datepicker.js')}}"></script>
     {%- block head_js %}
 
     {%- endblock head_js %}

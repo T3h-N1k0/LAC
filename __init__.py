@@ -2711,12 +2711,11 @@ def set_edit_ppolicy_form_values(form, fieldz_namez, ppolicy_cn=None):
                 field.data = field_value.decode('utf-8')
 
 def append_field_to_form(field, form):
-    date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
     if field.fieldtype.type == 'Text':
         setattr(form,
                 field.label,
                 TextField(field.description))
-    elif field.fieldtype.type in date_formatz:
+    elif field.fieldtype.type in app.config['DATE_FIELDTYPEZ']:
         setattr(form,
                 field.label,
                 DateField(field.description))

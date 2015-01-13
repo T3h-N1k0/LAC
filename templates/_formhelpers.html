@@ -25,7 +25,7 @@
     </dt>
     <dd><ul class="list-unstyled">
       {% for field in get_attr(form, pagefield.label) %}
-      <li  data-toggle="fieldset-entry">  {{ field(**kwargs)|safe }}
+      <li  data-toggle="fieldset-entry">  {% if pagefield.fieldtype.type in config['DATE_FIELDTYPEZ']  %} {{ field(class_='datepicker')|safe }} {% else %} {{ field(**kwargs)|safe }} {% endif %}
       {% if pagefield.multivalue %}
         <button type="button" data-toggle="fieldset-remove-row" id="{{ pagefield.label }}-{{loop.index0}}-remove" class="btn"><span class="glyphicon glyphicon-remove"></button></li>
       {% endif %}

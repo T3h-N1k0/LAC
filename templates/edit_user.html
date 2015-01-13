@@ -4,9 +4,6 @@
 {% block title %} Editer le compte {{ uid }} {% endblock title %}
 
 {% block head_js %}
-<script type="text/javascript" src="{{
-         url_for('static', filename='jquery-2.1.1.js')
-         }}"></script>
 
 <script type="text/javascript" src="{{
          url_for('static', filename='fieldset.js')
@@ -18,6 +15,7 @@
 
 <script type="text/javascript" id="js">
  $(document).ready(function(){
+   $('.datepicker').datepicker();
    $('#wrk_groupz-available_groupz').dblclick(function() {
      selectFromList('#wrk_groupz-available_groupz', '#wrk_groupz-selected_groupz');
    });
