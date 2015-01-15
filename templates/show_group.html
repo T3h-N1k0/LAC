@@ -7,66 +7,119 @@
 {% endblock head_js %}
 
 {% block body %}
-<a href="{{ url_for(
-'edit_group',
-branch=branch,
-group_cn=cn)}}">Editer</a>
-<a href="{{ url_for(
-   'delete_group',
-   branch=branch,
-   cn=cn
-   )}}">Supprimer</a>
-<br/>
+<header class="row text-center">
+  <h2>Détails pour le groupe {{ cn }}</h2>
+</header>
 
-<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+<section class="row">
+  <div class="col-sm-6">
 
-{% for attr_name, attr_values in cn_attributez.iteritems() %}
-{% if attr_name in page_fieldz %}
-{% if page_fieldz[attr_name].display %}
-{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :
-<ul>
-{% for value in attr_values %}
-<li>{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
-{% endfor %}
-</ul>
-{% endif %}
-{% endif %}
-{% endfor %}
+    {% for attr_name, attr_values in cn_attributez.iteritems() %}
 
-{% if manager %}
-Responsable : {{ manager.qualite.libelle_qualite }}  {{ manager.nom_personne }}  {{ manager.prenom_personne }} <br/>
-Comite : {{ ressource.comite.intitule_comite }} <br/>
-Site : {{ manager.adresse.organisme_adresse }}<br/>
-Laboratoire : {{ manager.adresse.laboratoire_adresse }} <br/>
-Ville : {{ manager.adresse.ville_adresse}} <br/>
-Téléphone : {{ manager.telephone_personne }} <br>
-Fax : {{ manager.fax_personne }} <br>
-Mail : {{ manager.bal_personne }} <br/>
+    {% if attr_name in page_fieldz %}
 
-<br>
-<table>
-  <tr>
-    <th>Ressources</th>
-    <th>IBM</th>
-    <th>SGI</th>
-  </tr>
-  <tr>
-    <td>Demandées</td>
-    <td> {{ ressource.demande_uc_ibm if ressource.demande_uc_ibm  else 0}}</td>
-    <td> {{ ressource.demande_uc_sgi if ressource.demande_uc_sgi  else 0}}</td>
-  </tr>
-  <tr>
-    <td>Accordées</td>
-    <td> {{ ressource.accorde_uc_ibm if ressource.accorde_uc_ibm else 0}}</td>
-    <td> {{ ressource.accorde_uc_sgi if ressource.accorde_uc_sgi else 0}}</td>
-  </tr>
-  <tr>
-    <td>Consommées</td>
-    <td> {{ ibm_computed  if ibm_computed  else 0}}</td>
-    <td> {{ sgi_computed  if sgi_computed  else 0}}</td>
-  </tr>
-</table>
+    {% if page_fieldz[attr_name].display %}
+    <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
 
-{% endif %}
+    {% if attr_name == 'memberuid' %}
+    {% for value in attr_values %}
+    {% if get_group_from_member_uid(value) %}
+    <a class="list-group-item" href="{{ url_for('show_user',
+       page=get_group_from_member_uid(value),
+       uid=value)}}">{{ value }}</a>
+    {% else %}
+    <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
+    {% endif %}
+    {% endfor %}
+    {% else %}
+    {% for value in attr_values %}
+    <ul class="list-group">
+      <li class="list-group-item">{{ value }}</li>
+    </ul>
+    {% endfor %}
+    {% endif %}
+    <br>
+    {% endif %}
+
+    {% endif %}
+
+    {% endfor %}
+
+    {% if manager %}
+    Responsable : {{ manager.qualite.libelle_qualite }}  {{ manager.nom_personne }}  {{ manager.prenom_personne }} <br/>
+    Comite : {{ ressource.comite.intitule_comite }} <br/>
+    Site : {{ manager.adresse.organisme_adresse }}<br/>
+    Laboratoire : {{ manager.adresse.laboratoire_adresse }} <br/>
+    Ville : {{ manager.adresse.ville_adresse}} <br/>
+    Téléphone : {{ manager.telephone_personne }} <br>
+    Fax : {{ manager.fax_personne }} <br>
+    Mail : {{ manager.bal_personne }} <br/>
+
+    <br>
+    <table>
+      <tr>
+        <th>Ressources</th>
+        <th>IBM</th>
+        <th>SGI</th>
+      </tr>
+      <tr>
+        <td>Demandées</td>
+        <td> {{ ressource.demande_uc_ibm if ressource.demande_uc_ibm  else 0}}</td>
+        <td> {{ ressource.demande_uc_sgi if ressource.demande_uc_sgi  else 0}}</td>
+      </tr>
+      <tr>
+        <td>Accordées</td>
+        <td> {{ ressource.accorde_uc_ibm if ressource.accorde_uc_ibm else 0}}</td>
+        <td> {{ ressource.accorde_uc_sgi if ressource.accorde_uc_sgi else 0}}</td>
+      </tr>
+      <tr>
+        <td>Consommées</td>
+        <td> {{ ibm_computed  if ibm_computed  else 0}}</td>
+        <td> {{ sgi_computed  if sgi_computed  else 0}}</td>
+      </tr>
+    </table>
+
+    {% endif %}
+
+  </div>
+
+  <div class="col-sm-offset-2 col-sm-4" >
+    <aside class="row">
+      <div id='dn'>Nom LDAP : {{ dn }}</div>
+      <h4>Actions</h4>
+      <a href="{{ url_for(
+         'edit_group',
+         branch=branch,
+         group_cn=cn)}}">Editer</a>
+      <br>
+      <a href="{{ url_for(
+         'delete_group',
+         branch=branch,
+         cn=cn
+         )}}">Supprimer</a>
+      <br/>
+    </aside>
+    <aside class="row">
+      <h4>Quotas</h4>
+      {% for quota in quotaz %}
+      <strong>{{ quota[0] }} : </strong>
+      <a href="{{ url_for(
+         'edit_default_quota',
+         storage_cn=quota[0])}}">Quota par defaut </a>
+       /
+      {% if quota[1] %}
+      <a href="{{ url_for(
+         'edit_quota',
+         storage_cn=quota[1])}}">Editer quota spécifique <strong>{{ quota[1] }}</strong></a>
+      {% else %}
+      <a href="{{ url_for(
+         'add_quota',
+         storage=quota[0],
+         group=cn_attributez['gidNumber'][0])}}">Ajouter un quota spécifique</a>
+      {% endif %}
+      {% endfor %}
+    </aside>
+  </div>
+</section>
 
 {% endblock body %}

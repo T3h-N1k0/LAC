@@ -1251,6 +1251,29 @@ def show_group(branch, cn):
         return redirect(url_for('show_groups',
                                 branch=branch))
     cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
+
+    default_storagez_labelz = [storage.get_attributes()['cn'][0]
+                       for storage in get_default_storage_list()]
+
+    kustom_storagez_labelz = [
+        storage.get_attributes()['cn'][0]
+        for storage in get_group_quota_list()
+        if storage.get_attributes()['cn'][
+                0
+        ].split('.')[1] == cn_attributez['gidNumber'][0]
+    ]
+
+    quotaz = []
+    for storage in default_storagez_labelz:
+        if kustom_storagez_labelz:
+            for kustom_storage in kustom_storagez_labelz:
+                if storage in kustom_storage:
+                    quotaz.append((storage, kustom_storage))
+        else:
+            quotaz.append((storage, None))
+
+        print("phuuuuuuuuuuuu {0}".format(quotaz))
+
     if branch == 'grCcc':
         ressource = C4Ressource.query.filter_by(code_projet = cn).first()
         code_personne = C4Projet.query.filter_by(
@@ -1282,7 +1305,8 @@ def show_group(branch, cn):
                            ressource=ressource,
                            manager=manager,
                            sgi_computed=sgi_computed,
-                           ibm_computed=ibm_computed)
+                           ibm_computed=ibm_computed,
+                           quotaz=quotaz)
 
 # @app.route('/delete_group/<cn>', methods=('GET', 'POST'))
 # @login_required
@@ -1503,9 +1527,8 @@ def toggle_account(uid):
 @app.route('/edit_default_quota/<storage_cn>', methods=('GET', 'POST'))
 @admin_login_required
 def edit_default_quota(storage_cn=None):
-    storagez = get_default_storage_list()
     storagez_labelz = [storage.get_attributes()['cn'][0]
-                       for storage in storagez]
+                       for storage in get_default_storage_list()]
 
     if storage_cn is not None:
         dn = ldap.get_full_dn_from_cn(storage_cn)
@@ -1553,8 +1576,15 @@ def edit_quota(storage_cn=None):
                                storagez=storagez_labelz)
 
 @app.route('/add_quota/', methods=('GET', 'POST'))
+@app.route('/add_quota/<storage>/<group>', methods=('GET', 'POST'))
 @admin_login_required
-def add_quota():
+def add_quota(storage=None, group=None):
+    if storage and group:
+        create_ldap_quota(storage, group)
+        return redirect(
+            url_for('edit_quota',
+                    storage_cn = '{0}.{1}'.format(storage, group)))
+
     form = CreateQuotaForm(request.form)
 
     default_storagez = get_default_storage_list()
@@ -1564,44 +1594,13 @@ def add_quota():
         for storage in default_storagez ]
     form.group.choices = get_posix_groupz_choices()
 
-    if request.method == 'POST' and form.validate():
+    if (request.method == 'POST' and form.validate()):
         niou_cn = '{0}.{1}'.format(
-                    form.default_quota.data,
-                    form.group.data)
+            form.default_quota.data,
+            form.group.data)
 
-        default_storage = get_default_storage(
-            form.default_quota.data).get_attributes()
 
-        default_size_unit = get_attr(
-            get_attr(SizeQuotaForm, 'unit'),'kwargs')['default']
-        default_inode_unit = get_attr(
-            get_attr(InodeQuotaForm, 'unit'),'kwargs')['default']
-
-        cinesQuotaSizeHard = str(int(
-            default_storage['cinesQuotaSizeHard'][0]
-        ) / default_size_unit)
-        cinesQuotaSizeSoft = str(int(
-            default_storage['cinesQuotaSizeSoft'][0]
-        ) / default_size_unit)
-        cinesQuotaInodeHard = str(int(
-            default_storage['cinesQuotaInodeHard'][0]
-        ) / default_inode_unit)
-        cinesQuotaInodeSoft = str(int(
-            default_storage['cinesQuotaInodeSoft'][0]
-        ) / default_inode_unit)
-
-        add_record = [('cn', [niou_cn]),
-                      ('objectClass', ['top', 'cinesQuota']),
-                      ('cinesQuotaSizeHard', cinesQuotaSizeHard),
-                      ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
-                      ('cinesQuotaInodeHard', cinesQuotaInodeHard),
-                      ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)
-        ]
-        group_full_dn = ldap.get_full_dn_from_cn(
-            get_posix_group_cn_by_gid(form.group.data))
-        full_dn = 'cn={0},{1}'.format(niou_cn,group_full_dn)
-        ldap.add(full_dn, add_record)
-        flash(u'Quota initialisé')
+        create_ldap_quota(form.default_quota.data, form.group.data)
         return redirect(url_for('edit_quota',
                                 storage_cn = niou_cn))
 
@@ -2395,6 +2394,44 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     return True
 
 
+def create_ldap_quota(storage, group_id):
+    niou_cn = '{0}.{1}'.format(
+        storage,
+        group_id)
+    print("plop  : {0}".format(storage))
+    default_storage = get_default_storage(
+        storage).get_attributes()
+
+    default_size_unit = get_attr(
+        get_attr(SizeQuotaForm, 'unit'),'kwargs')['default']
+    default_inode_unit = get_attr(
+        get_attr(InodeQuotaForm, 'unit'),'kwargs')['default']
+    cinesQuotaSizeHard = str(int(
+        default_storage['cinesQuotaSizeHard'][0]
+    ) / default_size_unit)
+    cinesQuotaSizeSoft = str(int(
+        default_storage['cinesQuotaSizeSoft'][0]
+    ) / default_size_unit)
+    cinesQuotaInodeHard = str(int(
+        default_storage['cinesQuotaInodeHard'][0]
+    ) / default_inode_unit)
+    cinesQuotaInodeSoft = str(int(
+        default_storage['cinesQuotaInodeSoft'][0]
+    ) / default_inode_unit)
+    add_record = [('cn', [niou_cn]),
+                  ('objectClass', ['top', 'cinesQuota']),
+                  ('cinesQuotaSizeHard', cinesQuotaSizeHard),
+                  ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
+                  ('cinesQuotaInodeHard', cinesQuotaInodeHard),
+                  ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)
+    ]
+    print(group_id)
+    group_full_dn = ldap.get_full_dn_from_cn(
+        get_posix_group_cn_by_gid(group_id))
+    full_dn = 'cn={0},{1}'.format(niou_cn,group_full_dn)
+    ldap.add(full_dn, add_record)
+    flash(u'Quota initialisé')
+
 def get_next_id_from_ldap_ot(ldap_ot):
     id_range = get_range_list_from_string(ldap_ot.ranges)
     next_index = id_range.index(ldap_ot.last_used_id)+1
@@ -3054,7 +3091,6 @@ def get_group_from_member_uid(uid):
         people_group = branch['account']
         if uid in r.smembers("groupz:{0}".format(people_group)):
             return people_group
-    flash(u"Impossible de trouver le groupe associé à {0}".format(uid))
 app.jinja_env.globals.update(
     get_group_from_member_uid=get_group_from_member_uid
 )
