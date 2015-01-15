@@ -9,7 +9,7 @@ from sqlalchemy import Table, Column, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import time
 from dateutil.relativedelta import relativedelta
 from pytz import timezone
@@ -1077,11 +1077,11 @@ def edit_user(page,uid):
     EditForm = generate_edit_user_form_class(page)
     form = EditForm(request.form)
     fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
-    fieldz_labelz = [field.label for field in fieldz]
+    # fieldz_labelz = [field.label for field in fieldz]
 
 
     if request.method == 'POST':
-        update_ldap_object_from_edit_user_form(form,fieldz_labelz,uid)
+        update_ldap_object_from_edit_user_form(form, fieldz, uid)
 
         for group in form.wrk_groupz.selected_groupz.data:
             add_to_group_if_not_member(group, [uid])
@@ -2467,34 +2467,28 @@ def update_ldap_object_from_edit_ppolicy_form(form, attributes, cn):
     print(pre_modlist)
     ldap.update_cn_attribute(cn, pre_modlist)
 
-def update_ldap_object_from_edit_user_form(form, attributes, uid):
+def update_ldap_object_from_edit_user_form(form, fieldz, uid):
     uid_attributez = ldaphelper.get_search_results(
         get_uid_detailz(uid)
     )[0].get_attributes()
     pre_modlist = []
-    for attr in attributes:
-        if attr == 'cinesUserToPurge':
-            form_values = [entry.data
-                           for entry in getattr(form, attr).entries]
-        elif attr == 'cinesIpClient':
-            form_values = [ ';'.join(
-                [entry.data.encode('utf-8')
-                 for entry in getattr(form, attr).entries]
-            )]
-        else:
-            form_values = [entry.data.encode('utf-8')
-                           for entry in getattr(form, attr).entries]
-        if attr not in uid_attributez or uid_attributez[attr] != form_values:
-            if form_values == [''] or (attr == 'cinesUserToPurge'
+    for field in fieldz:
+
+        form_values = [convert_display_mode_to_ldap(entry.data, field.fieldtype.type)
+                       for entry in getattr(form, field.label).entries]
+
+        if (field.label not in uid_attributez
+            or uid_attributez[field.label] != form_values):
+            if form_values == [''] or (field.label == 'cinesUserToPurge'
                                        and True not in form_values):
                 form_values = None
             if (
-                    attr == 'cinesUserToPurge'
+                    field.label == 'cinesUserToPurge'
                     and form_values
                     and True in form_values
             ):
                 form_values = ['1']
-            pre_modlist.append((attr, form_values))
+            pre_modlist.append((field.label, form_values))
     # print(pre_modlist)
     ldap.update_uid_attribute(uid, pre_modlist)
 
@@ -3561,6 +3555,9 @@ def generalized_time_to_datetime(generalized_time):
     return created_datetime
 
 
+def datetime_to_generalized_time(da_datetime):
+    return da_datetime.strftime("%Y%m%d%H%M%SZ")
+
 
 def generalized_time_sec_to_datetime(generalized_time):
     created_datetime = datetime.strptime(
@@ -3572,14 +3569,17 @@ def generalized_time_sec_to_datetime(generalized_time):
     )
     return created_datetime
 
+def datetime_to_generalized_time_sec(da_datetime):
+    return da_datetime.strftime("%Y%m%d%H%M%S.%fZ")
+
 def datetime_to_timestamp(date):
-    # return (date_time  - datetime(1970, 1, 1)).total_seconds()
     return str(int(time.mktime(
         datetime.strptime(str(date), "%Y-%m-%d").timetuple()
     )))
 
+
 def datetime_to_days_number(datetime):
-    return int(datetime.strftime("%s"))/86400
+    return (int(datetime.strftime("%s"))/86400)+1
 
 def days_number_to_datetime(nb):
     return datetime.fromtimestamp(
@@ -3588,22 +3588,17 @@ def days_number_to_datetime(nb):
     )
 
 def convert_to_display_mode(value, display_mode):
-    # print(value)
-    # print(display_mode)
     if display_mode in  ('Text', 'Filesystem', 'Shell') :
-        # value = value.decode('utf-8')
         return value.decode('utf-8')
     elif display_mode == 'Datetime' :
         return value.strftime(
             app.config['DATE_FORMAT'])
     elif display_mode == 'Generalizedtime' :
-        return generalized_time_to_datetime(value)# .strftime(
-            # app.config['DATE_FORMAT'])
+        return generalized_time_to_datetime(value)
     elif display_mode == 'GIDNumber' :
         return get_posix_group_cn_by_gid(value)
     elif display_mode == 'DaysNumber' :
-        return days_number_to_datetime(value)# .strftime(
-            # app.config['DATE_FORMAT'])
+        return days_number_to_datetime(value)
     elif display_mode == 'Checkbox' :
         if value == True:
             return "Oui"
@@ -3614,6 +3609,15 @@ app.jinja_env.globals.update(
     convert_to_display_mode = convert_to_display_mode
 )
 
+def convert_display_mode_to_ldap(value, display_mode):
+    if display_mode in  ('Text', 'Filesystem', 'Shell') :
+        return value.encode('utf-8')
+    elif display_mode == 'Generalizedtime' :
+        return datetime_to_generalized_time(value).encode('utf-8')
+    elif display_mode == 'DaysNumber' :
+        return str(datetime_to_days_number(value)).encode('utf-8')
+    else:
+        return value.encode('utf-8')
 
 def set_validators_to_form_field(form, field, validators):
     form_field_kwargs = get_attr(
@@ -3633,21 +3637,6 @@ def get_gid_from_posix_group_cn(cn):
 
 def get_posix_group_cn_by_gid(gid):
     return r.hget('grouplist', gid)
-
-# def get_groupz_from_member_uid(uid):
-#     groupz = []
-#     full_dn = ldap.get_full_dn_from_uid(uid)
-#     for group in app.config['PEOPLE_GROUPS']:
-#         for member in r.smembers("groupz:{0}".format(group)):
-#             if uid == member:
-#                 print("group {0}".format(member))
-#                 groupz.append(group)
-#     for group in get_submission_groupz_list():
-#         for member in r.smembers("wrk_groupz:{0}".format(group)):
-#             if full_dn == member:
-#                 print("wrk_group {0}".format(member))
-#                 groupz.append(group)
-#     return groupz
 
 app.jinja_env.globals.update(
     get_posix_group_cn_by_gid=get_posix_group_cn_by_gid
