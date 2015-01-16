@@ -2330,7 +2330,6 @@ def create_ldap_object_from_add_group_form(form, page_label):
                   ('fileSystem', [filesystem]),
                   ('objectClass', object_classes)]
 
-    # print(add_record)
     if ldap.add(full_dn, add_record):
         flash(u'Groupe créé')
 
@@ -2650,6 +2649,7 @@ def generate_edit_user_form_class(page):
                                         edit = True).all()
     class EditForm(Form):
         wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
+        # submission = FormField(EditSubmissionForm, label=u'Soumission')
 
     for field in page_fieldz:
         append_fieldlist_to_form(field, EditForm)
@@ -3167,6 +3167,27 @@ def  get_branch_from_posix_group_dn(dn):
         return ''
 app.jinja_env.globals.update(
     get_branch_from_posix_group_dn=get_branch_from_posix_group_dn
+)
+
+def  get_branch_from_posix_group_cn(cn):
+    ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
+    attributes=['entryDN']
+    base_dn='ou=groupePosix,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    raw_result = ldap.search(base_dn,ldap_filter,attributes)
+    if raw_result:
+        branch =  get_branch_from_posix_group_dn(
+            ldaphelper.get_search_results(
+                raw_result
+            )[0].get_attributes()['entryDN'][0]
+        )
+        return branch
+    else:
+        flash(u'Groupe {0} introuvable'.format(cn))
+        return None
+app.jinja_env.globals.update(
+    get_branch_from_posix_group_cn=get_branch_from_posix_group_cn
 )
 
 

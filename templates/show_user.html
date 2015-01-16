@@ -17,12 +17,23 @@
     {% if page_fieldz[attr_name].display %}
 
     <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
-
+    {% if page_fieldz[attr_name].fieldtype.type == 'GIDNumber' %}
+    {% for value in attr_values %}
+    <a class="list-group-item" href="{{ url_for(
+       'show_group',
+       branch=get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)),
+       cn=get_posix_group_cn_by_gid(value)
+       )}}">{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</a>
+    {% endfor %}
+    <br>
+    {% else %}
     <ul class="list-group">
       {% for value in attr_values %}
-      <li class="list-group-item">{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
+      <li class="list-group-item">
+        {{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
       {% endfor %}
     </ul>
+    {% endif %}
     {% endif %}
     {% endif %}
     {% endfor %}

@@ -1,16 +1,15 @@
 {% macro render_formfield(field, class) %}
 <dl class="dl-horizontal">
   <dt>{{ field.label }}</dt>
-  <dd>{{ field(class_=class)|safe }}
+  <dd>{{ field(class_=class)|safe }}</dd>
 </dl>
-  {% if field.errors %}
-    <ul class=errors>
-    {% for error in field.errors %}
-      <li>{{ error }}</li>
-    {% endfor %}
-    </ul>
-  {% endif %}
-  </dd>
+{% if field.errors %}
+<ul class=errors>
+  {% for error in field.errors %}
+  <li>{{ error }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
 {% endmacro %}
 {% macro render_field(field, display_mode) %}
 {{  convert_to_display_mode(field, display_mode) }}
