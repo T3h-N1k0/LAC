@@ -8,7 +8,7 @@ from flask_bootstrap import Bootstrap
 from sqlalchemy import Table, Column, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
-from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField
+from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField, TextAreaField
 from datetime import datetime, timedelta, date
 import time
 from dateutil.relativedelta import relativedelta
@@ -2776,6 +2776,11 @@ def append_field_to_form(field, form):
                 field.label,
                 BooleanField(field.description))
 
+    elif  field.fieldtype.type == 'TextArea':
+        setattr(form,
+                field.label,
+                TextAreaField(field.description))
+
 def append_fieldlist_to_form(field, form):
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
     if field.fieldtype.type == 'Text':
@@ -2806,6 +2811,10 @@ def append_fieldlist_to_form(field, form):
                 field.label,
                 FieldList(BooleanField(field.description)))
 
+    elif  field.fieldtype.type == 'TextArea':
+        setattr(form,
+                field.label,
+                FieldList(TextAreaField(field.description)))
 
 def generate_edit_page_admin_form(page):
 
