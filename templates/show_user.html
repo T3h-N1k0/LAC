@@ -15,17 +15,24 @@
     {% for attr_name, attr_values in uid_attributez.iteritems() %}
     {% if attr_name in page_fieldz %}
     {% if page_fieldz[attr_name].display %}
-
     <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
     {% if page_fieldz[attr_name].fieldtype.type == 'GIDNumber' %}
     {% for value in attr_values %}
+    {% if get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)) %}
     <a class="list-group-item" href="{{ url_for(
        'show_group',
        branch=get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)),
        cn=get_posix_group_cn_by_gid(value)
        )}}">{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</a>
+    {% else %}
+    <ul class="list-group">
+      <li class="list-group-item">
+        Le groupe correspondant au gidnumber {{ value }} n'existe pas.</li>
+    </ul>
+    {% endif %}
     {% endfor %}
     <br>
+
     {% else %}
     <ul class="list-group">
       {% for value in attr_values %}
