@@ -1187,10 +1187,11 @@ def add_group(page_label=None):
 
     if request.method == 'POST':
         if add_form.cn.data and add_form.validate():
-            create_ldap_object_from_add_group_form(add_form)
+            create_ldap_object_from_add_group_form(add_form, page_label)
             return redirect(url_for("home"))
     return render_template('add_group.html',
-                           add_form=add_form)
+                           add_form=add_form,
+                           page_label=page_label)
 
 @app.route('/edit_group/<branch>/<group_cn>', methods=('GET', 'POST'))
 @login_required
@@ -2310,8 +2311,8 @@ def create_ldapattr_if_not_exists(label):
     return db_attr
 
 
-def create_ldap_object_from_add_group_form(form):
-    ot = LDAPObjectType.query.filter_by(label = form.group_type.data).first()
+def create_ldap_object_from_add_group_form(form, page_label):
+    ot = LDAPObjectType.query.filter_by(label = page_label).first()
     cn = form.cn.data.encode('utf-8')
     description = form.description.data.encode('utf-8')
     filesystem = form.filesystem.data.encode('utf-8')

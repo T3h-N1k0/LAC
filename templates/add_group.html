@@ -26,7 +26,7 @@ searchFromList($(this).val(), searchArea);
 
 {% block body %}
 
-<form method="post" action="/add_group/">
+<form method="post" action="/add_group/{{ page_label }}">
 {{ render_formfield(add_form.cn) }}
 {{ render_formfield(add_form.filesystem) }}
 {{ render_formfield(add_form.description) }}
