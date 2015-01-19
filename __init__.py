@@ -1191,7 +1191,9 @@ def add_group(page_label=None):
     if request.method == 'POST':
         if add_form.cn.data and add_form.validate():
             create_ldap_object_from_add_group_form(add_form, page_label)
-            return redirect(url_for("home"))
+            return redirect(url_for("show_group",
+                                    branch=page_label,
+                                    cn=add_form.cn.data))
     return render_template('add_group.html',
                            add_form=add_form,
                            page_label=page_label)
@@ -1233,6 +1235,7 @@ def delete_group(branch, cn):
         dn = ldap.get_full_dn_from_cn(cn)
         ldap.delete(dn)
         flash(u'Groupe {0} supprimé'.format(cn))
+        return redirect(url_for('home'))
     return redirect(url_for('show_group',
                             branch=branch,
                             cn=cn))
