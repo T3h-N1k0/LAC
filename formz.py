@@ -15,6 +15,7 @@ class SearchUserForm(Form):
                                      ('sam','Compte S.A.M.'),
                                      ('autre','Compte divers')])
     ip = TextField('Adresse IP (cinesIpClient)')
+    nationality = TextField(u'Nationalité (cinesNationality)')
     user_disabled = BooleanField('Uniquement les comptes inactifs : ')
 
 class SearchGroupForm(Form):
