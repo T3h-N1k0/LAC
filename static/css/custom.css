@@ -12,3 +12,8 @@
   white-space: normal;
   font-style: italic;
 }
+
+
+.dl-horizontal dt {
+    white-space: normal;
+}
