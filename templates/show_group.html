@@ -34,7 +34,7 @@
     {% else %}
     {% for value in attr_values %}
     <ul class="list-group">
-      <li class="list-group-item">{{ value }}</li>
+      <li class="list-group-item">{{ value.decode('utf-8') }}</li>
     </ul>
     {% endfor %}
     {% endif %}
