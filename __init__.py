@@ -2331,10 +2331,11 @@ def create_ldap_object_from_add_group_form(form, page_label):
                                          ot.label,
                                          app.config['LDAP_SEARCH_BASE'])
     add_record = [('cn', [cn]),
-                  ('description', [description]),
                   ('gidNumber', [id_number]),
                   ('fileSystem', [filesystem]),
                   ('objectClass', object_classes)]
+    if description:
+        add_record.append([('description', [description])])
 
     if ldap.add(full_dn, add_record):
         flash(u'Groupe créé')
