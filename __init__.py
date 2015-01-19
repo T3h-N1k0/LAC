@@ -2215,7 +2215,10 @@ def enable_account(user):
     else:
         ldap.remove_uid_attribute(user_uid,
                                   [('shadowExpire', None)])
-    flash(u'Compte {0} activé'.format(user_uid))
+    if is_active(user):
+        flash(u'Compte {0} activé'.format(user_uid))
+    else:
+        flash(u'Le compte {0} n\'a pas été réactivé'.format(user_uid))
 
 def populate_lac_admin_choices(form):
     memberz = [ get_uid_from_dn(dn) for dn in ldap.get_lac_admin_memberz() ]
