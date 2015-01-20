@@ -194,7 +194,8 @@ class Field(db.Model):
     multivalue = db.Column(db.Boolean())
     restrict = db.Column(db.Boolean())
     display_mode = db.Column(db.String(50), unique=True)
-
+    priority = db.Column(db.Integer)
+    bloc = db.Column(db.String(1))
     page_id = Column(Integer, ForeignKey('page.id',
                                          onupdate="CASCADE",
                                          ondelete="CASCADE"))
@@ -662,16 +663,17 @@ def test(uid):
 def show_user(page, uid):
     dn = ldap.get_full_dn_from_uid(uid)
     page = Page.query.filter_by(label = page).first()
-    page_fieldz = dict(
-        (row.label.lower(), row)
-        for row in Field.query.filter_by(page_id = page.id).all()
-    )
+    page_fieldz = Field.query.filter_by(
+        page_id = page.id,
+        display=True
+    ).order_by(Field.priority).all()
     raw_detailz = get_uid_detailz(uid)
     if not raw_detailz:
         flash(u'Utilisateur non trouvé')
         return redirect(url_for('home'))
     uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
     uid_attributez=uid_detailz.get_attributes()
+
     if 'cinesIpClient' in uid_attributez:
         uid_attributez['cinesIpClient'] = [
             ip for ip in uid_attributez['cinesIpClient'][0].split(";")
@@ -687,9 +689,17 @@ def show_user(page, uid):
             uid_attributez['cinesSoumission'][0])
     else:
         submission_list = []
+
+    blocs =sorted(
+        set(
+            [field.bloc for field in page_fieldz]
+        )
+    )
+    print(blocs)
     return render_template('show_user.html',
                            uid = uid,
                            dn=dn,
+                           blocs=blocs,
                            uid_attributez=uid_attributez,
                            page_fieldz=page_fieldz,
                            is_active=is_active(uid_detailz),
@@ -1079,9 +1089,10 @@ def edit_user(page,uid):
     page = Page.query.filter_by(label=page).first()
     EditForm = generate_edit_user_form_class(page)
     form = EditForm(request.form)
-    fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
-    # fieldz_labelz = [field.label for field in fieldz]
-
+    fieldz = Field.query.filter_by(
+        page_id = page.id,
+        edit = True
+    ).group_by(Field.bloc).all()
 
     if request.method == 'POST':
         update_ldap_object_from_edit_user_form(form, fieldz, uid)
@@ -1113,7 +1124,6 @@ def delete_user(uid):
         user_dn = ldap.get_full_dn_from_uid(uid)
         ldap.delete(user_dn)
         for group in groupz:
-            # group_dn = ldap.get_full_dn_from_cn(group)
             pre_modlist = [('memberUid', uid.encode('utf-8'))]
             ldap.remove_cn_attribute(group,pre_modlist)
 
@@ -2891,8 +2901,18 @@ def generate_edit_page_admin_form(page):
                                        if existing_field is not None else None,
                                        choices=get_display_mode_choices())
             desc = TextField(u'Description du champ',
-                                    default=existing_field.description
-                                   if existing_field is not None else None)
+                             default=existing_field.description
+                             if existing_field is not None else None)
+            priority = TextField(u'Priorité',
+                                 default=existing_field.priority
+                                 if existing_field is not None else None)
+            bloc = SelectField('Bloc',
+                               default=existing_field.bloc
+                               if existing_field is not None else None,
+                               choices=[
+                                   (x, x) for x in list(
+                                       ' ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+                               ])
         setattr(EditPageForm, label, FormField(EditFieldForm))
 
     form = EditPageForm(request.form)
@@ -2949,6 +2969,8 @@ def upsert_field(attr_label, form_field, page):
         existing_field.fieldtype = field_type
         existing_field.description = form_field.desc.data
         existing_field.multivalue = form_field.multivalue.data
+        existing_field.priority = form_field.priority.data
+        existing_field.bloc = form_field.bloc.data
     else:
         new_field = Field(label=attribute.label,
                           page=page,
@@ -2958,7 +2980,9 @@ def upsert_field(attr_label, form_field, page):
                           restrict=form_field.restrict.data,
                           fieldtype=field_type,
                           description=form_field.desc.data,
-                          multivalue=form_field.multivalue.data)
+                          multivalue=form_field.multivalue.data,
+                          priority=form_field.priority.data,
+                          bloc=form_field.bloc.data)
         db.session.add(new_field)
 def add_user_to_lac_admin(user):
     ldap.update_uid_attribute(user, pre_modlist)

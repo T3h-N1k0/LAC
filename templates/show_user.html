@@ -8,41 +8,44 @@
 <header class="row text-center">
   <h2>Détails pour le compte {{ uid }}</h2>
 </header>
-
+<br>
 <section class="row">
   <div class="col-sm-6">
-    <!-- <h4>Attributs</h4> -->
-    {% for attr_name, attr_values in uid_attributez.iteritems() %}
-    {% if attr_name in page_fieldz %}
-    {% if page_fieldz[attr_name].display %}
-    <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
-    {% if page_fieldz[attr_name].fieldtype.type == 'GIDNumber' %}
-    {% for value in attr_values %}
-    {% if get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)) %}
-    <a class="list-group-item" href="{{ url_for(
-       'show_group',
-       branch=get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)),
-       cn=get_posix_group_cn_by_gid(value)
-       )}}">{{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</a>
-    {% else %}
-    <ul class="list-group">
-      <li class="list-group-item">
-        Le groupe correspondant au gidnumber {{ value }} n'existe pas.</li>
-    </ul>
-    {% endif %}
-    {% endfor %}
-    <br>
+    {% for bloc in blocs %}
+    <div class="attrz-block">
+      {% for field in page_fieldz %}
+      {% if field.label in uid_attributez.keys() and field.bloc == bloc %}
+      <strong>{{ field.description }} ( {{field.label}} ) :</strong>
 
-    {% else %}
-    <ul class="list-group">
-      {% for value in attr_values %}
-      <li class="list-group-item">
-        {{ render_field(value, page_fieldz[attr_name].fieldtype.type) }}</li>
+      <ul class="list-group">
+        {% if field.fieldtype.type == 'GIDNumber' %}
+
+        {% for value in uid_attributez[field.label] %}
+        {% if get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)) %}
+        <a class="list-group-item" href="{{ url_for(
+           'show_group',
+           branch=get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)),
+           cn=get_posix_group_cn_by_gid(value)
+           )}}">{{ render_field(value, field.fieldtype.type) }}</a>
+        {% else %}
+        <li class="list-group-item">
+          Le groupe correspondant au gidnumber {{ value }} n'existe pas.</li>
+
+        {% endif %}
+        {% endfor %}
+        <br>
+
+        {% else %}
+        {% for value in uid_attributez[field.label] %}
+        <li class="list-group-item">
+          {{ render_field(value, field.fieldtype.type) }}</li>
+        {% endfor %}
+      {% endif %}
+      </ul>
+      {% endif %}
+
       {% endfor %}
-    </ul>
-    {% endif %}
-    {% endif %}
-    {% endif %}
+    </div>
     {% endfor %}
   </div>
 
@@ -128,28 +131,30 @@
     {% if sec_groupz %}
     <aside class="row">
       <h4>Groupes secondaires</h4>
-      {% for group in sec_groupz %}
-      {% if group[1] != 'grProjet' %}
-      <a class="list-group-item" href="{{ url_for(
-         'show_group',
-         branch=group[1],
-         cn=group[0]
-         )}}">{{ group[0] }}</a>
-      {% endif %}
-      {% endfor %}
+      <ul class='list-group'>
+        {% for group in sec_groupz %}
+        {% if group[1] != 'grProjet' %}
+        <a class="list-group-item" href="{{ url_for(
+           'show_group',
+           branch=group[1],
+           cn=group[0]
+           )}}">{{ group[0] }}</a>
+        {% endif %}
+        {% endfor %}
       </ul>
     </aside>
     <aside class="row">
       <h4>Groupes projet</h4>
-      {% for group in sec_groupz %}
-      {% if group[1] == 'grProjet' %}
-      <a class="list-group-item" href="{{ url_for(
-         'show_group',
-         branch=group[1],
-         cn=group[0]
-         )}}">{{ group[0] }}</a>
-      {% endif %}
-      {% endfor %}
+      <ul class='list-group'>
+        {% for group in sec_groupz %}
+        {% if group[1] == 'grProjet' %}
+        <a class="list-group-item" href="{{ url_for(
+           'show_group',
+           branch=group[1],
+           cn=group[0]
+           )}}">{{ group[0] }}</a>
+        {% endif %}
+        {% endfor %}
       </ul>
     </aside>
     {% endif %}
