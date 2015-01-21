@@ -18,6 +18,7 @@ Accueil
       <div class="panel panel-primary">
         <div class="panel-heading text-center"><strong>{{ branch['account'].upper() }}</strong></div>
         <div class="panel-body">
+
           <div class="row">
             <div class="col-sm-3">Compte <!-- {{ branch['account'] }} --></div>
             <div class="col-sm-5"><a href="{{ url_for(
@@ -30,6 +31,7 @@ Accueil
                                      }}">Ajouter</a></div>
             {% endif %}
           </div>
+
           <div class="row">
             <div class="col-sm-3">Groupe <!-- {{ branch['group'] }} --></div>
             <div class="col-sm-5"><a href="{{ url_for(
@@ -41,11 +43,34 @@ Accueil
                                      page_label=branch['group'])}}">Ajouter</a></div>
             {% endif %}
           </div>
+
         </div>
 
       </div>
     </div>
     {% endfor %}
+    <div class="col-sm-6">
+      <div class="panel panel-primary">
+        <div class="panel-heading text-center"><strong>PROJET</strong></div>
+        <div class="panel-body">
+
+
+          <div class="row">
+            <div class="col-sm-3">Groupe</div>
+            <div class="col-sm-5"><a href="{{ url_for(
+                                     'show_groups',
+                                     branch='grProjet')}}">Consulter/Modifier</a></div>
+            {% if session['admin'] %}
+            <div class="col-sm-4"><a href="{{ url_for(
+                                     'add_group',
+                                     page_label='grProjet')}}">Ajouter</a></div>
+            {% endif %}
+          </div>
+
+        </div>
+
+      </div>
+    </div>
 
   </section>
 
