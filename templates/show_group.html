@@ -20,24 +20,23 @@
 
     {% if page_fieldz[attr_name].display %}
     <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
-
-    {% if attr_name == 'memberuid' %}
-    {% for value in attr_values %}
-    {% if get_group_from_member_uid(value) %}
-    <a class="list-group-item" href="{{ url_for('show_user',
-       page=get_group_from_member_uid(value),
-       uid=value)}}">{{ value }}</a>
-    {% else %}
-    <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
-    {% endif %}
-    {% endfor %}
-    {% else %}
-    {% for value in attr_values %}
     <ul class="list-group">
+      {% if attr_name == 'memberuid' %}
+      {% for value in attr_values %}
+      {% if get_group_from_member_uid(value) %}
+      <a class="list-group-item" href="{{ url_for('show_user',
+         page=get_group_from_member_uid(value),
+         uid=value)}}">{{ value }}</a>
+      {% else %}
+      <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
+      {% endif %}
+      {% endfor %}
+      {% else %}
+      {% for value in attr_values %}
       <li class="list-group-item">{{ value.decode('utf-8') }}</li>
+      {% endfor %}
+      {% endif %}
     </ul>
-    {% endfor %}
-    {% endif %}
     <br>
     {% endif %}
 
