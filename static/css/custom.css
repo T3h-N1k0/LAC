@@ -34,3 +34,9 @@
   padding: 20px;
   margin-bottom: 20px;
 }
+
+.work-group-select {
+  border: 1px solid  #DDD;
+  border-radius: 4px;
+  background-color:  rgba(251, 251, 251, 0.93);
+}
