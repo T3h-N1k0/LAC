@@ -68,6 +68,7 @@ class EditGroupBaseForm(Form):
     action = SelectField('Action',
                          choices=[(0, 'Ajout'), (1, 'Modification')],
                          default=1)
+    memberz = FormField(SelectMemberzForm)
     submited = HiddenField(default="False")
 class EditSubmissionForm(Form):
     wrk_group = SelectField(u'Groupe de travail')
