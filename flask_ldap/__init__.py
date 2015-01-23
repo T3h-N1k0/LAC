@@ -69,7 +69,7 @@ class LDAP(object):
 
     def anonymous_search(self,
                          base_dn=None,
-                         filter=None,
+                         ldap_filter=None,
                          attributes=None,
                          scope=ldap.SCOPE_SUBTREE):
         try:
@@ -188,7 +188,7 @@ class LDAP(object):
         if 'logged_in' in session:
             result = self.search(ldap_filter=filter)
         else:
-            result = self.anonymous_search(filter=filter)
+            result = self.anonymous_search(ldap_filter=filter)
         return result[0][0]
 
     def get_full_dn_from_uid(self, uid):
@@ -198,7 +198,7 @@ class LDAP(object):
         # if 'logged_in' in session:
         #     result = self.search(ldap_filter=filter)
         # else:
-        result = self.anonymous_search(filter=filter)
+        result = self.anonymous_search(ldap_filter=filter)
         return result[0][0] if result else None
 
     # def get_ldap_admin_memberz(self):
@@ -215,7 +215,7 @@ class LDAP(object):
         ldap_filter='(cn=lacadmin)'
         attributes=['member']
         raw_resultz = ldaphelper.get_search_results(
-            self.admin_search(ldap_filter=ldap_filter,attributes=attributes)
+            self.search(ldap_filter=ldap_filter,attributes=attributes)
         )
         memberz = raw_resultz[0].get_attributes()['member']
         return memberz

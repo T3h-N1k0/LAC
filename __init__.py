@@ -610,6 +610,7 @@ def change_password(uid):
                                 form.new_pass.data.encode('utf-8')))
             pre_modlist.append(('pwdReset', 'TRUE'))
             flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
+            ldap.update_uid_attribute(uid, pre_modlist)
             return redirect(url_for('show_user',
                                     page= get_group_from_member_uid(uid),
                                     uid=uid))
@@ -618,9 +619,11 @@ def change_password(uid):
             flash(
                 u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
             )
+
+            if pre_modlist:
+                ldap.update_uid_attribute(uid, pre_modlist)
             return redirect(url_for('home'))
 
-        ldap.update_uid_attribute(uid, pre_modlist)
 
     return render_template('change_password.html',
                            form=form,
@@ -1019,7 +1022,7 @@ def update_schema():
         infoz.append(u'Aucune donnée mise à jour')
 
     flash(u'\n'.join(infoz))
-    return render_template('test.html')
+    return redirect(url_for('home'))
 
 
 
@@ -3336,7 +3339,7 @@ def get_all_people_group_memberz():
     attributes=['uid']
     base_dn='ou=people,{0}'.format(app.config['LDAP_SEARCH_BASE'])
 
-    raw_result = ldap.admin_search(base_dn,ldap_filter,attributes)
+    raw_result = ldap.anonymous_search(base_dn,ldap_filter,attributes)
     if raw_result:
         records = ldaphelper.get_search_results(
             raw_result
@@ -3358,7 +3361,7 @@ def get_work_group_memberz(group):
     )
 
     records = ldaphelper.get_search_results(
-        ldap.admin_search(base_dn,ldap_filter,attributes)
+        ldap.anonymous_search(base_dn,ldap_filter,attributes)
     )
     memberz = []
     for member in records:
@@ -3380,7 +3383,7 @@ def get_posix_groupz(branch=None):
         base_dn = ''.join(['ou={0},'.format(branch), base_dn])
     # print(base_dn)
     groupz = ldaphelper.get_search_results(
-        ldap.admin_search(base_dn=base_dn,
+        ldap.anonymous_search(base_dn=base_dn,
                           ldap_filter=ldap_filter,
                           attributes=['cn', 'gidNumber']))
     return groupz
@@ -3389,7 +3392,7 @@ def get_work_groupz():
     ldap_filter = "(objectClass=cinesGrWork)"
     base_dn = 'ou=grTravail,{0}'.format(app.config['LDAP_SEARCH_BASE'])
     groupz = ldaphelper.get_search_results(
-        ldap.admin_search(base_dn=base_dn,
+        ldap.anonymous_search(base_dn=base_dn,
                           ldap_filter=ldap_filter,
                           attributes=['cn']))
     return [group.get_attributes()['cn'][0] for group in groupz]
@@ -3419,7 +3422,7 @@ def get_list_from_submission_attr(sub_attr):
 def get_submission_groupz_list():
     ldap_filter = "(&(objectClass=cinesGrWork)(cinesGrWorkType=1))"
     ldap_groupz = ldaphelper.get_search_results(
-        ldap.admin_search(ldap_filter=ldap_filter,
+        ldap.anonymous_search(ldap_filter=ldap_filter,
                          attributes=['cn'])
     )
     ldap_groupz_list = []
@@ -3441,7 +3444,7 @@ def get_initial_submission():
 def get_user_pwd_policy(uid):
     ldap_filter = "(&(objectClass=posixAccount)(uid={0}))".format(uid)
     user = ldaphelper.get_search_results(
-        ldap.admin_search(ldap_filter=ldap_filter,
+        ldap.anonymous_search(ldap_filter=ldap_filter,
                           attributes=['pwdPolicySubentry'])
     )[0].get_attributes()
     if 'pwdPolicySubentry' in user:
@@ -3450,7 +3453,7 @@ def get_user_pwd_policy(uid):
         subentry_filter = '(&(objectClass=pwdPolicy)(cn=passwordDefault))'
     base_dn = 'ou=policies,ou=system,{0}'.format(app.config['LDAP_SEARCH_BASE'])
     pwd_policy = ldaphelper.get_search_results(
-        ldap.admin_search(ldap_filter=subentry_filter,
+        ldap.anonymous_search(ldap_filter=subentry_filter,
                          attributes=['*'])
     )[0].get_attributes()
     return pwd_policy
