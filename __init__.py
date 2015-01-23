@@ -195,7 +195,7 @@ class Field(db.Model):
     restrict = db.Column(db.Boolean())
     display_mode = db.Column(db.String(50), unique=True)
     priority = db.Column(db.Integer)
-    bloc = db.Column(db.String(1))
+    block = db.Column(db.String(1))
     page_id = Column(Integer, ForeignKey('page.id',
                                          onupdate="CASCADE",
                                          ondelete="CASCADE"))
@@ -216,7 +216,9 @@ class Field(db.Model):
                  display=False,
                  edit=False,
                  multivalue=False,
-                 restrict=False):
+                 restrict=False,
+                 priority=False,
+                 block=False):
         self.label = label
         self.description = description
         self.display = display
@@ -226,6 +228,8 @@ class Field(db.Model):
         self.ldapattribute = ldapattribute
         self.fieldtype = fieldtype
         self.multivalue = multivalue
+        self.priority = priority
+        self.block = block
 
     def __repr__(self):
         return '<Field %r>' % self.label
@@ -690,16 +694,16 @@ def show_user(page, uid):
     else:
         submission_list = []
 
-    blocs =sorted(
+    blockz =sorted(
         set(
-            [field.bloc for field in page_fieldz]
+            [field.block for field in page_fieldz]
         )
     )
-    print(blocs)
+    print(blocks)
     return render_template('show_user.html',
                            uid = uid,
                            dn=dn,
-                           blocs=blocs,
+                           blockz=blockz,
                            uid_attributez=uid_attributez,
                            page_fieldz=page_fieldz,
                            is_active=is_active(uid_detailz),
@@ -1092,7 +1096,13 @@ def edit_user(page,uid):
     fieldz = Field.query.filter_by(
         page_id = page.id,
         edit = True
-    ).group_by(Field.bloc).all()
+    ).all()
+
+    blockz =sorted(
+        set(
+            [field.block for field in fieldz]
+        )
+    )
 
     if request.method == 'POST':
         update_ldap_object_from_edit_user_form(form, fieldz, uid)
@@ -1113,7 +1123,8 @@ def edit_user(page,uid):
                            page=page,
                            uid=uid,
                            dn=dn,
-                           fieldz=fieldz)
+                           fieldz=fieldz,
+                           blockz=blockz)
 
 @app.route('/delete_user/<uid>', methods=('GET', 'POST'))
 @login_required
@@ -2901,8 +2912,8 @@ def generate_edit_page_admin_form(page):
             priority = TextField(u'Priorité',
                                  default=existing_field.priority
                                  if existing_field is not None else None)
-            bloc = SelectField('Bloc',
-                               default=existing_field.bloc
+            block = SelectField('Bloc',
+                               default=existing_field.block
                                if existing_field is not None else None,
                                choices=[
                                    (x, x) for x in list(
@@ -2965,7 +2976,7 @@ def upsert_field(attr_label, form_field, page):
         existing_field.description = form_field.desc.data
         existing_field.multivalue = form_field.multivalue.data
         existing_field.priority = form_field.priority.data
-        existing_field.bloc = form_field.bloc.data
+        existing_field.block = form_field.block.data
     else:
         new_field = Field(label=attribute.label,
                           page=page,
@@ -2977,7 +2988,7 @@ def upsert_field(attr_label, form_field, page):
                           description=form_field.desc.data,
                           multivalue=form_field.multivalue.data,
                           priority=form_field.priority.data,
-                          bloc=form_field.bloc.data)
+                          block=form_field.block.data)
         db.session.add(new_field)
 def add_user_to_lac_admin(user):
     ldap.update_uid_attribute(user, pre_modlist)

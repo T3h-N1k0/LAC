@@ -53,15 +53,22 @@
     <form method="post" action="/edit_user/{{ page.label}}/{{ uid }}" >
       <section class="row">
         <div class="col-sm-6  large-label">
-          {% for field in fieldz %}
-          {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
-          {{ render_fieldlist(form, field) }}
-          {% else %}
-          {{ render_formfield(get_attr(form, field.label))}}
-          {% endif  %}
+          {% for block in blockz %}
+
+          <div class="attrz-block">
+            {% for field in fieldz %}
+            {% if field.block == block %}
+            {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
+            {{ render_fieldlist(form, field) }}
+            {% else %}
+            {{ render_formfield(get_attr(form, field.label))}}
+            {% endif  %}
+            {% endif  %}
+            {% endfor  %}
+          </div>
           {% endfor  %}
         </div>
-        <div class="work-group-select col-sm-6">
+        <div class="group-select col-sm-6">
           <p class="help-block">Filtrer les groupes :
             <input id="searchGroupzFilter" type="text"/><p/>
             {{ render_formfield(form.wrk_groupz)}}

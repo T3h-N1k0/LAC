@@ -11,10 +11,10 @@
 <br>
 <section class="row">
   <div class="col-sm-6">
-    {% for bloc in blocs %}
+    {% for block in blockz %}
     <div class="attrz-block">
       {% for field in page_fieldz %}
-      {% if field.label in uid_attributez.keys() and field.bloc == bloc %}
+      {% if field.label in uid_attributez.keys() and field.block == block %}
       <strong>{{ field.description }} ( {{field.label}} ) :</strong>
 
       <ul class="list-group">
