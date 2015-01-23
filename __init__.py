@@ -1225,9 +1225,26 @@ def edit_group(branch, group_cn):
     dn = ldap.get_full_dn_from_cn(group_cn)
     page = Page.query.filter_by(label=branch).first()
     form = generate_edit_group_form(page)
+
+    selected_memberz = get_posix_group_memberz(group_cn)
+    if branch == "grCines":
+        accountz = get_people_group_memberz('cines')
+    else:
+        accountz = get_all_people_group_memberz()
+
+    available_memberz = [
+        account for account in accountz
+        if account not in selected_memberz
+    ]
+    form.memberz.selected_memberz.choices = [
+        (member, member) for member in selected_memberz
+    ]
+    form.memberz.available_memberz.choices =[
+        (member, member) for member in available_memberz
+    ]
+
     fieldz = Field.query.filter_by(page_id = page.id,
                                    edit = True).all()
-
     if request.method == 'POST':
         update_ldap_object_from_edit_group_form(form,page,group_cn)
         flash(u'Groupe {0} mis à jour'.format(group_cn))
@@ -2623,7 +2640,14 @@ def update_ldap_object_from_edit_group_form(form, page, group_cn):
         print('form_field_values : {0}'.format(form_field_values))
         if group_attributez[field.label] != form_field_values:
             pre_modlist.append((field.label, form_field_values))
-    print(pre_modlist)
+    print(form.memberz.selected_memberz.data)
+    pre_modlist.append(
+        ('memberuid',
+         [
+             member.encode('utf-8') for member in
+             form.memberz.selected_memberz.data
+         ])
+    )
     ldap.update_cn_attribute(group_cn, pre_modlist)
 
 def generate_kustom_batch_edit_form(page, attributez):
@@ -3288,6 +3312,26 @@ def get_people_group_memberz(group):
     ldap_filter='(objectclass=inetOrgPerson)'
     attributes=['uid']
     base_dn='ou={0},ou=people,{1}'.format(group,app.config['LDAP_SEARCH_BASE'])
+
+    raw_result = ldap.admin_search(base_dn,ldap_filter,attributes)
+    if raw_result:
+        records = ldaphelper.get_search_results(
+            raw_result
+        )
+    else:
+        return None
+
+    memberz = [ member.get_attributes()['uid'][0] for member in records]
+    return memberz
+
+
+def get_all_people_group_memberz():
+    """
+    List all accountz
+    """
+    ldap_filter='(objectclass=inetOrgPerson)'
+    attributes=['uid']
+    base_dn='ou=people,{0}'.format(app.config['LDAP_SEARCH_BASE'])
 
     raw_result = ldap.admin_search(base_dn,ldap_filter,attributes)
     if raw_result:
