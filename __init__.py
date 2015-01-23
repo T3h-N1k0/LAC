@@ -1210,10 +1210,13 @@ def add_group(page_label=None):
 
     if request.method == 'POST':
         if add_form.cn.data and add_form.validate():
-            create_ldap_object_from_add_group_form(add_form, page_label)
-            return redirect(url_for("show_group",
-                                    branch=page_label,
-                                    cn=add_form.cn.data))
+            if create_ldap_object_from_add_group_form(add_form, page_label):
+                return redirect(url_for("show_group",
+                                        branch=page_label,
+                                        cn=add_form.cn.data))
+            else :
+                return redirect(url_for("add_group",
+                                        page_label = page_label))
     return render_template('add_group.html',
                            add_form=add_form,
                            page_label=page_label)
@@ -2359,6 +2362,9 @@ def create_ldap_object_from_add_group_form(form, page_label):
     object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8') for oc_ot in
                       LDAPObjectTypeObjectClass.query.filter_by(
                           ldapobjecttype_id = ot.id).all()]
+    if not object_classes:
+        flash(u'ObjectClasss manquants pour ce type d\'objet')
+        return 0
 
     full_dn = "cn={0},ou={1},ou=groupePosix,{2}".format(cn,
                                          ot.label,
@@ -2368,10 +2374,11 @@ def create_ldap_object_from_add_group_form(form, page_label):
                   ('fileSystem', [filesystem]),
                   ('objectClass', object_classes)]
     if description:
-        add_record.append([('description', [description])])
+        add_record.append(('description', [description]))
 
     if ldap.add(full_dn, add_record):
         flash(u'Groupe créé')
+        return 1
 
 
 def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
