@@ -699,7 +699,6 @@ def show_user(page, uid):
             [field.block for field in page_fieldz]
         )
     )
-    print(blocks)
     return render_template('show_user.html',
                            uid = uid,
                            dn=dn,
@@ -1316,8 +1315,6 @@ def show_group(branch, cn):
                     quotaz.append((storage, kustom_storage))
         else:
             quotaz.append((storage, None))
-
-        print("phuuuuuuuuuuuu {0}".format(quotaz))
 
     if branch == 'grCcc':
         ressource = C4Ressource.query.filter_by(code_projet = cn).first()
@@ -2677,7 +2674,6 @@ def generate_edit_group_form(page):
         pass
 
     for field in page_fieldz:
-        # print('field label {0}'.format(field.label))
         append_fieldlist_to_form(field,
                                  EditGroupForm)
     return EditGroupForm(request.form)
