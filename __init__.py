@@ -3375,13 +3375,10 @@ def get_group_branch(account_type):
             return branch['group']
 
 def get_posix_groupz(branch=None):
-    # print(branch)
     ldap_filter = "(objectClass=posixGroup)"
     base_dn = 'ou=groupePosix,{0}'.format(app.config['LDAP_SEARCH_BASE'])
-
     if branch:
         base_dn = ''.join(['ou={0},'.format(branch), base_dn])
-    # print(base_dn)
     groupz = ldaphelper.get_search_results(
         ldap.anonymous_search(base_dn=base_dn,
                           ldap_filter=ldap_filter,

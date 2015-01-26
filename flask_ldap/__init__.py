@@ -76,10 +76,10 @@ class LDAP(object):
             if base_dn==None:
                 base_dn=self.app.config['LDAP_SEARCH_BASE']
             self.connect()
-            # print(base_dn)
-            # print(attributes)
             self.conn.simple_bind_s("","")
-            records = self.conn.search_s(base_dn, scope, filter, attributes)
+            records = self.conn.search_s(
+                base_dn, scope, ldap_filter, attributes
+            )
             self.conn.unbind_s()
             return records
 
