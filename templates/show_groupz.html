@@ -1,11 +1,37 @@
 {% extends "layout.html" %}
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{                                                                                                                               url_for('static', filename='jquery-2.1.1.js')                                                                                                               }}"></script>
+
+
+<script type="text/javascript" language='javascript' src="{{
+         url_for('static', filename='TableFilter/tablefilter.js')
+         }}"></script>
+
+
+{% endblock head_js %}
+
+
 {% block body %}
 Liste des groupes {% if branch %} pour la branche {{ branch }} {% endif %}
-{% for group in groupz %}
-<br/>
-<a href="{{ url_for(
-'show_group',
-branch=branch,
-cn=group)}}">{{ group }}</a>
-{% endfor %}
+<table id='table1' >
+  {% for group in groupz | sort %}
+  <tr>
+    <td>
+      <a href="{{ url_for(
+         'show_group',
+         branch=branch,
+         cn=group)}}">{{ group }}</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<script language="javascript" type="text/javascript">
+ var table_propz = { on_keyup: true,
+                     on_keyup_delay: 10
+ }
+ setFilterGrid("table1", table_propz);
+</script>
+
 {% endblock body %}
