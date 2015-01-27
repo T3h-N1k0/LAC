@@ -3319,7 +3319,7 @@ def get_people_group_memberz(group):
     attributes=['uid']
     base_dn='ou={0},ou=people,{1}'.format(group,app.config['LDAP_SEARCH_BASE'])
 
-    raw_result = ldap.admin_search(base_dn,ldap_filter,attributes)
+    raw_result = ldap.anonymous_search(base_dn,ldap_filter,attributes)
     if raw_result:
         records = ldaphelper.get_search_results(
             raw_result
