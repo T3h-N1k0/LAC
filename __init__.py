@@ -2778,9 +2778,12 @@ def set_edit_user_form_values(form, fieldz, uid=None):
                     for ip_address in uid_attributez[field.label][0].split(";")
                 ]
             for field_value in uid_attributez[field.label]:
-                form_field.append_entry(
-                    convert_to_display_mode(field_value,
-                                            field.fieldtype.type))
+                if field.label != 'gidNumber':
+                    form_field.append_entry(
+                        convert_to_display_mode(field_value,
+                                                field.fieldtype.type))
+                else:
+                    form_field.append_entry(field_value)
         else:
             form_field.append_entry()
 
