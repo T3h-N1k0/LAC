@@ -2,7 +2,7 @@
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, make_response
 from flask_ldap import LDAP, login_required, admin_login_required
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask_debugtoolbar import DebugToolbarExtension
+# from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug import secure_filename
 from flask_bootstrap import Bootstrap
 from sqlalchemy import Table, Column, Integer, ForeignKey, func
@@ -3813,6 +3813,6 @@ def get_sambasid_prefix():
 if __name__ == '__main__':
     app.debug = app.config['DEBUG']
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-    toolbar = DebugToolbarExtension(app)
+    # toolbar = DebugToolbarExtension(app)
     decoder = PythonLDAPDecoder(app.config['ENCODING'])
     app.run(host='0.0.0.0')
