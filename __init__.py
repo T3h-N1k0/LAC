@@ -3404,7 +3404,8 @@ def get_posix_groupz_choices(branch=None):
         group_attrz = group.get_attributes()
         ldap_groupz_list.append((group_attrz['gidNumber'][0],
                                  group_attrz['cn'][0]))
-    return ldap_groupz_list
+    sorted_by_second = sorted(ldap_groupz_list, key=lambda tup: tup[1])
+    return sorted_by_second
 
 def get_shellz_choices():
     shellz = Shell.query.all()
