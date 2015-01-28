@@ -179,16 +179,21 @@ class LDAP(object):
             return self.other_err(e)
 
     def is_lac_admin(self, uid):
-        print("phuu : ".format(self.get_lac_admin_memberz()))
-        if self.get_full_dn_from_uid(uid) in self.get_lac_admin_memberz():
-            return True
-        else:
+        # print("lac admin ? : {0}".format(self.get_lac_admin_memberz()))
+        try:
+            if self.get_full_dn_from_uid(uid) in self.get_lac_admin_memberz():
+                return True
+        except Exception as e:
+            print(e)
             return False
 
     def is_ldap_admin(self, uid):
-        if self.get_full_dn_from_uid(uid) in self.get_ldap_admin_memberz():
-            return True
-        else:
+        # print("ldap admin ? : {0}".format(self.get_lac_admin_memberz()))
+        try:
+            if self.get_full_dn_from_uid(uid) in self.get_ldap_admin_memberz():
+                return True
+        except Exception as e:
+            print(e)
             return False
 
     def get_full_dn_from_cn(self, cn):
@@ -422,6 +427,9 @@ class LDAP(object):
             return ctx.ldap_host
 
     def logout(self):
+        session.pop('admin', None)
+        session.pop('password', None)
+        session.pop('lac_admin', None)
         session.pop('logged_in', None)
         flash(u"Vous êtes à présent déconnecté")
         return redirect(url_for('login'))
