@@ -1231,7 +1231,7 @@ def edit_group(branch, group_cn):
     page = Page.query.filter_by(label=branch).first()
     form = generate_edit_group_form(page)
 
-    selected_memberz = get_posix_group_memberz(group_cn)
+    selected_memberz = get_posix_group_memberz(branch, group_cn)
 
     if branch in ["grCines", "grProjet"]:
         accountz = get_people_group_memberz('cines')
@@ -1261,7 +1261,7 @@ def edit_group(branch, group_cn):
     if branch == 'grCcc':
         comite = C4Ressource.query.filter_by(
             code_projet = group_cn).first().comite.ct
-        update_group_memberz_cines_c4(group_cn, comite)
+        update_group_memberz_cines_c4(branch, group_cn, comite)
 
     return render_template('edit_group.html',
                            form=form,
@@ -1273,7 +1273,7 @@ def edit_group(branch, group_cn):
 @app.route('/delete_group/<branch>/<cn>')
 @login_required
 def delete_group(branch, cn):
-    if get_posix_group_memberz(cn):
+    if get_posix_group_memberz(branch, cn):
         flash(u'Le groupe n\'est pas vide.\nImpossible de supprimer le groupe.')
     else:
         dn = get_group_full_dn(branch, cn)
@@ -1424,9 +1424,12 @@ def edit_by_group():
 
         elif group_form.selected_groupz.data:
             groupz_id = group_form.selected_groupz.data
-            groupz_label = [ get_posix_group_cn_by_gid(id)
-                             for id in groupz_id ]
-            groupz_memberz = get_posix_groupz_memberz(groupz_label)
+            groupz_infoz = [
+                (get_branch_from_posix_group_gidnumber(id),
+                 get_posix_group_cn_by_gid(id))
+                for id in groupz_id
+            ]
+            groupz_memberz = get_posix_groupz_memberz(groupz_infoz)
 
             session[
                 'edit_by_group_memberz_uid'
@@ -1540,10 +1543,13 @@ def edit_group_submission():
 
     if request.method == 'POST':
         groupz_id = form.group_form.selected_groupz.data
-        groupz_label = [ get_posix_group_cn_by_gid(id)
-                         for id in groupz_id ]
-        groupz_memberz_uid = get_posix_groupz_memberz(groupz_label)
 
+        groupz_infoz = [
+            (get_branch_from_posix_group_gidnumber(id),
+             get_posix_group_cn_by_gid(id))
+            for id in groupz_id
+        ]
+        groupz_memberz = get_posix_groupz_memberz(groupz_infoz)
 
         wrk_group = form.submission_form.wrk_group.data
         is_submission = form.submission_form.submission.data
@@ -3200,10 +3206,10 @@ def get_type(obj):
     return str(type(obj))
 app.jinja_env.globals.update(get_type=get_type)
 
-def get_posix_groupz_memberz(group_list):
+def get_posix_groupz_memberz(groupz_infoz):
     memberz = []
-    for group in group_list:
-        memberz.extend(get_posix_group_memberz(group))
+    for branch, cn in groupz_infoz:
+        memberz.extend(get_posix_group_memberz(branch, cn))
     return memberz
 
 # def get_groupz_person_memberz(group_list):
@@ -3212,13 +3218,14 @@ def get_posix_groupz_memberz(group_list):
 #         memberz.extend(get_people_group_memberz(group))
 #     return memberz
 
-def get_posix_group_memberz(group):
+def get_posix_group_memberz(branch, cn):
     """
     List memberz of a group inherited from people ou
     """
-    ldap_filter='(cn={0})'.format(group)
+    ldap_filter='(cn={0})'.format(cn)
     attributes=['memberUid', "entryDN"]
-    base_dn='ou=groupePosix,{0}'.format(
+    base_dn='ou={0},ou=groupePosix,{1}'.format(
+        branch,
         app.config['LDAP_SEARCH_BASE']
     )
     # print(ldap_filter)
@@ -3254,6 +3261,19 @@ def get_posix_groupz_from_member_uid(uid):
             (cn, branch))
     return groupz
 
+def  get_branch_from_posix_group_gidnumber(id):
+    ldap_filter='(&(objectClass=posixGroup)(gidNumber={0}))'.format(id)
+    attributes=['entryDN']
+    base_dn='ou=groupePosix,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    group = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )[0]
+    return get_branch_from_posix_group_dn(
+        group.get_attributes('entryDN')[0]
+    )
+
 def  get_branch_from_posix_group_dn(dn):
     search_pattern = "cn=(.+?),ou=(.+?),"
     m = re.search(search_pattern, dn)
@@ -3265,26 +3285,28 @@ app.jinja_env.globals.update(
     get_branch_from_posix_group_dn=get_branch_from_posix_group_dn
 )
 
-def  get_branch_from_posix_group_cn(cn):
-    ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
-    attributes=['entryDN']
-    base_dn='ou=groupePosix,{0}'.format(
-        app.config['LDAP_SEARCH_BASE']
-    )
-    raw_result = ldap.search(base_dn,ldap_filter,attributes)
-    if raw_result:
-        branch =  get_branch_from_posix_group_dn(
-            ldaphelper.get_search_results(
-                raw_result
-            )[0].get_attributes()['entryDN'][0]
-        )
-        return branch
-    else:
-        flash(u'Groupe {0} introuvable'.format(cn))
-        return None
-app.jinja_env.globals.update(
-    get_branch_from_posix_group_cn=get_branch_from_posix_group_cn
-)
+
+
+# def  get_branch_from_posix_group_cn(cn):
+#     ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
+#     attributes=['entryDN']
+#     base_dn='ou=groupePosix,{0}'.format(
+#         app.config['LDAP_SEARCH_BASE']
+#     )
+#     raw_result = ldap.search(base_dn,ldap_filter,attributes)
+#     if raw_result:
+#         branch =  get_branch_from_posix_group_dn(
+#             ldaphelper.get_search_results(
+#                 raw_result
+#             )[0].get_attributes()['entryDN'][0]
+#         )
+#         return branch
+#     else:
+#         flash(u'Groupe {0} introuvable'.format(cn))
+#         return None
+# app.jinja_env.globals.update(
+#     get_branch_from_posix_group_cn=get_branch_from_posix_group_cn
+# )
 
 
 def get_work_groupz_from_member_uid(uid):
@@ -3687,8 +3709,8 @@ def update_quota(storage, form):
                             cinesQuotaInodeTempExpire))
     ldap.update_cn_attribute(storage['cn'][0], pre_modlist)
 
-def update_group_memberz_cines_c4(group, comite):
-    memberz_uid = get_posix_group_memberz(group)
+def update_group_memberz_cines_c4(branch, group, comite):
+    memberz_uid = get_posix_group_memberz(branch, group)
     if len(memberz_uid)>1:
         ldap_filter = '(&(objectClass=posixAccount)(|{0}))'.format(
             ''.join(['(uid={0})'.format(uid) for uid in memberz_uid]))
@@ -3814,10 +3836,11 @@ def set_validators_to_form_field(form, field, validators):
     form_field_kwargs['validators'] = validators
 
     # print(form_field_kwargs['validators'])
-def get_gid_from_posix_group_cn(cn):
-    for gid, group_cn in r.hgetall('grouplist').iteritems():
-        if group_cn == cn:
-            return gid
+
+# def get_gid_from_posix_group_cn(cn):
+#     for gid, group_cn in r.hgetall('grouplist').iteritems():
+#         if group_cn == cn:
+#             return gid
 
 def get_posix_group_cn_by_gid(gid):
     return r.hget('grouplist', gid)
