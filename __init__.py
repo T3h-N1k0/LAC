@@ -1227,12 +1227,13 @@ def add_group(page_label=None):
 @app.route('/edit_group/<branch>/<group_cn>', methods=('GET', 'POST'))
 @login_required
 def edit_group(branch, group_cn):
-    dn = ldap.get_full_dn_from_cn(group_cn)
+    dn = get_group_full_dn(branch, group_cn)
     page = Page.query.filter_by(label=branch).first()
     form = generate_edit_group_form(page)
 
     selected_memberz = get_posix_group_memberz(group_cn)
-    if branch == "grCines":
+
+    if branch in ["grCines", "grProjet"]:
         accountz = get_people_group_memberz('cines')
     else:
         accountz = get_all_people_group_memberz()
@@ -1255,7 +1256,7 @@ def edit_group(branch, group_cn):
         flash(u'Groupe {0} mis à jour'.format(group_cn))
         return redirect(url_for('show_groups', branch=page.label))
     else:
-        set_edit_group_form_values(form, fieldz, group_cn)
+        set_edit_group_form_values(form, fieldz, branch, group_cn)
 
     if branch == 'grCcc':
         comite = C4Ressource.query.filter_by(
@@ -1275,7 +1276,7 @@ def delete_group(branch, cn):
     if get_posix_group_memberz(cn):
         flash(u'Le groupe n\'est pas vide.\nImpossible de supprimer le groupe.')
     else:
-        dn = ldap.get_full_dn_from_cn(cn)
+        dn = get_group_full_dn(branch, cn)
         ldap.delete(dn)
         flash(u'Groupe {0} supprimé'.format(cn))
         return redirect(url_for('home'))
@@ -1287,7 +1288,6 @@ def delete_group(branch, cn):
 @app.route('/show_group/<branch>/<cn>')
 @login_required
 def show_group(branch, cn):
-    dn = ldap.get_full_dn_from_cn(cn)
     page = Page.query.filter_by(label = branch).first()
     page_fieldz = dict(
         (row.label.lower(), row)
@@ -1295,13 +1295,20 @@ def show_group(branch, cn):
     )
     ldap_filter='(cn={0})'.format(cn)
     attributes=['*','+']
-    raw_detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+    base_dn='ou={0},ou=groupePosix,{1}'.format(
+        branch,
+        app.config['LDAP_SEARCH_BASE']
+    )
+    raw_detailz = ldap.search(ldap_filter=ldap_filter,
+                              attributes=attributes,
+                              base_dn=base_dn)
     if not raw_detailz:
         flash(u'Groupe non trouvé')
         return redirect(url_for('show_groups',
                                 branch=branch))
     cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
-
+    dn = cn_attributez['entryDN'][0]
+    print("arg {0}".format(raw_detailz))
     default_storagez_labelz = [storage.get_attributes()['cn'][0]
                        for storage in get_default_storage_list()]
 
@@ -2309,10 +2316,10 @@ def init_populate_people_group_redis():
 def populate_people_group_redis():
     for branch in app.config['BRANCHZ']:
         people_group = branch['account']
-        print(people_group)
+        # print(people_group)
         r.delete('groupz:{0}'.format(people_group))
         memberz = get_people_group_memberz(people_group)
-        print("memberz : {0}".format(memberz))
+        # print("memberz : {0}".format(memberz))
         if memberz:
             for member in memberz:
                 r.sadd("groupz:{0}".format(people_group), member)
@@ -2724,11 +2731,18 @@ def generate_edit_ppolicy_form_class(page):
     return EditForm
 
 
-def set_edit_group_form_values(form, fieldz, cn=None):
+def set_edit_group_form_values(form, fieldz, branch, cn=None):
     if cn:
         ldap_filter='(cn={0})'.format(cn)
         attributes=['*','+']
-        detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+        base_dn='ou={0},ou=groupePosix,{1}'.format(
+            branch,
+            app.config['LDAP_SEARCH_BASE']
+        )
+
+        detailz = ldap.search(ldap_filter=ldap_filter,
+                              attributes=attributes,
+                              base_dn=base_dn)
 
         group_attributez = ldaphelper.get_search_results(
             detailz
@@ -3203,7 +3217,7 @@ def get_posix_group_memberz(group):
     List memberz of a group inherited from people ou
     """
     ldap_filter='(cn={0})'.format(group)
-    attributes=['memberUid']
+    attributes=['memberUid', "entryDN"]
     base_dn='ou=groupePosix,{0}'.format(
         app.config['LDAP_SEARCH_BASE']
     )
@@ -3371,6 +3385,18 @@ def get_work_group_memberz(group):
         memberz.extend(member.get_attributes()['uniqueMember'])
     return memberz
 
+def get_group_full_dn(branch, cn):
+    ldap_filter='(objectclass=posixGroup)'
+    attributes=['entryDN']
+    base_dn='cn={0},ou={1},ou=groupePosix,{2}'.format(
+        cn,
+        branch,
+        app.config['LDAP_SEARCH_BASE']
+    )
+    raw_result = ldaphelper.get_search_results(
+        ldap.anonymous_search(base_dn,ldap_filter,attributes)
+    )
+    return raw_result[0].get_attributes()['entryDN'][0]
 
 def get_group_branch(account_type):
     for branch in app.config['BRANCHZ']:
