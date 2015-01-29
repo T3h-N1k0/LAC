@@ -3271,8 +3271,11 @@ def  get_branch_from_posix_group_gidnumber(id):
         ldap.search(base_dn,ldap_filter,attributes)
     )[0]
     return get_branch_from_posix_group_dn(
-        group.get_attributes('entryDN')[0]
+        group.get_attributes()['entryDN'][0]
     )
+app.jinja_env.globals.update(
+    get_branch_from_posix_group_gidnumber=get_branch_from_posix_group_gidnumber
+)
 
 def  get_branch_from_posix_group_dn(dn):
     search_pattern = "cn=(.+?),ou=(.+?),"

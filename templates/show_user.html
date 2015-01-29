@@ -21,10 +21,10 @@
         {% if field.fieldtype.type == 'GIDNumber' %}
 
         {% for value in uid_attributez[field.label] %}
-        {% if get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)) %}
+        {% if get_branch_from_posix_group_gidnumber(value) %}
         <a class="list-group-item" href="{{ url_for(
            'show_group',
-           branch=get_branch_from_posix_group_cn(get_posix_group_cn_by_gid(value)),
+           branch=get_branch_from_posix_group_gidnumber(value),
            cn=get_posix_group_cn_by_gid(value)
            )}}">{{ render_field(value, field.fieldtype.type) }}</a>
         {% else %}
