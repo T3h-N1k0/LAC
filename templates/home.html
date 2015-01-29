@@ -78,6 +78,8 @@ Accueil
     <div class="panel panel-default">
       <div class="panel-heading">Mon compte</div>
       <div class="panel-body">
+        <a href="{{ url_for('logout')}}">Déconnecter</a>
+        <br>
         <a href="{{ url_for(
            'change_password',
            uid=session['uid'])}}">Changer mon mot de passe</a>
