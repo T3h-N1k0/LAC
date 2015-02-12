@@ -368,9 +368,9 @@ class C4Ressource(db.Model):
     code_projet = db.Column(db.String(8),
                             db.ForeignKey('PROJET.code_projet'))
     demande_uc_ibm = db.Column(db.Integer)
-    demande_uc_sgi = db.Column(db.Integer)
+    demande_uc_occigen = db.Column(db.Integer)
     accorde_uc_ibm = db.Column(db.Integer)
-    accorde_uc_sgi = db.Column(db.Integer)
+    accorde_uc_occigen = db.Column(db.Integer)
 
 class C4Comite(db.Model):
     __bind_key__ = 'gescli'
@@ -443,9 +443,9 @@ class C4Projet(db.Model):
     #                              uselist=False)
 
 
-class C4SGI(db.Model):
+class C4OCCIGEN(db.Model):
     __bind_key__ = 'gescpt'
-    __tablename__ = 'SGI{0}'.format(datetime.now().strftime('%Y'))
+    __tablename__ = 'OCCIGEN'
     grpunix = db.Column(db.String(255), primary_key=True)
     walltime = db.Column(db.Float())
     nbcoeurs = db.Column(db.Integer)
@@ -1335,20 +1335,20 @@ def show_group(branch, cn):
             code_projet = cn).first().code_personne
         manager = C4Personne.query.filter_by(
             code_personne=code_personne).first()
-        sgi_computed = db.session.query(
-            func.sum(C4SGI.walltime * C4SGI.nbcoeurs) / 3600
-        ).filter_by(grpunix=cn).group_by(C4SGI.grpunix).first()
+        bull_computed = db.session.query(
+            func.sum(C4OCCIGEN.walltime * C4OCCIGEN.nbcoeurs) / 3600
+        ).filter_by(grpunix=cn).group_by(C4OCCIGEN.grpunix).first()
         ibm_computed = db.session.query(
             func.sum(C4IBM.walltime * C4IBM.nbcoeurs) / 3600
         ).filter_by(grpunix=cn).group_by(C4IBM.grpunix).first()
         if ibm_computed:
             ibm_computed = int(ibm_computed[0])
-        if sgi_computed:
-            sgi_computed = int(sgi_computed[0])
+        if bull_computed:
+            bull_computed = int(bull_computed[0])
     else:
         ressource = None
         manager = None
-        sgi_computed = None
+        bull_computed = None
         ibm_computed = None
         # update_group_memberz_cines_c4(cn, comite.ct)
     return render_template('show_group.html',
@@ -1359,7 +1359,7 @@ def show_group(branch, cn):
                            branch=branch,
                            ressource=ressource,
                            manager=manager,
-                           sgi_computed=sgi_computed,
+                           bull_computed=bull_computed,
                            ibm_computed=ibm_computed,
                            quotaz=quotaz)
 
