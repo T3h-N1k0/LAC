@@ -21,9 +21,9 @@ Accueil
 
           <div class="row">
             <div class="col-sm-3">Compte <!-- {{ branch['account'] }} --></div>
-            <div class="col-sm-5"><a href="{{ url_for(
+            <div class="text-center col-sm-{% if session['admin'] %}5{% else %}9{% endif %}"><a href="{{ url_for(
                                      'show_group_memberz',
-                                     group=branch['account'])}}">Consulter/Modifier</a></div>
+                                     group=branch['account'])}}">{% if session['admin'] %}Consulter/Modifier{% else %}Consulter les groupes {{ branch['account'].upper() }} {% endif %}</a></div>
             {% if session['admin'] %}
             <div class="col-sm-4"><a href="{{url_for(
                                      'add_user',
@@ -34,9 +34,9 @@ Accueil
 
           <div class="row">
             <div class="col-sm-3">Groupe <!-- {{ branch['group'] }} --></div>
-            <div class="col-sm-5"><a href="{{ url_for(
+            <div class="text-center col-sm-{% if session['admin'] %}5{% else %}9{% endif %}"><a href="{{ url_for(
                                      'show_groups',
-                                     branch=branch['group'])}}">Consulter/Modifier</a></div>
+                                     branch=branch['group'])}}">{% if session['admin'] %}Consulter/Modifier{% else %}Consulter les groupes {{ branch['account'].upper() }} {% endif %}</a></div>
             {% if session['admin'] %}
             <div class="col-sm-4"><a href="{{ url_for(
                                      'add_group',
@@ -57,9 +57,9 @@ Accueil
 
           <div class="row">
             <div class="col-sm-3">Groupe</div>
-            <div class="col-sm-5"><a href="{{ url_for(
+            <div class="text-center col-sm-{% if session['admin'] %}5{% else %}9{% endif %}"><a href="{{ url_for(
                                      'show_groups',
-                                     branch='grProjet')}}">Consulter/Modifier</a></div>
+                                     branch='grProjet')}}">{% if session['admin'] %}Consulter/Modifier{% else %}Consulter les groupes projet{% endif %}</a></div>
             {% if session['admin'] %}
             <div class="col-sm-4"><a href="{{ url_for(
                                      'add_group',
