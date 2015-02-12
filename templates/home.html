@@ -59,7 +59,7 @@ Accueil
             <div class="col-sm-3">Groupe</div>
             <div class="text-center col-sm-{% if session['admin'] %}5{% else %}9{% endif %}"><a href="{{ url_for(
                                      'show_groups',
-                                     branch='grProjet')}}">{% if session['admin'] %}Consulter/Modifier{% else %}Consulter les groupes projet{% endif %}</a></div>
+                                     branch='grProjet')}}">{% if session['admin'] %}Consulter/Modifier{% else %}Consulter les comptes projet{% endif %}</a></div>
             {% if session['admin'] %}
             <div class="col-sm-4"><a href="{{ url_for(
                                      'add_group',
