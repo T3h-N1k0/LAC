@@ -3369,7 +3369,7 @@ def get_people_group_memberz(group):
     else:
         return None
 
-    memberz = [ member.get_attributes()['uid'][0] for member in records]
+    memberz = sorted([ member.get_attributes()['uid'][0] for member in records])
     return memberz
 
 
