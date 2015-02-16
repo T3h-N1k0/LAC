@@ -98,7 +98,7 @@
 
           </li>
           {% if session['lac_admin'] %}
-          <li class="dropdown">
+          <li class="dropdown" style='background-color:{% if config['PROD_FLAG'] %}#FF987E{% else %}#CCFF99{% endif %};'>
             <a data-toggle="dropdown" href="#">Administration<b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a href="{{ url_for(
@@ -116,7 +116,13 @@
               <li><a href="{{ url_for(
                  'show_shells')}}">Gérer les types de shell</a></li>
               <li><a href="{{ url_for(
-                 'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a></li>
+                     'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a></li>
+
+              <li class="divider"></li>
+              <li><a href='#'>LDAP HOST : {{ config['LDAP_HOST']}}</a></li>
+              <li><a href='#'>LAC DB HOST : {{ config['LAC_DB_HOST']}}</a></li>
+              <li><a href='#'>OTRS HOST : {{ config['OTRS_DB_HOST']}}</a></li>
+              <li><a href='#'>DARI HOST : {{ config['DARI_HOST']}}</a></li>
             </ul>
           </li>
           {% endif %}
