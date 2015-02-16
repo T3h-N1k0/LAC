@@ -1231,7 +1231,26 @@ def edit_group(branch, group_cn):
     page = Page.query.filter_by(label=branch).first()
     form = generate_edit_group_form(page)
 
-    selected_memberz = get_posix_group_memberz(branch, group_cn)
+    ldap_filter='(cn={0})'.format(group_cn)
+    attributes=['gidNumber']
+    base_dn='ou={0},ou=groupePosix,{1}'.format(
+        branch,
+        app.config['LDAP_SEARCH_BASE']
+    )
+    raw_detailz = ldap.search(ldap_filter=ldap_filter,
+                              attributes=attributes,
+                              base_dn=base_dn)
+    if raw_detailz:
+        gid_number = ldaphelper.get_search_results(raw_detailz)[0].get_attributes()['gidNumber'][0]
+
+    principal_memberz = get_posix_group_principal_memberz_from_gid(
+        gid_number
+        )
+
+    selected_memberz = [member for member in get_posix_group_memberz(
+        branch, group_cn
+    )
+                        if member not in principal_memberz]
 
     if branch in ["grCines", "grProjet"]:
         accountz = get_people_group_memberz('cines')
@@ -1307,6 +1326,13 @@ def show_group(branch, cn):
         return redirect(url_for('show_groups',
                                 branch=branch))
     cn_attributez=ldaphelper.get_search_results(raw_detailz)[0].get_attributes()
+
+    if 'memberUid' in cn_attributez:
+        cn_attributez['memberUid'] = sorted(cn_attributez['memberUid'])
+    principal_memberz = get_posix_group_principal_memberz_from_gid(
+            cn_attributez['gidNumber'][0]
+        )
+
     dn = cn_attributez['entryDN'][0]
     print("arg {0}".format(raw_detailz))
     default_storagez_labelz = [storage.get_attributes()['cn'][0]
@@ -1361,6 +1387,7 @@ def show_group(branch, cn):
                            manager=manager,
                            bull_computed=bull_computed,
                            ibm_computed=ibm_computed,
+                           principal_memberz=principal_memberz,
                            quotaz=quotaz)
 
 # @app.route('/delete_group/<cn>', methods=('GET', 'POST'))
@@ -3240,6 +3267,21 @@ def get_posix_group_memberz(branch, cn):
     else:
         memberz = []
     return memberz
+
+def get_posix_group_principal_memberz_from_gid(gid_number):
+    ldap_filter='(&(gidNumber={0})(objectClass=posixAccount))'.format(
+        gid_number
+    )
+    attributes=["uid", "entryDN"]
+    base_dn='ou=people,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    raw_memberz = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    memberz_dn = sorted([member.get_attributes()['uid'][0]
+                  for member in raw_memberz])
+    return memberz_dn
 
 
 def get_posix_groupz_from_member_uid(uid):

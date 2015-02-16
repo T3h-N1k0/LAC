@@ -65,9 +65,14 @@
         </fieldset>
       </div>
       <div class="group-select col-sm-6">
-        <fieldset>
+        <fieldset class='text-center'>
+          <legend>
+            Gestion des membres à titre secondaire
+          </legend>
           Filter les membres :
           <input id="searchMemberFilter" type="text"/>
+          <br>
+          <br>
           {{ render_formfield(form.memberz.available_memberz) }}
           {{ render_formfield(form.memberz.selected_memberz) }}
         </fieldset>
