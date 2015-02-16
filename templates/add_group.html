@@ -25,11 +25,14 @@ searchFromList($(this).val(), searchArea);
 {% endblock head_js %}
 
 {% block body %}
-
-<form method="post" action="/add_group/{{ page_label }}">
-{{ render_formfield(add_form.cn) }}
-{{ render_formfield(add_form.filesystem) }}
-{{ render_formfield(add_form.description) }}
-<input id="update" type="submit" value="Créer" >
-
+<div class="well col-md-offset-3 col-md-6 text-center">
+  <form method="post" action="/add_group/{{ page_label }}">
+    {{ render_formfield(add_form.cn) }}
+    {{ render_formfield(add_form.filesystem) }}
+    {{ render_formfield(add_form.description) }}
+    <button id="update" type="submit"  class="btn btn-primary">
+      <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
+    </button>
+  </form>
+</div>
 {% endblock body %}
