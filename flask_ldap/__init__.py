@@ -389,7 +389,15 @@ class LDAP(object):
             print(e)
             return self.other_err(e)
 
+    def is_cines_account(self, username):
+        ldap_filter = '(&(objectClass=cinesusr)(uid={0}))'.format(username)
+        base_dn='ou=cines,ou=people,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        raw_result = self.anonymous_search(ldap_filter=ldap_filter,
+                              base_dn=base_dn)
 
+        return False if not raw_result else True
 
     def login(self):
         """
@@ -399,9 +407,10 @@ class LDAP(object):
         """
         if request.method == 'POST':
             if "username" in request.form and "password" in request.form:
-                if self.ldap_login(request.form['username'], request.form['password']):
-#                    for i in self.mu.keys():
-#                        session[i] = self.mu[i]
+                if not self.is_cines_account(request.form['username']):
+                    flash(u'Seuls les comptes CINES sont autorisés à se connecter à LAC')
+                    return render_template(self.app.config['LDAP_LOGIN_TEMPLATE'])
+                elif self.ldap_login(request.form['username'], request.form['password']):
                     return redirect(url_for(self.app.config['LDAP_SUCCESS_REDIRECT']))
                 else:
                     return render_template(self.app.config['LDAP_LOGIN_TEMPLATE'])
