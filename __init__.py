@@ -3839,7 +3839,7 @@ def days_number_to_datetime(nb):
     )
 
 def convert_to_display_mode(value, display_mode):
-    if display_mode in  ('Text', 'Filesystem', 'Shell') :
+    if display_mode in  ('Text', 'Filesystem', 'Shell', 'TextArea') :
         return value.decode('utf-8')
     elif display_mode == 'Datetime' :
         return value.strftime(
