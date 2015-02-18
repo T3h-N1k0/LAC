@@ -1308,10 +1308,11 @@ def delete_group(branch, cn):
 @login_required
 def show_group(branch, cn):
     page = Page.query.filter_by(label = branch).first()
-    page_fieldz = dict(
-        (row.label.lower(), row)
-        for row in Field.query.filter_by(page_id = page.id).all()
-    )
+    page_fieldz = Field.query.filter_by(
+        page_id = page.id,
+        display=True
+    ).order_by(Field.priority).all()
+
     ldap_filter='(cn={0})'.format(cn)
     attributes=['*','+']
     base_dn='ou={0},ou=groupePosix,{1}'.format(
@@ -1376,8 +1377,16 @@ def show_group(branch, cn):
         manager = None
         bull_computed = None
         ibm_computed = None
-        # update_group_memberz_cines_c4(cn, comite.ct)
+
+    blockz =sorted(
+        set(
+            [field.block for field in page_fieldz]
+        )
+    )
+
+
     return render_template('show_group.html',
+                           blockz=blockz,
                            cn = cn,
                            dn=dn,
                            cn_attributez=cn_attributez,

@@ -14,13 +14,12 @@
 <section class="row">
   <div class="col-sm-6">
 
-    {% for attr_name, attr_values in cn_attributez.iteritems() %}
+    {% for block in blockz %}
+    <div class="attrz-block">
+      {% for field in page_fieldz %}
+      {% if field.label in cn_attributez.keys() and field.block == block %}
 
-    {% if attr_name in page_fieldz %}
-
-    {% if page_fieldz[attr_name].display %}
-
-    {% if attr_name == 'memberuid' %}
+    {% if field.label == 'memberuid' %}
     <strong>Membres à titre principal :</strong>
     <ul class="list-group">
 
@@ -37,7 +36,7 @@
     <strong>Membres à titre secondaires ( {{attr_name}} ) :</strong>
     <ul class="list-group">
 
-      {% for value in attr_values %}
+      {% for value in cn_attributez[field.label] %}
       {% if value not in principal_memberz %}
       {% if get_group_from_member_uid(value) %}
       <a class="list-group-item" href="{{ url_for('show_user',
@@ -52,9 +51,9 @@
     {% else %}
 
 
-    <strong>{{ page_fieldz[attr_name].description }} ( {{attr_name}} ) :</strong>
+    <strong>{{ field.description }} ( {{field.label}} ) :</strong>
     <ul class="list-group">
-      {% for value in attr_values %}
+      {% for value in cn_attributez[field.label] %}
       <li class="list-group-item">{{ value.decode('utf-8') }}</li>
       {% endfor %}
     </ul>
@@ -62,8 +61,8 @@
 
     {% endif %}
 
-    {% endif %}
-
+    {% endfor %}
+    </div>
     {% endfor %}
 
     {% if manager %}
