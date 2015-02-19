@@ -19,8 +19,8 @@
       {% for field in page_fieldz %}
       {% if field.label in cn_attributez.keys() and field.block == block %}
 
-    {% if field.label == 'memberuid' %}
-    <strong>Membres à titre principal :</strong>
+    {% if field.label == 'memberUid' %}
+    <strong>Membres à titre principal ( {{ field.label }} ) :</strong>
     <ul class="list-group">
 
       {% for value in principal_memberz %}
@@ -33,7 +33,7 @@
       {% endif %}
       {% endfor %}
     </ul>
-    <strong>Membres à titre secondaires ( {{attr_name}} ) :</strong>
+    <strong>Membres à titre secondaires ( {{ field.label }} ) :</strong>
     <ul class="list-group">
 
       {% for value in cn_attributez[field.label] %}
@@ -68,7 +68,12 @@
     {% if manager %}
     <div class="well">
       <strong>Responsable : </strong> {{ manager.qualite.libelle_qualite }}  {{ manager.nom_personne }}  {{ manager.prenom_personne }} <br/>
-      <strong>Comite : </strong>{{ ressource.comite.intitule_comite }} <br/>
+
+      <strong>Comite : </strong>{% if ressource.comite %}
+      {{ ressource.comite.intitule_comite }}
+      {% else %} Pas de comité {% endif %}
+      <br/>
+
       <strong>Site : </strong>{{ manager.adresse.organisme_adresse }}<br/>
       <strong>Laboratoire : </strong>{{ manager.adresse.laboratoire_adresse }} <br/>
       <strong>Ville : </strong>{{ manager.adresse.ville_adresse}} <br/>
