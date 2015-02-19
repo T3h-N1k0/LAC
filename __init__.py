@@ -2709,7 +2709,8 @@ def update_ldap_object_from_edit_group_form(form, page, group_cn):
         form_field_values = [entry.data.encode('utf-8')
                              for entry in getattr(form, field.label).entries]
         print('form_field_values : {0}'.format(form_field_values))
-        if group_attributez[field.label] != form_field_values:
+        if ((field.label not in group_attributez)
+            or (group_attributez[field.label] != form_field_values)):
             pre_modlist.append((field.label, form_field_values))
     print(form.memberz.selected_memberz.data)
     pre_modlist.append(
