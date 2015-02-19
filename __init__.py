@@ -1136,10 +1136,10 @@ def delete_user(uid):
     if request.method == 'POST':
         user_dn = ldap.get_full_dn_from_uid(uid)
         ldap.delete(user_dn)
-        for group in groupz:
+        for (group_cn, group_branch) in groupz:
+            group_dn = get_group_full_dn(group_branch, group_cn)
             pre_modlist = [('memberUid', uid.encode('utf-8'))]
-            ldap.remove_cn_attribute(group,pre_modlist)
-
+            ldap.remove_dn_attribute(group_dn,pre_modlist)
         if app.config['PROD_FLAG']:
             delete_otrs_user(uid)
         flash(u'Utilisateur {0} supprimé'.format(uid))
