@@ -3817,7 +3817,7 @@ def update_group_memberz_cines_c4(branch, group, comite):
 
 
 def is_ccc_group(member):
-    return 'ccc' == get_group_from_member_uid(member['uid'][0])
+    return 'ccc' == get_group_from_member_uid(member)
 
 def is_cines_group(uid):
     return 'cines' == get_group_from_member_uid(uid)
