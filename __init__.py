@@ -1269,26 +1269,40 @@ def edit_group(branch, group_cn):
         (member, member) for member in available_memberz
     ]
 
-    fieldz = Field.query.filter_by(page_id = page.id,
-                                   edit = True).all()
+    fieldz = Field.query.filter_by(
+        page_id = page.id,
+        edit = True
+    ).order_by(Field.priority).all()
+
+    blockz =sorted(
+        set(
+            [field.block for field in fieldz]
+        )
+    )
+
     if request.method == 'POST':
+        if branch == 'grCcc':
+            ressource = C4Ressource.query.filter_by(
+                code_projet = group_cn).first()
+            if ressource:
+                comite = ressource.comite.ct
+            else:
+                comite = ''
+            update_group_memberz_cines_c4(branch, group_cn, comite)
+
         update_ldap_object_from_edit_group_form(form,page,group_cn)
         flash(u'Groupe {0} mis à jour'.format(group_cn))
         return redirect(url_for('show_groups', branch=page.label))
     else:
         set_edit_group_form_values(form, fieldz, branch, group_cn)
 
-    if branch == 'grCcc':
-        comite = C4Ressource.query.filter_by(
-            code_projet = group_cn).first().comite.ct
-        update_group_memberz_cines_c4(branch, group_cn, comite)
-
     return render_template('edit_group.html',
                            form=form,
                            page=page,
                            dn=dn,
                            group_cn=group_cn,
-                           fieldz=fieldz)
+                           fieldz=fieldz,
+                           blockz=blockz)
 
 @app.route('/delete_group/<branch>/<cn>')
 @login_required
