@@ -1098,7 +1098,7 @@ def edit_user(page,uid):
     fieldz = Field.query.filter_by(
         page_id = page.id,
         edit = True
-    ).all()
+    ).order_by(Field.priority).all()
 
     blockz =sorted(
         set(
