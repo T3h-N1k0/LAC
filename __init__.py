@@ -1246,16 +1246,17 @@ def edit_group(branch, group_cn):
     principal_memberz = get_posix_group_principal_memberz_from_gid(
         gid_number
         )
-
     selected_memberz = [member for member in get_posix_group_memberz(
         branch, group_cn
     )
                         if member not in principal_memberz]
 
-    if branch in ["grCines", "grProjet"]:
+    if branch == 'grProjet':
         accountz = get_people_group_memberz('cines')
     else:
-        accountz = get_all_people_group_memberz()
+        accountz = get_people_group_memberz(
+            get_account_branch_from_group_branch(branch)
+        )
 
     available_memberz = [
         account for account in accountz
