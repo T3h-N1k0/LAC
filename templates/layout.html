@@ -47,8 +47,10 @@
             <a data-toggle="dropdown" href="#">Utilisateurs<b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a href="{{ url_for('search_user')}}">Chercher un compte</a></li>
+              {% if session['admin'] %}
               <li><a href="{{ url_for(
-   'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a></li>
+                     'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a></li>
+              {% endif %}
             </ul>
           </li>
 
@@ -56,10 +58,12 @@
             <a data-toggle="dropdown" href="#">Groupes<b class="caret"></b></a>
             <ul class="dropdown-menu">
               <li><a href="{{ url_for('search_group') }}">Chercher un groupe</a></li>
+              {% if session['admin'] %}
               <li><a href="{{ url_for(
    'edit_group_submission')}}">Editer la soumission par groupe(s)</a></li>
               <li><a href="{{ url_for(
-   'edit_by_group')}}">Editer un/des attribut(s) par groupe(s)</a></li>
+                     'edit_by_group')}}">Editer un/des attribut(s) par groupe(s)</a></li>
+              {% endif %}
             </ul>
           </li>
 

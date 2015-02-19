@@ -102,7 +102,7 @@ Accueil
       </div>
     </div>
 
-
+    {% if session['admin'] %}
     <div class="panel panel-default">
       <div class="panel-heading">Gestion par lot</div>
       <div class="panel-body">
@@ -116,6 +116,7 @@ Accueil
            'edit_file')}}">Editer un/des attribut(s) à partir d'un fichier</a>
       </div>
     </div>
+    {% endif %}
 
     <div class="panel panel-default">
       <div class="panel-heading">Gestion des quotas</div>
