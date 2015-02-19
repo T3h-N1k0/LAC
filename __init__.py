@@ -3181,6 +3181,13 @@ def get_storage(cn):
     )[0]
     return storage
 
+
+def get_account_branch_from_group_branch(group_branch):
+    for branch in app.config['BRANCHZ']:
+        if branch['group'] == group_branch:
+            print( branch['account'])
+            return branch['account']
+
 def get_uid_logz(uid):
     dn = ldap.get_full_dn_from_uid(uid)
     ldap_filter="(&(objectClass=auditModify)(reqDN={0}))".format(dn)
