@@ -81,9 +81,9 @@
     </thead>
     <tbody>
       {% for group in groupz|sort %}
-      <tr onclick="document.location = '{{ url_for('show_group',
+      <tr onclick="window.open('{{ url_for('show_group',
           branch=get_branch_from_posix_group_dn(group.dn),
-          cn=group.get_attributes()['cn'][0] ) }}'">
+          cn=group.get_attributes()['cn'][0] ) }}')">
         {% for attr in attributes %}
         <td>
           {% for value in group.get_attributes()[attr.label]  %}
