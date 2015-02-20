@@ -3828,6 +3828,9 @@ def is_principal_group(member, group):
 
 
 def generalized_time_to_datetime(generalized_time):
+    if len(generalized_time) > 14:
+        m = re.search('^\d{14}', generalized_time)
+        generalized_time = '{0}Z'.format(m.group(0))
     created_datetime = datetime.strptime(
         generalized_time, "%Y%m%d%H%M%SZ"
     )
