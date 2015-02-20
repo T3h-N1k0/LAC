@@ -3099,7 +3099,6 @@ def add_user_to_lac_admin(user):
     ldap.update_uid_attribute(user, pre_modlist)
 
 def add_to_group_if_not_member(group, memberz_uid):
-    populate_work_group_redis()
     memberz_dn = [ldap.get_full_dn_from_uid(uid)
                   for uid in memberz_uid]
     memberz_dn_filtered = [dn
@@ -3112,8 +3111,9 @@ def add_to_group_if_not_member(group, memberz_uid):
         group_dn = get_wrk_group_dn_from_cn(group)
         ldap.add_dn_attribute(group_dn, pre_modlist)
 
-def rem_from_group_if_member(group, memberz_uid):
     populate_work_group_redis()
+
+def rem_from_group_if_member(group, memberz_uid):
     memberz_dn = [ldap.get_full_dn_from_uid(uid)
                   for uid in memberz_uid]
     memberz_dn_filtered = [dn
@@ -3125,9 +3125,8 @@ def rem_from_group_if_member(group, memberz_uid):
         pre_modlist = [('uniqueMember', memberz_dn_filtered)]
         group_dn = get_wrk_group_dn_from_cn(group)
         ldap.remove_dn_attribute(group_dn, pre_modlist)
-    #     flash(u'Utilisateur(s) supprimé(s) du groupe')
-    # else:
-    #     flash(u'Utilisateur(s) déjà supprimé(s) du groupe')
+
+    populate_work_group_redis()
 
 
 def get_default_storage_list():
