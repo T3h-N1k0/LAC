@@ -1142,6 +1142,8 @@ def delete_user(uid):
             ldap.remove_dn_attribute(group_dn,pre_modlist)
         if app.config['PROD_FLAG']:
             delete_otrs_user(uid)
+        populate_people_group_redis()
+        populate_work_group_redis()
         flash(u'Utilisateur {0} supprimé'.format(uid))
         return redirect(url_for('home'))
 
@@ -1312,6 +1314,8 @@ def delete_group(branch, cn):
     else:
         dn = get_group_full_dn(branch, cn)
         ldap.delete(dn)
+        populate_people_group_redis()
+        populate_work_group_redis()
         flash(u'Groupe {0} supprimé'.format(cn))
         return redirect(url_for('home'))
     return redirect(url_for('show_group',
