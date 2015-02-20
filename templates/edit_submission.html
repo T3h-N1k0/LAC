@@ -8,38 +8,44 @@
 <header class="row text-center">
   <h2>Gérer la soumission pour : {{ uid }}</h2>
 </header>
-<div class='row text-right'>
-  <div id='dn'> Nom LDAP : {{ dn }}</div>
-</div>
-<section class="well col-md-4 col-md-offset-2">
-  <form method="post" action="/edit_submission/{{ uid }}">
+<div class='row'>
+  <div class='row text-right'>
+    <div id='dn'> Nom LDAP : {{ dn }}</div>
+  </div>
+  <section class="well col-md-4 col-md-offset-2">
+    <form method="post" action="/edit_submission/{{ uid }}">
       {{ render_formfield(form.wrk_group) }}
       {{ render_formfield(form.member) }}
       {{ render_formfield(form.submission) }}
-    <div class="text-center">
-      <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button>
-    </div>
-  </form>
-</section>
-{% if work_groupz %}
-<aside class="row col-md-4 col-md-offset-1">
-  <h4>Droits de soumission actuels :</h4>
+      <div class="text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button>
+      </div>
+    </form>
+  </section>
+  {% if work_groupz %}
+  <aside class="row col-md-4 col-md-offset-1">
+    <h4>Droits de soumission actuels :</h4>
 
-  <table class='table'>
-    <tr>
-      <th>Groupe</th>
-      <th>Membre</th>
-      <th>Soumission</th>
-    </tr>
-    {% for group in work_groupz %}
-    <tr>
-      <td>{{ group }}</td>
-      <td>{% if work_groupz[group]['is_member'] %}Oui{% else %}Non{% endif %}</td>
-      <td>{% if work_groupz[group]['is_submission'] %}Oui{% else %}Non{% endif %}</td>
-    </tr>
-    {% endfor %}
-  </table>
-</aside>
-{% endif %}
+    <table class='table'>
+      <tr>
+        <th>Groupe</th>
+        <th>Membre</th>
+        <th>Soumission</th>
+      </tr>
+      {% for group in work_groupz %}
+      <tr>
+        <td>{{ group }}</td>
+        <td>{% if work_groupz[group]['is_member'] %}Oui{% else %}Non{% endif %}</td>
+        <td>{% if work_groupz[group]['is_submission'] %}Oui{% else %}Non{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </aside>
 
+  {% endif %}
+</div>
+<div class="row">
+Si seule l'autorisation à la soumission est cochée, l'utilisateur ne sera pas enregistré comme membre du groupe, et la soumission ne lui sera pas affectée.<br>
+  Il faut cocher "Membre" + "Autorisé à la soumission" afin d'affecter la soumission à l'utilisateur.
+</div>
 {% endblock body %}
