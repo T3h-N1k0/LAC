@@ -27,7 +27,7 @@
       {% if get_group_from_member_uid(value) %}
       <a class="list-group-item" href="{{ url_for('show_user',
          page=get_group_from_member_uid(value),
-         uid=value)}}">{{ value }}</a>
+         uid=value)}}">{{ render_field(value, field.fieldtype.type) }}</a>
       {% else %}
       <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
       {% endif %}
@@ -41,7 +41,7 @@
       {% if get_group_from_member_uid(value) %}
       <a class="list-group-item" href="{{ url_for('show_user',
          page=get_group_from_member_uid(value),
-         uid=value)}}">{{ value }}</a>
+         uid=value)}}">{{ render_field(value, field.fieldtype.type) }}</a>
       {% else %}
       <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
       {% endif %}
@@ -54,7 +54,7 @@
     <strong>{{ field.description }} ( {{field.label}} ) :</strong>
     <ul class="list-group">
       {% for value in cn_attributez[field.label] %}
-      <li class="list-group-item">{{ value.decode('utf-8') }}</li>
+      <li class="list-group-item">{{ render_field(value, field.fieldtype.type) }}</li>
       {% endfor %}
     </ul>
     {% endif %}
