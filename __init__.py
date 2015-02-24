@@ -2922,7 +2922,7 @@ def append_field_to_form(field, form):
                 field.label,
                 TextAreaField(field.description))
 
-def append_fieldlist_to_form(field, form):
+def append_fieldlist_to_form(field, form, branch=None):
     date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
     if field.fieldtype.type == 'Text':
         setattr(form,
@@ -2935,8 +2935,10 @@ def append_fieldlist_to_form(field, form):
     elif  field.fieldtype.type == 'GIDNumber':
         setattr(form,
                 field.label,
-                FieldList(SelectField(field.description,
-                                      choices=get_posix_groupz_choices())))
+                FieldList(SelectField(
+                    field.description,
+                    choices=get_posix_groupz_choices(branch)
+                )))
     elif  field.fieldtype.type == 'Shell':
         setattr(form,
                 field.label,
