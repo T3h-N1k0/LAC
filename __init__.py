@@ -2470,16 +2470,18 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
     for field_label in fieldz_labelz:
         form_field_values = [entry.data.encode('utf-8')
                              for entry in getattr(form, field_label).entries]
-        print('form_field_values : {0}'.format(form_field_values))
-        if field_label != 'cinesUserToPurge':
+        if (field_label not in ['cinesUserToPurge', 'cn']
+            and form_field_values != [''] ):
             form_attributez.append((field_label, form_field_values))
 
     uid_number = get_next_id_from_ldap_ot(ldap_ot)
     add_record = [('uid', [uid.encode('utf-8')]),
+                  ('cn', [uid.encode('utf-8')]),
                   ('uidNumber', [str(uid_number).encode('utf-8')]),
                   ('objectClass', ot_oc_list)]
 
     add_record.extend(form_attributez)
+
     add_record.append(
         ('homeDirectory', "/home/{0}".format(uid).encode('utf-8')))
 
