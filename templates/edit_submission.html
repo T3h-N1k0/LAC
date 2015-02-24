@@ -2,9 +2,31 @@
 {% extends "layout.html" %}
 
 {% block title %} Gestion de la soumission  {% endblock title %}
+
+{% block head_js %}
+<script type="text/javascript" id="js">
+ var work_groupz = {}
+ {% for group in work_groupz %}
+ work_groupz['{{ group }}'] = {}
+ work_groupz['{{ group }}']['is_submission'] = {% if work_groupz[group]['is_submission'] %}true{% else %}false{% endif %} ;
+ work_groupz['{{ group }}']['is_member'] = {% if work_groupz[group]['is_member'] %}true{% else %}false{% endif %} ;
+ {% endfor %}
+
+function set_group_state() {
+     $( '#member').prop( "checked", work_groupz[$( '#wrk_group' ).val()]['is_member']);
+     $( '#submission').prop( "checked", work_groupz[$( '#wrk_group' ).val()]['is_submission']);
+   }
+
+ $(document).ready(function(){
+   set_group_state();
+   $( '#wrk_group' ).change(set_group_state);
+
+ });
+</script>
+
+{% endblock %}
+
 {% block body %}
-
-
 <header class="row text-center">
   <h2>Gérer la soumission pour : {{ uid }}</h2>
 </header>
