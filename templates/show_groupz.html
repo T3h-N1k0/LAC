@@ -14,7 +14,11 @@
 
 
 {% block body %}
-Liste des groupes {% if branch %} pour la branche {{ branch }} {% endif %}
+<div class="well col-sm-4 col-sm-offset-4">
+  <em>Nombre de groupes : {{ groupz_count }}</em>
+  <br>
+  <h4>Liste des groupes {% if branch %} pour la branche {{ branch }} {% endif %}</h4>
+
 <table id='table1' >
   {% for group in groupz | sort %}
   <tr>
@@ -33,5 +37,5 @@ Liste des groupes {% if branch %} pour la branche {{ branch }} {% endif %}
  }
  setFilterGrid("table1", table_propz);
 </script>
-
+</div>
 {% endblock body %}

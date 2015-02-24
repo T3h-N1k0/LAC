@@ -15,7 +15,10 @@
 {% block body %}
 
 {% if memberz %}
-<h1> Liste des membres du groupe {{ group }} : </h1>
+<div class="well col-sm-4 col-sm-offset-4">
+  <em>Nombre de membres : {{ memberz_count }}</em>
+  <br>
+<h4>Liste des membres du groupe {{ group }} :</h4>
 <table id='table1' >
   {% for member in memberz|sort %}
   <tr>
@@ -26,6 +29,7 @@
   </tr>
   {%endfor%}
 </table>
+</div>
 {% else %}
 <h1>Groupe vide</h1>
 {% endif %}

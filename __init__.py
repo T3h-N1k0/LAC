@@ -635,9 +635,11 @@ def change_password(uid):
 @login_required
 def show_group_memberz(group):
     memberz = r.smembers("groupz:{0}".format(group))
+    memberz_count = len(memberz)
     return render_template('show_group_memberz.html',
                            memberz=memberz,
-                           group=group)
+                           group=group,
+                           memberz_count=memberz_count)
 
 
 
@@ -1433,9 +1435,11 @@ def show_groups(branch):
     # print(branch)
     groupz = [group.get_attributes()['cn'][0]
               for group in  get_posix_groupz(branch)]
+    groupz_count = len(groupz)
     return render_template('show_groupz.html',
                            groupz=groupz,
-                           branch=branch)
+                           branch=branch,
+                           groupz_count=groupz_count)
 
 
 @app.route('/edit_by_group/', methods=('GET', 'POST'))
