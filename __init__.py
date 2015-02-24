@@ -2783,7 +2783,7 @@ def generate_edit_user_form_class(page):
         # submission = FormField(EditSubmissionForm, label=u'Soumission')
 
     for field in page_fieldz:
-        append_fieldlist_to_form(field, EditForm)
+        append_fieldlist_to_form(field, EditForm, page.label)
 
     return EditForm
 
