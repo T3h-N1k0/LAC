@@ -2937,7 +2937,7 @@ def append_fieldlist_to_form(field, form, branch=None):
                 field.label,
                 FieldList(SelectField(
                     field.description,
-                    choices=get_posix_groupz_choices(branch)
+                    choices=get_posix_groupz_choices(get_group_branch(branch))
                 )))
     elif  field.fieldtype.type == 'Shell':
         setattr(form,
