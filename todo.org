@@ -15,25 +15,116 @@
 ** TODO Propager la suppression d'un groupe de soumission sur les utilisateurs
 ** TODO Gestion soumission depuis pages utilisateur
 ** TODO Conteneur
-** TODO Quota doit aussi  être accessible directement depuis le groupe
+** DONE Quota doit aussi  être accessible directement depuis le groupe
+   CLOSED: [2015-01-15 jeu. 14:25]
    (affichage de la liste de quota spécifique+ajout+modifier)
-** TODO Rendre cliquable les objet ldap
-   - [ ] Utilisateurs
-   - [ ] Groupes
-** TODO Ajout utilisateur
- - [ ] 2° ecran rappeler le login
+** DONE Faire ressortir graphiquement l'etat d'un compte 'désactiver / activer'
+   CLOSED: [2015-01-12 lun. 10:48]
+   Mettre en surbrillance rouge le lien quand le compte est désactivé.*
+** DONE Date Picker pour les champs date
+   CLOSED: [2015-01-13 mar. 10:06]
+** DONE Bug edition soumission utilisateur
+   CLOSED: [2015-01-07 mer. 09:37]
+** DONE Edition soumission ajouter si membre du groupe à l'affichage
+   CLOSED: [2015-01-07 mer. 10:46]
+** DONE Séparer groupe secondaire /
+   CLOSED: [2015-01-12 lun. 10:45]
+** DONE Ajouter un bouton d'accueil à la place du <USER> dans la navbar
+   CLOSED: [2015-01-07 mer. 10:50]
+** DONE Bug lors d'un clic sur un utilisateur (depuis un groupe)
+   CLOSED: [2015-01-16 ven. 09:36]
+   http://195.83.179.105:5000/show_user/grCines/massol,
+** DONE Ajouter le champ nationalité dans la page de recherche
+   CLOSED: [2015-01-19 lun. 10:15]
+
+** DONE Problème redirection apres creation du groupe
+** DONE Mettre à jour la BDD à partir de ldapone
+   CLOSED: [2015-01-16 ven. 11:16]
+** DONE Réorganiser l'ordre suivant le formulaire ldap
+   CLOSED: [2015-01-21 mer. 10:03]
+** DONE Rajouter un type de champ "texte multiligne"
+   CLOSED: [2015-01-21 mer. 10:03]
+   pour l'edition des champs long (description par exemple)
+** DONE Ajouter Rajouter le lien pour les groupes projets (dans la vue cines ?)
+   CLOSED: [2015-01-21 mer. 10:13]
+** DONE Sur la fiche d'edition d'un utilisateur changer les libelles
+   CLOSED: [2015-01-21 mer. 10:19]
+   Groupes disponibles/select... en Groupes de travail dispo/...
+   Ou mettre un cadre autour pour bien identifié sur quoi porte la zone
+   "groupe de travail"
+
+** DONE Check bug sur utilisateur
+   CLOSED: [2015-02-13 ven. 10:07]
+** DONE A partir d'un groupe ajouter des membres secondaires (liste de l'ensemble des login ldap)
+   CLOSED: [2015-02-13 ven. 10:12]
+** DONE A partir d'un groupe projet (liste de l'ensemble des logins Cines)
+   CLOSED: [2015-02-13 ven. 10:18]** TODO Ajout utilisateur [3/4]
+ - [X] 2° ecran rappeler le login
  - [ ] Rester sur la page en cas d'erreur a l'ajout
- - [ ] filtrer les groupes : uniquement ceux de la branche en cours
+ - [X] filtrer les groupes : uniquement ceux de la branche en cours
    (ex: si add user cines * TODO−> groupe cines uniquement)
- - [ ] Virer le champ "type d'objet" déjà selectionné sur le home
-** TODO Faire ressortir graphiquement l'etat d'un compte 'désactiver / activer'
-   Mettre en surbrillance rouge le lien quand le compte est désactivé.
-** TODO Réorganiser l'ordre suivant le formulaire ldap
-** TODO Date Picker pour les champs date
-** TODO Problème redirection apres creation du groupe
-** TODO Bug edition soumission utilisateur
-** TODO Séparer groupe secondaire /
-** TODO Ajouter un bouton d'accueil à la place du <USER> dans la navbar
+ - [X] Virer le champ "type d'objet" déjà selectionné sur le home
+
+** DONE Branche "Cines Admin" compte + Groupe : 0.2
+   CLOSED: [2015-02-13 ven. 10:21]
+** DONE Déplacer "groupe projet dans CINES" : 0.2
+   CLOSED: [2015-02-13 ven. 10:21]
+** DONE Si pas ldapadmin --> consulter au lieur de consulter/modifier : 0.2
+   CLOSED: [2015-02-13 ven. 10:21]
+** DONE Brider les boutons "ajout/ modifier" que pour les cn=ldapadmin,.... : 0.2
+   CLOSED: [2015-02-13 ven. 10:21]
+** DONE Identifier visuellement le serveur de test 0.2
+   CLOSED: [2015-02-17 mar. 10:50]
+** DONE Afficher les infos des serveur: ldap/ sybase / otrs (dans le bandeau)  0.2
+   CLOSED: [2015-02-17 mar. 11:30]
+** DONE Limiter l'authentification / session aux utilisateur ou=cines,ou=people : 0.2
+   CLOSED: [2015-02-17 mar. 11:30]
+** DONE Pb order by edition
+   CLOSED: [2015-02-19 jeu. 11:42]
+** DONE Editer sur fiche groupe à filter pour admin
+   CLOSED: [2015-02-19 jeu. 11:42]
+** DONE Problème redirection apres creation du groupe Groupe CCC/SAM/DECI/... erreur python −−> return getattr(obj, attribute) : 0.4
+   CLOSED: [2015-02-19 jeu. 11:41]
+** DONE Edition groupe : différencier groupe principale / secondaire : 0.3
+   CLOSED: [2015-02-19 jeu. 11:40]
+** DONE Séparer affichage par block sur groupes .3
+   CLOSED: [2015-02-19 jeu. 11:41]
+** DONE Format de date incorrect sur show history
+   CLOSED: [2015-02-20 ven. 10:00]
+** DONE Affichage de date incorrect sur show group
+   CLOSED: [2015-02-20 ven. 10:05]
+** DONE Groupe : bug affichage sur les dates  0.3
+   CLOSED: [2015-02-20 ven. 10:05]
+** DONE Problème description edition utilisateur
+   CLOSED: [2015-02-20 ven. 10:06]
+** DONE Refresh cache sur suppression objet 0.2
+   CLOSED: [2015-02-20 ven. 11:22]
+
+** DONE Bug Soumission (dernier de la liste)
+   CLOSED: [2015-02-20 ven. 11:22]
+   si etat avant "membre = oui soumission= non" alors bug si "membre=oui soumissio=oui" --> resultat "membre = non soumission=oui"
+   dès qu'on touche les 2 pour changer les 2 états . tester sur boulard
+** TODO Rendre cliquable les objet ldap
+    - [ ] Utilisateurs
+      Sur les groupes de travail
+    - [X] Groupes
+
+** TODO Mettre en place un refresh automatique du cache
+** TODO Quota uniquement accessible pour admin ldap
+** TODO Bug sur nouvelle branche
+** TODO Afficher aussi les champs en lecture seule
+** TODO Soumission afficher l'état actuel lors de l'edition (coché/décoché)
+** TODO History lastbind
+** TODO Forcer ppolicy pour un user (=> Admin)
+** TODO Ajout d'un quota deuis les groupes
+** TODO Création utilisateur, ne pas afficher le groupe sur la première page
+** TODO Bug création champs vide envoyés
+** TODO Ajouter un compteur sur les groupes et utilisateurs
+** TODO Date de renouvellement (sur affichage groupe) a coté du login.
+** TODO Affichage groupe : décaler le pavet comptabilité sur la droite
+** TODO A la suppression d'un compte le compte est supprimé de ses groupes mais pas des groupes de travail (p16500/SGI/OCCIGEN)... Ce qui est plutot embettant :)
+** TODO Compte autre et soft ne pas mettre le pwdreset à true
+** TODO Bug sur enregistrement adresses ip
 * P2
 ** Divers
 *** TODO Conteneur
@@ -69,3 +160,77 @@
 *** TODO péremption des comptes (shadowexpire) --> envoi mail a prod@cines.fr
 *** TODO utilisateurs fantomes
 *** TODO Scrupter les tentative de brutforce
+
+
+* Installation sur RED HAT
+
+# Installation des paquets de dépendances
+yum install python-pip python-devel git mysql-server mysql openldap-devel redis mysql-devel nginx
+pip install virtualenvwrapper
+yum groupinstall -y 'development tools'
+
+# Installation de python2.7
+wget https://www.python.org/ftp/python/2.7.7/Python-2.7.7.tgz
+tar xvzf Python-2.7.7.tgz
+cd Python-2.7.7
+./configure
+make
+sudo make altinstall
+
+
+# Ajouter dans le bashrc/zshrc :
+export WORKON_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/Devel
+source /usr/bin/virtualenvwrapper.sh
+
+# Clonage du repo LAC
+git clone https://github.com/T3h-N1k0/LAC
+
+# Créer le virtualenv && entrer dedans
+mkvirtualenv lac -p /usr/bin/python2.7
+
+# Installer les paquets python avec pipserver
+
+pip install flask
+pip install python-ldap
+pip install flask-sqlalchemy
+pip install flask-debugtoolbar
+pip install flask-bootstrap
+pip install wtforms
+pip install python-dateutil
+pip install pytz
+pip install redis
+
+# ou avec requirements.txt
+pip install -r requirements.txt
+
+
+# Installation de uWSGI
+pip install uwsgi
+
+# Configuration avec nginx et uWSGI
+# /etc/nginx/conf.d/lac.conf :
+{
+    listen      443;
+    server_name ldapone;
+    charset     utf-8;
+    client_max_body_size 75M;
+
+    location / { try_files $uri @lac; }
+    location @lac {
+        include uwsgi_params;
+        uwsgi_pass unix:/tmp/uwsgi.sock;
+    }
+
+    ssl on;
+    ssl_certificate /etc/nginx/ssl/server.crt;
+    ssl_certificate_key /etc/nginx/ssl/server.key;
+
+}
+
+# Lancement de uWSGI :
+
+/home/chatelain/.virtualenvs/lac/bin/uwsgi  -s /tmp/uwsgi.sock -w LAC:app --chown-socket=nginx:ngin
+
+Sur kajura configuré en socket réseau:
+/home/lac/.virtualenvs/lac/bin/uwsgi  -s 127.0.0.1:3031 -w LAC:app
