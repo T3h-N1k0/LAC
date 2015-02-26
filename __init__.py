@@ -2634,10 +2634,13 @@ def update_ldap_object_from_edit_user_form(form, fieldz, uid):
     )[0].get_attributes()
     pre_modlist = []
     for field in fieldz:
-
-        form_values = [convert_display_mode_to_ldap(entry.data, field.fieldtype.type)
-                       for entry in getattr(form, field.label).entries]
-
+        form_values = [
+            convert_display_mode_to_ldap(
+                entry.data,
+                field.fieldtype.type
+            )
+            for entry in getattr(form, field.label).entries
+        ]
         if (field.label not in uid_attributez
             or uid_attributez[field.label] != form_values):
             if form_values == [''] or (field.label == 'cinesUserToPurge'
@@ -3907,6 +3910,8 @@ app.jinja_env.globals.update(
 )
 
 def convert_display_mode_to_ldap(value, display_mode):
+    if value is None:
+        return ''
     if display_mode in  ('Text', 'Filesystem', 'Shell') :
         return value.encode('utf-8')
     elif display_mode == 'Generalizedtime' :
