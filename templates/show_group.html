@@ -65,8 +65,55 @@
     </div>
     {% endfor %}
 
+
+  </div>
+
+  <div class="col-sm-offset-2 col-sm-4" >
+    <aside class="row">
+      <div id='dn'>Nom LDAP : {{ dn }}</div>
+      {% if session['admin'] %}
+      <h4>Actions</h4>
+      <a href="{{ url_for(
+         'edit_group',
+         branch=branch,
+         group_cn=cn)}}">Editer</a>
+      <br>
+      <a href="{{ url_for(
+         'delete_group',
+         branch=branch,
+         cn=cn
+         )}}">Supprimer</a>
+      <br/>
+      {% endif %}
+    </aside>
+    {% if session['admin'] %}
+    <aside class="row">
+      <h4>Quotas</h4>
+      <a href="{{ url_for(
+         'add_quota')}}">Ajouter un quota </a>
+      <br>
+      {% for quota in quotaz %}
+      <strong>{{ quota[0] }} : </strong>
+      <a href="{{ url_for(
+         'edit_default_quota',
+         storage_cn=quota[0])}}">Quota par defaut </a>
+       /
+      {% if quota[1] %}
+      <a href="{{ url_for(
+         'edit_quota',
+         storage_cn=quota[1])}}">Editer quota spécifique <strong>{{ quota[1] }}</strong></a>
+      {% else %}
+      <a href="{{ url_for(
+         'add_quota',
+         storage=quota[0],
+         group=cn_attributez['gidNumber'][0])}}">Ajouter un quota spécifique</a>
+      {% endif %}
+      {% endfor %}
+    </aside>
+    {% endif %}
     {% if manager %}
-    <div class="well">
+    <br>
+    <aside class="well">
       <strong>Responsable : </strong> {{ manager.qualite.libelle_qualite }}  {{ manager.nom_personne }}  {{ manager.prenom_personne }} <br/>
 
       <strong>Comite : </strong>{% if ressource.comite %}
@@ -104,52 +151,9 @@
           <td> {{ bull_computed  if bull_computed  else 0}}</td>
         </tr>
       </table>
-    </div>
+    </aside>
     {% endif %}
 
-  </div>
-
-  <div class="col-sm-offset-2 col-sm-4" >
-    <aside class="row">
-      <div id='dn'>Nom LDAP : {{ dn }}</div>
-      {% if session['admin'] %}
-      <h4>Actions</h4>
-      <a href="{{ url_for(
-         'edit_group',
-         branch=branch,
-         group_cn=cn)}}">Editer</a>
-      <br>
-      <a href="{{ url_for(
-         'delete_group',
-         branch=branch,
-         cn=cn
-         )}}">Supprimer</a>
-      <br/>
-      {% endif %}
-    </aside>
-    <aside class="row">
-      <h4>Quotas</h4>
-      <a href="{{ url_for(
-         'add_quota')}}">Ajouter un quota </a>
-      <br>
-      {% for quota in quotaz %}
-      <strong>{{ quota[0] }} : </strong>
-      <a href="{{ url_for(
-         'edit_default_quota',
-         storage_cn=quota[0])}}">Quota par defaut </a>
-       /
-      {% if quota[1] %}
-      <a href="{{ url_for(
-         'edit_quota',
-         storage_cn=quota[1])}}">Editer quota spécifique <strong>{{ quota[1] }}</strong></a>
-      {% else %}
-      <a href="{{ url_for(
-         'add_quota',
-         storage=quota[0],
-         group=cn_attributez['gidNumber'][0])}}">Ajouter un quota spécifique</a>
-      {% endif %}
-      {% endfor %}
-    </aside>
   </div>
 </section>
 
