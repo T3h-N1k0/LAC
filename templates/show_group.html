@@ -129,6 +129,9 @@
     </aside>
     <aside class="row">
       <h4>Quotas</h4>
+      <a href="{{ url_for(
+         'add_quota')}}">Ajouter un quota </a>
+      <br>
       {% for quota in quotaz %}
       <strong>{{ quota[0] }} : </strong>
       <a href="{{ url_for(
