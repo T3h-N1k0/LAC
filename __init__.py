@@ -2641,6 +2641,8 @@ def update_ldap_object_from_edit_user_form(form, fieldz, uid):
             )
             for entry in getattr(form, field.label).entries
         ]
+        if field.label == 'cinesIpClient':
+            form_values = ';'.join(form_values)
         if (field.label not in uid_attributez
             or uid_attributez[field.label] != form_values):
             if form_values == [''] or (field.label == 'cinesUserToPurge'
