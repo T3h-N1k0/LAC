@@ -27,7 +27,7 @@
       {% if get_group_from_member_uid(value) %}
       <a class="list-group-item" href="{{ url_for('show_user',
          page=get_group_from_member_uid(value),
-         uid=value)}}">{{ render_field(value, field.fieldtype.type) }}</a>
+         uid=value)}}">{{ render_field(value, field.fieldtype.type) }} {% if branch == 'grCcc' %}<div class='text-right'> Date de renouvellement : {{ get_cinesdaterenew_from_uid(value) }} </div> {% endif %}</a>
       {% else %}
       <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
       {% endif %}

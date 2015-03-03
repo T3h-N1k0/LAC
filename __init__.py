@@ -3275,6 +3275,30 @@ app.jinja_env.globals.update(
     get_group_from_member_uid=get_group_from_member_uid
 )
 
+def get_cinesdaterenew_from_uid(uid):
+    page = Page.query.filter_by(label='ccc').first()
+    field = Field.query.filter_by(
+        page_id = page.id,
+        label = 'cinesdaterenew').first()
+    ldap_filter='(uid={0})'.format(uid)
+    attributes=['cinesdaterenew']
+    base_dn='ou=people,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    records = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )
+    uid_attrz= records[0].get_attributes()
+    if 'cinesdaterenew' in uid_attrz:
+        date_renew = convert_to_display_mode(
+            uid_attrz['cinesdaterenew'][0], field.fieldtype.type
+        )
+    else:
+        date_renew = ''
+    return date_renew
+app.jinja_env.globals.update(
+    get_cinesdaterenew_from_uid=get_cinesdaterenew_from_uid)
+
 def get_attr(form, name):
     return getattr(form, name)
 app.jinja_env.globals.update(get_attr=get_attr)
