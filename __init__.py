@@ -605,10 +605,12 @@ def change_password(uid):
             ).hexdigest().upper()
             pre_modlist = [('sambaPwdLastSet', str(int(time.time()))),
                            ('sambaNTPassword', nt_hash)]
+
         if uid != session['uid']:
             pre_modlist.append(('userPassword',
                                 form.new_pass.data.encode('utf-8')))
-            pre_modlist.append(('pwdReset', 'TRUE'))
+            if get_group_from_member_uid(uid) not in ['autre', 'soft']:
+                pre_modlist.append(('pwdReset', 'TRUE'))
             flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
             ldap.update_uid_attribute(uid, pre_modlist)
             return redirect(url_for('show_user',
