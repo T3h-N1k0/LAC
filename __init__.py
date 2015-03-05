@@ -2145,6 +2145,7 @@ def refresh_cache():
     populate_grouplist_redis()
     populate_people_group_redis()
     populate_work_group_redis()
+    return redirect(url_for('home'))
 
 ### Helperz
 
