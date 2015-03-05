@@ -2139,7 +2139,14 @@ def show_history(uid):
                                uid = uid,
                                logz=ordered_logz)
 
-    ### Helperz
+@app.route('/refresh_cache')
+@login_required
+def refresh_cache():
+    populate_grouplist_redis()
+    populate_people_group_redis()
+    populate_work_group_redis()
+
+### Helperz
 
 def get_dict_from_raw_log_valuez(raw_valuez):
     valuez = {}
