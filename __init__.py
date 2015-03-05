@@ -1146,6 +1146,7 @@ def delete_user(uid):
             ldap.remove_dn_attribute(group_dn,pre_modlist)
         if app.config['PROD_FLAG']:
             delete_otrs_user(uid)
+        populate_grouplist_redis()
         populate_people_group_redis()
         populate_work_group_redis()
         flash(u'Utilisateur {0} supprimé'.format(uid))
@@ -1318,6 +1319,7 @@ def delete_group(branch, cn):
     else:
         dn = get_group_full_dn(branch, cn)
         ldap.delete(dn)
+        populate_grouplist_redis()
         populate_people_group_redis()
         populate_work_group_redis()
         flash(u'Groupe {0} supprimé'.format(cn))
@@ -2454,6 +2456,8 @@ def create_ldap_object_from_add_group_form(form, page_label):
         add_record.append(('description', [description]))
 
     if ldap.add(full_dn, add_record):
+        populate_grouplist_redis()
+        populate_people_group_redis()
         flash(u'Groupe créé')
         return 1
 
@@ -2513,7 +2517,8 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
         ldap_ot.last_used_id= uid_number
         db.session.add(ldap_ot)
         db.session.commit()
-        r.sadd("groupz:{0}".format(page.label), uid)
+        populate_grouplist_redis()
+        populate_people_group_redis()
     else:
         flash(u'L\'utilisateur n\'a pas été créé')
 
