@@ -1400,8 +1400,9 @@ def show_group(branch, cn):
 
     if branch == 'grCcc':
         ressource = C4Ressource.query.filter_by(code_projet = cn).first()
-        code_personne = C4Projet.query.filter_by(
-            code_projet = cn).first().code_personne
+        projet = C4Projet.query.filter_by(
+            code_projet = cn).first()
+        code_personne = projet.code_personne if projet else ""
         manager = C4Personne.query.filter_by(
             code_personne=code_personne).first()
         bull_computed = db.session.query(
