@@ -1,4 +1,4 @@
-{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% from "_formhelpers.html" import render_formfield, render_fieldlist, render_field %}
 {% extends "layout.html" %}
 
 {% block title %} Editer le compte {{ uid }} {% endblock title %}
@@ -53,10 +53,10 @@
     <form method="post" action="/edit_user/{{ page.label}}/{{ uid }}" >
       <section class="row">
         <div class="col-sm-6  large-label">
-          {% for block in blockz %}
+          {% for block in edit_blockz %}
 
           <div class="attrz-block">
-            {% for field in fieldz %}
+            {% for field in edit_fieldz %}
             {% if field.block == block %}
             {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
             {{ render_fieldlist(form, field) }}
@@ -81,5 +81,44 @@
       </section>
     </form>
   </div>
+  <div class="col-sm-6">
+    {% for block in show_blockz %}
+    <div class="attrz-block">
+      {% for field in show_fieldz %}
+      {% if field.label in uid_attributez.keys() and field.block == block %}
+      <strong>{{ field.description }} ( {{field.label}} ) :</strong>
+
+      <ul class="list-group">
+        {% if field.fieldtype.type == 'GIDNumber' %}
+
+        {% for value in uid_attributez[field.label] %}
+        {% if get_branch_from_posix_group_gidnumber(value) %}
+        <a class="list-group-item" href="{{ url_for(
+           'show_group',
+           branch=get_branch_from_posix_group_gidnumber(value),
+           cn=get_posix_group_cn_by_gid(value)
+           )}}">{{ render_field(value, field.fieldtype.type) }}</a>
+        {% else %}
+        <li class="list-group-item">
+          Le groupe correspondant au gidnumber {{ value }} n'existe pas.</li>
+
+        {% endif %}
+        {% endfor %}
+        <br>
+
+        {% else %}
+        {% for value in uid_attributez[field.label] %}
+        <li class="list-group-item">
+          {{ render_field(value, field.fieldtype.type) }}</li>
+        {% endfor %}
+      {% endif %}
+      </ul>
+      {% endif %}
+
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
 </section>
 {% endblock body %}

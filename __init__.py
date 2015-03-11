@@ -645,12 +645,12 @@ def show_group_memberz(group):
 
 
 
-@app.route('/details/<uid>')
-@login_required
-def get_account_detailz(uid):
-    detailz = get_uid_detailz(uid)
-    print(detailz)
-    return render_template('show_detailz.html', account=detailz)
+# @app.route('/details/<uid>')
+# @login_required
+# def get_account_detailz(uid):
+#     detailz = get_uid_detailz(uid)
+#     print(detailz)
+#     return render_template('show_detailz.html', account=detailz)
 
 @app.route('/infoz')
 @login_required
@@ -678,12 +678,9 @@ def show_user(page, uid):
         page_id = page.id,
         display=True
     ).order_by(Field.priority).all()
-    raw_detailz = get_uid_detailz(uid)
-    if not raw_detailz:
-        flash(u'Utilisateur non trouvé')
-        return redirect(url_for('home'))
-    uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
-    uid_attributez=uid_detailz.get_attributes()
+
+    uid_detailz = get_uid_detailz(uid)
+    uid_attributez = uid_detailz.get_attributes()
 
     if 'cinesIpClient' in uid_attributez:
         uid_attributez['cinesIpClient'] = [
@@ -1099,16 +1096,33 @@ def edit_user(page,uid):
     page = Page.query.filter_by(label=page).first()
     EditForm = generate_edit_user_form_class(page)
     form = EditForm(request.form)
-    fieldz = Field.query.filter_by(
+    edit_fieldz = Field.query.filter_by(
         page_id = page.id,
         edit = True
     ).order_by(Field.priority).all()
 
-    blockz =sorted(
+    edit_blockz =sorted(
         set(
-            [field.block for field in fieldz]
+            [field.block for field in edit_fieldz]
         )
     )
+
+    show_fieldz = Field.query.filter_by(
+        page_id = page.id,
+        display=True
+    ).order_by(Field.priority).all()
+
+    show_blockz =sorted(
+        set(
+            [field.block for field in show_fieldz]
+        )
+    )
+
+    uid_attributez = get_uid_detailz(uid).get_attributes()
+    if 'cinesIpClient' in uid_attributez:
+        uid_attributez['cinesIpClient'] = [
+            ip for ip in uid_attributez['cinesIpClient'][0].split(";")
+        ]
 
     if request.method == 'POST':
         update_ldap_object_from_edit_user_form(form, fieldz, uid)
@@ -1123,14 +1137,17 @@ def edit_user(page,uid):
             upsert_otrs_user(uid)
         return redirect(url_for('show_user', page=page.label, uid=uid))
     else:
-        set_edit_user_form_values(form, fieldz, uid)
+        set_edit_user_form_values(form, edit_fieldz, uid)
     return render_template('edit_user.html',
                            form=form,
                            page=page,
                            uid=uid,
                            dn=dn,
-                           fieldz=fieldz,
-                           blockz=blockz)
+                           edit_fieldz=edit_fieldz,
+                           show_fieldz=show_fieldz,
+                           show_blockz=show_blockz,
+                           edit_blockz=edit_blockz,
+                           uid_attributez=uid_attributez)
 
 @app.route('/delete_user/<uid>', methods=('GET', 'POST'))
 @login_required
@@ -1549,12 +1566,7 @@ def edit_submission(uid):
         (group, group)
         for group in get_submission_groupz_list()
     ]
-    raw_detailz = get_uid_detailz(uid)
-    if not raw_detailz:
-        flash(u'Utilisateur non trouvé')
-        return redirect(url_for('home'))
-    uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
-    uid_attributez=uid_detailz.get_attributes()
+    uid_attributez=get_uid_detailz(uid).get_attributes()
     if 'cinesSoumission' in uid_attributez:
         submission_list = get_list_from_submission_attr(
             uid_attributez['cinesSoumission'][0])
@@ -1637,7 +1649,7 @@ def edit_group_submission():
 @app.route('/toggle_account/<uid>')
 @login_required
 def toggle_account(uid):
-    user = ldaphelper.get_search_results(get_uid_detailz(uid))[0]
+    user = get_uid_detailz(uid)
     if is_active(user):
         disable_account(user)
     else:
@@ -2644,9 +2656,7 @@ def update_ldap_object_from_edit_ppolicy_form(form, attributes, cn):
     ldap.update_cn_attribute(cn, pre_modlist)
 
 def update_ldap_object_from_edit_user_form(form, fieldz, uid):
-    uid_attributez = ldaphelper.get_search_results(
-        get_uid_detailz(uid)
-    )[0].get_attributes()
+    uid_attributez = get_uid_detailz(uid).get_attributes()
     pre_modlist = []
     for field in fieldz:
         form_values = [
@@ -2674,9 +2684,7 @@ def update_ldap_object_from_edit_user_form(form, fieldz, uid):
     ldap.update_uid_attribute(uid, pre_modlist)
 
 def upsert_otrs_user(uid):
-    user_attrz = ldaphelper.get_search_results(
-        get_uid_detailz(uid)
-    )[0].get_attributes()
+    user_attrz = get_uid_detailz(uid).get_attributes()
     otrs_user = OTRSCustomerUser.query.filter_by(login = uid).first()
     if not otrs_user:
         otrs_user = OTRSCustomerUser(login = uid)
@@ -2863,9 +2871,7 @@ def set_edit_user_form_values(form, fieldz, uid=None):
     form.wrk_groupz.selected_groupz.choices = selected_choices
 
     if uid:
-        uid_attributez = ldaphelper.get_search_results(
-            get_uid_detailz(uid)
-        )[0].get_attributes()
+        uid_attributez = get_uid_detailz(uid).get_attributes()
     else:
         uid_attributez = {}
 
@@ -3642,8 +3648,14 @@ def get_user_pwd_policy(uid):
 def get_uid_detailz(uid):
     ldap_filter='(uid={0})'.format(uid)
     attributes=['*','+']
-    detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
-    return detailz
+    raw_detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
+    if not raw_detailz:
+        flash(u'Utilisateur non trouvé')
+        uid_detailz = None
+    else:
+        uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
+
+    return uid_detailz
 
 
 
