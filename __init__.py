@@ -1063,7 +1063,6 @@ def add_user(page_label, uid=None):
             label = ldap_object_type.label
         ).first()
         fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
-        fieldz_labelz = [field.label for field in fieldz]
         EditForm = generate_edit_user_form_class(page)
         edit_form = EditForm(request.form)
 
@@ -1078,7 +1077,7 @@ def add_user(page_label, uid=None):
         elif uid:
             create_ldap_object_from_add_user_form(
                 edit_form,
-                fieldz_labelz,
+                fieldz,
                 uid,
                 page)
 
@@ -2485,7 +2484,7 @@ def create_ldap_object_from_add_group_form(form, page_label):
         return 1
 
 
-def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
+def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
     ldap_ot = LDAPObjectType.query.filter_by(
         label=page.label
     ).first()
@@ -2496,12 +2495,17 @@ def create_ldap_object_from_add_user_form(form, fieldz_labelz, uid, page):
                   for oc in ldap_ot_ocz]
 
     form_attributez = []
-    for field_label in fieldz_labelz:
-        form_field_values = [entry.data.encode('utf-8')
-                             for entry in getattr(form, field_label).entries]
-        if (field_label not in ['cinesUserToPurge', 'cn']
+    for field in fieldz:
+        form_field_values = [
+            convert_display_mode_to_ldap(
+                entry.data,
+                field.fieldtype.type
+            )
+            for entry in getattr(form, field.label).entries
+]
+        if (field.label not in ['cinesUserToPurge', 'cn']
             and form_field_values != [''] ):
-            form_attributez.append((field_label, form_field_values))
+            form_attributez.append((field.label, form_field_values))
 
     uid_number = get_next_id_from_ldap_ot(ldap_ot)
     add_record = [('uid', [uid.encode('utf-8')]),
