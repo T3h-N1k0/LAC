@@ -680,6 +680,8 @@ def show_user(page, uid):
     ).order_by(Field.priority).all()
 
     uid_detailz = get_uid_detailz(uid)
+    if uid_detailz is None:
+        return redirect(url_for('home'))
     uid_attributez = uid_detailz.get_attributes()
 
     if 'cinesIpClient' in uid_attributez:
