@@ -3653,7 +3653,7 @@ def get_uid_detailz(uid):
     attributes=['*','+']
     raw_detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
     if not raw_detailz:
-        flash(u'Utilisateur non trouvé')
+        flash(u'Utilisateur {0} non trouvé'.format(uid))
         uid_detailz = None
     else:
         uid_detailz = ldaphelper.get_search_results(raw_detailz)[0]
