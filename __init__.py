@@ -1119,14 +1119,18 @@ def edit_user(page,uid):
         )
     )
 
-    uid_attributez = get_uid_detailz(uid).get_attributes()
+    uid_detailz = get_uid_detailz(uid)
+    if uid_detailz is None:
+        return redirect(url_for('home'))
+    uid_attributez = uid_detailz.get_attributes()
+
     if 'cinesIpClient' in uid_attributez:
         uid_attributez['cinesIpClient'] = [
             ip for ip in uid_attributez['cinesIpClient'][0].split(";")
         ]
 
     if request.method == 'POST':
-        update_ldap_object_from_edit_user_form(form, fieldz, uid)
+        update_ldap_object_from_edit_user_form(form, edit_fieldz, uid)
 
         for group in form.wrk_groupz.selected_groupz.data:
             add_to_group_if_not_member(group, [uid])
