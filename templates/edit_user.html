@@ -15,7 +15,7 @@
 
 <script type="text/javascript" id="js">
  $(document).ready(function(){
-   $('.datepicker').datepicker({format:"yyyy-mm-dd"});
+   $('.datepicker').datepicker({format:"{{ config['DATE_FORMAT_DATEPICKER']}}"});
    $('#wrk_groupz-available_groupz').dblclick(function() {
      selectFromList('#wrk_groupz-available_groupz', '#wrk_groupz-selected_groupz');
    });

@@ -2928,7 +2928,8 @@ def append_field_to_form(field, form):
     elif field.fieldtype.type in app.config['DATE_FIELDTYPEZ']:
         setattr(form,
                 field.label,
-                DateField(field.description))
+                DateField(field.description,
+                          format=app.config['DATE_FORMAT']))
     elif  field.fieldtype.type == 'GIDNumber':
         setattr(form,
                 field.label,
@@ -2960,15 +2961,15 @@ def append_field_to_form(field, form):
                 TextAreaField(field.description))
 
 def append_fieldlist_to_form(field, form, branch=None):
-    date_formatz = ['Datetime', 'DaysNumber', 'GeneralizedTime']
     if field.fieldtype.type == 'Text':
         setattr(form,
                 field.label,
                 FieldList(TextField(field.description)))
-    elif field.fieldtype.type in date_formatz:
+    elif field.fieldtype.type in app.config['DATE_FIELDTYPEZ']:
         setattr(form,
                 field.label,
-                FieldList(DateField(field.description)))
+                FieldList(DateField(field.description,
+                                    format=app.config['DATE_FORMAT'])))
     elif  field.fieldtype.type == 'GIDNumber':
         setattr(form,
                 field.label,
