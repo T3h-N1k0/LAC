@@ -636,7 +636,7 @@ def change_password(uid):
 @app.route('/people/<group>')
 @login_required
 def show_group_memberz(group):
-    memberz = r.smembers("groupz:{0}".format(group))
+    memberz = r.smembers("people_groupz:{0}".format(group))
     memberz_count = len(memberz)
     return render_template('show_group_memberz.html',
                            memberz=memberz,
@@ -1133,7 +1133,7 @@ def edit_user(page,uid):
         update_ldap_object_from_edit_user_form(form, edit_fieldz, uid)
 
         for group in form.wrk_groupz.selected_groupz.data:
-            add_to_group_if_not_member(group, [uid])
+            add_to_work_group_if_not_member(group, [uid])
         for group in get_work_groupz_from_member_uid(uid):
             if group not in form.wrk_groupz.selected_groupz.data:
                 rem_from_group_if_member(group, [uid])
@@ -1186,7 +1186,7 @@ def select_work_groups(uid):
 
     if request.method == 'POST':
         for group in form.selected_groupz.data:
-            add_to_group_if_not_member(group, [uid])
+            add_to_work_group_if_not_member(group, [uid])
         for group in actual_work_groupz:
             if group not in form.selected_groupz.data:
                 rem_from_group_if_member(group, [uid])
@@ -1593,10 +1593,10 @@ def edit_submission(uid):
         is_submission = form.submission.data
         is_member = form.member.data
         if is_submission and is_member:
-            add_to_group_if_not_member(wrk_group, [uid])
+            add_to_work_group_if_not_member(wrk_group, [uid])
             set_submission(uid, wrk_group, '1')
         elif is_member and not is_submission:
-            add_to_group_if_not_member(wrk_group, [uid])
+            add_to_work_group_if_not_member(wrk_group, [uid])
             set_submission(uid, wrk_group, '0')
         elif not is_member:
             rem_from_group_if_member(wrk_group, [uid])
@@ -1637,11 +1637,11 @@ def edit_group_submission():
         is_member = form.submission_form.member.data
 
         if is_submission and is_member:
-            add_to_group_if_not_member(wrk_group, groupz_memberz_uid)
+            add_to_work_group_if_not_member(wrk_group, groupz_memberz_uid)
             for uid in groupz_memberz_uid:
                 set_submission(uid, wrk_group, '1')
         elif is_member and not is_submission:
-            add_to_group_if_not_member(wrk_group, groupz_memberz_uid)
+            add_to_work_group_if_not_member(wrk_group, groupz_memberz_uid)
             for uid in groupz_memberz_uid:
                 set_submission(uid, wrk_group, '0')
         elif not is_member:
@@ -2412,12 +2412,13 @@ def populate_people_group_redis():
     for branch in app.config['BRANCHZ']:
         people_group = branch['account']
         # print(people_group)
+        print('people_group : {0}'.format(people_group))
         r.delete('groupz:{0}'.format(people_group))
         memberz = get_people_group_memberz(people_group)
         # print("memberz : {0}".format(memberz))
         if memberz:
             for member in memberz:
-                r.sadd("groupz:{0}".format(people_group), member)
+                r.sadd("people_groupz:{0}".format(people_group), member)
 
 @app.before_first_request
 def init_populate_work_group_redis():
@@ -2510,7 +2511,10 @@ def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
         if (field.label not in ['cinesUserToPurge', 'cn']
             and form_field_values != [''] ):
             form_attributez.append((field.label, form_field_values))
-
+        if field.label == 'gidNumber':
+            add_to_people_group_if_not_member(
+                get_posix_group_cn_by_gid(form_field_values[0]),
+                [uid.encode('utf-8')])
     uid_number = get_next_id_from_ldap_ot(ldap_ot)
     add_record = [('uid', [uid.encode('utf-8')]),
                   ('cn', [uid.encode('utf-8')]),
@@ -3148,7 +3152,7 @@ def upsert_field(attr_label, form_field, page):
 def add_user_to_lac_admin(user):
     ldap.update_uid_attribute(user, pre_modlist)
 
-def add_to_group_if_not_member(group, memberz_uid):
+def add_to_work_group_if_not_member(group, memberz_uid):
     memberz_dn = [ldap.get_full_dn_from_uid(uid)
                   for uid in memberz_uid]
     memberz_dn_filtered = [dn
@@ -3162,6 +3166,18 @@ def add_to_group_if_not_member(group, memberz_uid):
         ldap.add_dn_attribute(group_dn, pre_modlist)
 
     populate_work_group_redis()
+
+def add_to_people_group_if_not_member(group, memberz_uid):
+    memberz_uid_filtered = [uid.encode("utf-8")
+                           for uid in memberz_uid
+                           if uid not in r.smembers(
+                                   "people_groupz:{0}".format(group))
+    ]
+    if memberz_uid_filtered:
+        pre_modlist = [('memberUid', memberz_uid_filtered)]
+        group_dn = get_people_group_dn_from_cn(group)
+        ldap.add_dn_attribute(group_dn, pre_modlist)
+        populate_people_group_redis()
 
 def rem_from_group_if_member(group, memberz_uid):
     memberz_dn = [ldap.get_full_dn_from_uid(uid)
@@ -3300,7 +3316,7 @@ def get_attr_from_oc_id_list(oc_id_list):
 def get_group_from_member_uid(uid):
     for branch in app.config['BRANCHZ']:
         people_group = branch['account']
-        if uid in r.smembers("groupz:{0}".format(people_group)):
+        if uid in r.smembers("people_groupz:{0}".format(people_group)):
             return people_group
 app.jinja_env.globals.update(
     get_group_from_member_uid=get_group_from_member_uid
@@ -3479,6 +3495,18 @@ def get_wrk_group_dn_from_cn(cn):
     ldap_filter='(&(objectClass=cinesGrWork)(cn={0}))'.format(cn)
     attributes = ['entryDN']
     base_dn='ou=grTravail,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    group_obj = ldaphelper.get_search_results(
+        ldap.search(base_dn,ldap_filter,attributes)
+    )[0]
+    dn = group_obj.get_attributes()['entryDN'][0]
+    return dn
+
+def get_people_group_dn_from_cn(cn):
+    ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
+    attributes = ['entryDN']
+    base_dn='ou=groupePosix,{0}'.format(
         app.config['LDAP_SEARCH_BASE']
     )
     group_obj = ldaphelper.get_search_results(
