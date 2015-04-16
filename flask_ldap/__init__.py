@@ -33,8 +33,8 @@ class LDAP(object):
 
     def init_app(self, app):
         app.config.setdefault('LDAP_HOST', '127.0.0.1')
-        app.config.setdefault('LDAP_PORT', 389)
-        app.config.setdefault('LDAP_SCHEMA', 'ldap')
+        app.config.setdefault('LDAP_PORT', 636)
+        app.config.setdefault('LDAP_SCHEMA', 'ldaps')
         app.config.setdefault('LDAP_DOMAIN', 'ou=cines,ou=people,dc=cines,dc=fr')
         app.config.setdefault('LDAP_LOGIN_VIEW', 'login')
         app.config.setdefault('LDAP_SEARCH_BASE', 'OU=Users,DC=example,DC=com')
@@ -51,14 +51,14 @@ class LDAP(object):
         self.login_func = app.config['LDAP_LOGIN_VIEW']
 
     def connect(self):
-        # print('LDAP_SCHEMA {0}'.format(self.app.config['LDAP_SCHEMA']))
-        # print('LDAP_PORT {0}'.format(self.app.config['LDAP_PORT']))
-        # print('LDAP_HOST {0}'.format(self.app.config['LDAP_HOST']))
         self.conn = ldap.initialize('{0}://{1}:{2}'.format(
             self.app.config['LDAP_SCHEMA'],
             self.app.config['LDAP_HOST'],
             self.app.config['LDAP_PORT']))
-        self.conn.set_option(ldap.OPT_REFERRALS, 0)
+
+        self.conn.protocol_version = ldap.VERSION3
+        self.conn.set_option( ldap.OPT_X_TLS_DEMAND, True )
+
         return self.conn
 
     def teardown(self, exception):
