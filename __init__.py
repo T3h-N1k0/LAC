@@ -2413,7 +2413,7 @@ def populate_people_group_redis():
         people_group = branch['account']
         # print(people_group)
         print('people_group : {0}'.format(people_group))
-        r.delete('groupz:{0}'.format(people_group))
+        r.delete('people_groupz:{0}'.format(people_group))
         memberz = get_people_group_memberz(people_group)
         # print("memberz : {0}".format(memberz))
         if memberz:
