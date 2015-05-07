@@ -2512,8 +2512,9 @@ def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
             and form_field_values != [''] ):
             form_attributez.append((field.label, form_field_values))
         if field.label == 'gidNumber':
+            gid_number = form_field_values[0]
             add_to_people_group_if_not_member(
-                get_posix_group_cn_by_gid(form_field_values[0]),
+                get_posix_group_cn_by_gid(gid_number),
                 [uid.encode('utf-8')])
     uid_number = get_next_id_from_ldap_ot(ldap_ot)
     add_record = [('uid', [uid.encode('utf-8')]),
@@ -2535,6 +2536,17 @@ def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
         add_record.append(
             ('sambaSID', "{0}-{1}".format(get_sambasid_prefix(),
                                                  uid_number))
+        )
+    if  page.label == 'ccc' and gid_number:
+        group_cn = get_posix_group_cn_by_gid(gid_number)
+        ressource = C4Ressource.query.filter_by(
+                                        code_projet = group_cn).first()
+        if ressource:
+            comite = ressource.comite.ct
+        else:
+            comite = ''
+        add_record.append(
+            ('cinesC4', comite.encode('utf-8'))
         )
 
     if ldap_ot.ppolicy != '':
