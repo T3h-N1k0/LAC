@@ -2508,9 +2508,11 @@ def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
             )
             for entry in getattr(form, field.label).entries
 ]
-        if (field.label not in ['cinesUserToPurge', 'cn']
+        if (field.label not in ['cinesUserToPurge', 'cn', 'cinesIpClient']
             and form_field_values != [''] ):
             form_attributez.append((field.label, form_field_values))
+        if (field.label == 'cinesIpClient' and form_field_values != ['']):
+            form_attributez.append((field.label, ';'.join(form_field_values)))
         if field.label == 'gidNumber':
             gid_number = form_field_values[0]
             add_to_people_group_if_not_member(
