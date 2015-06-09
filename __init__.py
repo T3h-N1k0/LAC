@@ -1272,13 +1272,9 @@ def edit_group(branch, group_cn):
     if raw_detailz:
         gid_number = ldaphelper.get_search_results(raw_detailz)[0].get_attributes()['gidNumber'][0]
 
-    principal_memberz = get_posix_group_principal_memberz_from_gid(
-        gid_number
-        )
     selected_memberz = [member for member in get_posix_group_memberz(
         branch, group_cn
-    )
-                        if member not in principal_memberz]
+    )]
 
     if branch == 'grProjet':
         accountz = get_people_group_memberz('cines')
