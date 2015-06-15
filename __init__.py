@@ -3820,9 +3820,14 @@ def set_submission(uid, group, state):
             attributes=['cinesSoumission']
         )
     )[0].get_attributes()['cinesSoumission'][0]
-    new_cines_soumission = re.sub(r'(.*{0}=)\d(.*)'.format(group),
+    if group in old_cines_soumission:
+        new_cines_soumission = re.sub(r'(.*{0}=)\d(.*)'.format(group),
                                   r"\g<1>{0}\2".format(str(state)),
                                   old_cines_soumission)
+    else:
+        new_cines_soumission = "{0}{1}={2};".format(old_cines_soumission,
+                                                    group,
+                                                    state)
     pre_modlist = [('cinesSoumission', new_cines_soumission)]
     ldap.update_uid_attribute(uid, pre_modlist)
     flash(u'Soumission mis à jour pour le groupe {0}'.format(group))
