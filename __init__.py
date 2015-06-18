@@ -1130,7 +1130,7 @@ def edit_user(page,uid):
         ]
 
     if request.method == 'POST':
-        update_ldap_object_from_edit_user_form(form, edit_fieldz, uid)
+        update_ldap_object_from_edit_user_form(form, edit_fieldz, uid, page)
 
         for group in form.wrk_groupz.selected_groupz.data:
             add_to_work_group_if_not_member(group, [uid])
@@ -2543,9 +2543,10 @@ def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
             comite = ressource.comite.ct
         else:
             comite = ''
-        add_record.append(
-            ('cinesC4', comite.encode('utf-8'))
-        )
+        if comite != '':
+            add_record.append(
+                ('cinesC4', comite.encode('utf-8'))
+            )
 
     if ldap_ot.ppolicy != '':
         add_record.append(
@@ -2680,7 +2681,7 @@ def update_ldap_object_from_edit_ppolicy_form(form, attributes, cn):
     print(pre_modlist)
     ldap.update_cn_attribute(cn, pre_modlist)
 
-def update_ldap_object_from_edit_user_form(form, fieldz, uid):
+def update_ldap_object_from_edit_user_form(form, fieldz, uid, page):
     uid_attributez = get_uid_detailz(uid).get_attributes()
     pre_modlist = []
     for field in fieldz:
@@ -2705,6 +2706,21 @@ def update_ldap_object_from_edit_user_form(form, fieldz, uid):
             ):
                 form_values = ['1']
             pre_modlist.append((field.label, form_values))
+
+            if  page.label == 'ccc' and field.label == 'gidNumber':
+                group_cn = get_posix_group_cn_by_gid(form_values[0])
+                ressource = C4Ressource.query.filter_by(
+                                        code_projet = group_cn).first()
+                if ressource:
+                    comite = ressource.comite.ct
+                else:
+                    comite = ''
+                if comite != '':
+                    pre_modlist.append(
+                        ('cinesC4', comite.encode('utf-8'))
+                    )
+                print('Group: {0} && Comite: {1}'.format(group_cn, comite))
+
     # print(pre_modlist)
     ldap.update_uid_attribute(uid, pre_modlist)
 
