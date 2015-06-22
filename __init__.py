@@ -1057,9 +1057,17 @@ def add_user(page_label):
     page = Page.query.filter_by(
         label = ldap_object_type.label
     ).first()
-    fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
+    fieldz = Field.query.filter_by(page_id = page.id,edit = True).order_by(Field.priority).all()
     EditForm = generate_add_user_form_class(page)
     edit_form = EditForm(request.form)
+
+
+    edit_blockz =sorted(
+        set(
+            [field.block for field in fieldz]
+        )
+    )
+
 
     if request.method == 'POST':
         create_ldap_object_from_add_user_form(
@@ -1078,6 +1086,7 @@ def add_user(page_label):
         return render_template('add_user.html',
                                page=page.label,
                                fieldz=fieldz,
+                               edit_blockz=edit_blockz,
                                edit_form=edit_form)
 
     return render_template('add_user.html',

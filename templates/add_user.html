@@ -37,14 +37,20 @@ $(document).ready(function(){
     {% if edit_form  %}
     <form method="post" action="/add_user/{{ page}}">
       {{ render_formfield(edit_form.uid) }}
-      {% for field in fieldz %}
-      {% if 'FieldList' in get_type(get_attr(edit_form, field.label)) %}
-      {{ render_fieldlist(edit_form, field) }}
-      {% else %}
-      {{ render_formfield(get_attr(edit_form, field.label))}}
-      {% endif  %}
+      {% for block in edit_blockz %}
+      <div class="attrz-block">
+        {% for field in fieldz %}
+        {% if field.block == block %}
+        {% if 'FieldList' in get_type(get_attr(edit_form, field.label)) %}
+        {{ render_fieldlist(edit_form, field) }}
+        {% else %}
+        {{ render_formfield(get_attr(edit_form, field.label))}}
+        {% endif  %}
+        {% endif %}
+        {% endfor  %}
+      </div>
+     {% endfor  %}
 
-      {% endfor  %}
       <button id="update" type="submit"  class="btn btn-primary">
         <span class="glyphicon glyphicon-ok-sign"> Créer le compte</span>
       </button>
