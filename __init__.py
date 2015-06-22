@@ -1039,11 +1039,11 @@ def hello(name=None):
 
 
 
-@app.route('/add_user/<page_label>/<uid>', methods=('GET', 'POST'))
+# @app.route('/add_user/<page_label>/<uid>', methods=('GET', 'POST'))
 @app.route('/add_user/<page_label>', methods=('GET', 'POST'))
 # @app.route('/add_user/', methods=('GET', 'POST'))
 @login_required
-def add_user(page_label, uid=None):
+def add_user(page_label):
     pages = Page.query.all()
     ldap_object_type = LDAPObjectType.query.filter_by(
         label = page_label
@@ -1054,38 +1054,32 @@ def add_user(page_label, uid=None):
     set_validators_to_form_field(
         AddUserForm, 'uid',[validators.NoneOf(existing_userz)])
 
-    add_form = AddUserForm(request.form)
-    add_form.group.choices = get_posix_groupz_choices(
-        get_group_branch(page_label))
+    page = Page.query.filter_by(
+        label = ldap_object_type.label
+    ).first()
+    fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
+    EditForm = generate_add_user_form_class(page)
+    edit_form = EditForm(request.form)
 
     if request.method == 'POST':
-        page = Page.query.filter_by(
-            label = ldap_object_type.label
-        ).first()
-        fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
-        EditForm = generate_edit_user_form_class(page)
-        edit_form = EditForm(request.form)
+        create_ldap_object_from_add_user_form(
+            edit_form,
+            fieldz,
+            page)
 
-        if add_form.uid.data and add_form.validate():
-            set_edit_user_form_values(edit_form,fieldz)
-            return render_template('add_user.html',
-                                   page=page.label,
-                                   uid=add_form.uid.data,
-                                   fieldz=fieldz,
-                                   edit_form=edit_form)
+        if app.config['PROD_FLAG']:
+            upsert_otrs_user(uid)
+        return redirect(url_for('show_user',
+                            page=page_label,
+                                uid = edit_form.uid.data))
+    else:
 
-        elif uid:
-            create_ldap_object_from_add_user_form(
-                edit_form,
-                fieldz,
-                uid,
-                page)
+        set_edit_user_form_values(edit_form,fieldz)
+        return render_template('add_user.html',
+                               page=page.label,
+                               fieldz=fieldz,
+                               edit_form=edit_form)
 
-            if app.config['PROD_FLAG']:
-                upsert_otrs_user(uid)
-            return redirect(url_for('show_user',
-                                    page=page_label,
-                                    uid = uid))
     return render_template('add_user.html',
                            add_form=add_form,
                            page=page_label)
@@ -2485,7 +2479,7 @@ def create_ldap_object_from_add_group_form(form, page_label):
         return 1
 
 
-def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
+def create_ldap_object_from_add_user_form(form, fieldz, page):
     ldap_ot = LDAPObjectType.query.filter_by(
         label=page.label
     ).first()
@@ -2496,6 +2490,7 @@ def create_ldap_object_from_add_user_form(form, fieldz, uid, page):
                   for oc in ldap_ot_ocz]
 
     form_attributez = []
+    uid = form.uid.data
     for field in fieldz:
         form_field_values = [
             convert_display_mode_to_ldap(
@@ -2849,10 +2844,24 @@ def generate_edit_user_form_class(page):
                                         edit = True).all()
     class EditForm(Form):
         wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
-        # submission = FormField(EditSubmissionForm, label=u'Soumission')
 
     for field in page_fieldz:
         append_fieldlist_to_form(field, EditForm, page.label)
+
+    return EditForm
+
+def generate_add_user_form_class(page):
+    page_fieldz = Field.query.filter_by(page_id = page.id,
+                                        edit = True).all()
+    uid = TextField(u'Login (uid)')
+    class EditForm(Form):
+        wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
+
+    for field in page_fieldz:
+        append_fieldlist_to_form(field, EditForm, page.label)
+    setattr(EditForm,
+            "uid",
+            TextField("Login"))
 
     return EditForm
 
