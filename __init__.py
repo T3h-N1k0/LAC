@@ -3660,7 +3660,7 @@ def get_work_groupz():
 
 def get_posix_groupz_choices(branch=None):
     ldap_groupz = get_posix_groupz(branch)
-    ldap_groupz_list = []
+    ldap_groupz_list = [('', '---')]
     for group in ldap_groupz:
         group_attrz = group.get_attributes()
         ldap_groupz_list.append((group_attrz['gidNumber'][0],
