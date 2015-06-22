@@ -2391,6 +2391,8 @@ def get_c4_groupz_choices():
     c4_groupz_choices = [(project.code_projet, project.code_projet)
                          for project in c4_projectz
                          if project.code_projet not in existing_groupz]
+    c4_groupz_choices.insert(0, ('', '---'))
+
     return c4_groupz_choices
 
 @app.before_first_request
