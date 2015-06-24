@@ -77,12 +77,14 @@
       <a href="{{ url_for(
          'show_bind_history',
          uid=uid
-         )}}">Afficher l'historique des connexions</a>
+         )}}" target="_blank">Afficher l'historique des connexions</a>
       <br/>
+      {% if session['admin'] %}
       <a href="{{ url_for(
          'show_history',
          uid=uid
          )}}">Afficher l'historique des modifications</a>
+      {% endif %}
       <hr>
       <a href="{{ url_for(
          'delete_user',
