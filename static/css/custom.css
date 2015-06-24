@@ -20,6 +20,7 @@
 
 .list-group-item {
   padding-left: 30px;
+  padding: 5px 15px;
 }
 
 .list-group {
@@ -31,7 +32,7 @@
   border: 1px solid  #DDD;
   border-radius: 4px;
   background-color:  rgba(251, 251, 251, 0.93);
-  padding: 20px;
+  padding: 10px 10px 0px 20px;
   margin-bottom: 20px;
 }
 
