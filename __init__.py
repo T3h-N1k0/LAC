@@ -1076,9 +1076,9 @@ def add_user(page_label):
             page)
 
         if app.config['PROD_FLAG']:
-            upsert_otrs_user(uid)
+            upsert_otrs_user(edit_form.uid.data)
         return redirect(url_for('show_user',
-                            page=page_label,
+                                page=page_label,
                                 uid = edit_form.uid.data))
     else:
 
