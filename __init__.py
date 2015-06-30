@@ -2484,6 +2484,9 @@ def create_ldap_object_from_add_group_form(form, page_label):
         add_record.append(('description', [description]))
 
     if ldap.add(full_dn, add_record):
+        ot.last_used_id= id_number
+        db.session.add(ot)
+        db.session.commit()
         populate_grouplist_redis()
         populate_people_group_redis()
         flash(u'Groupe créé')
