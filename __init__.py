@@ -2621,11 +2621,15 @@ def create_ldap_quota(storage, group_id):
 def get_next_id_from_ldap_ot(ldap_ot):
     id_range = get_range_list_from_string(ldap_ot.ranges)
     next_index = id_range.index(ldap_ot.last_used_id)+1
+    if ldap_ot.apply_to == 'group':
+        id_type = 'gidNumber'
+    else:
+        id_type = 'uidNumber'
     while 1:
         test_id = id_range[next_index]
-        ldap_filter = '(uidNumber={0})'.format(test_id)
+        ldap_filter = '({0}={1})'.format(id_type, test_id)
         raw_result = ldap.search(ldap_filter=ldap_filter,
-                                 attributes = ['uidNumber'])
+                                 attributes = [id_type])
         if not raw_result:
             return test_id
         next_index += 1
@@ -2652,7 +2656,6 @@ def get_last_used_id(ldap_ot):
         'groupePosix' if ldap_ot.apply_to == 'group' else 'people',
         app.config['LDAP_SEARCH_BASE']
     )
-    # print(base_dn)
     raw_resultz = ldap.search(base_dn,ldap_filter,attributes)
     if raw_resultz:
         resultz = ldaphelper.get_search_results(
