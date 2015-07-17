@@ -3974,11 +3974,18 @@ def update_group_memberz_cines_c4(branch, group, comite):
                      or member_attrz['cinesC4'][0] != comite
                 )
         ):
-            print(u"{0} mis à jour à : {1}".format(member_attrz['uid'][0],
-                                                    comite))
-            ldap.update_uid_attribute(
+            if not comite and 'cinesC4' in member_attrz:
+                ldap.remove_uid_attribute(
+                    member_attrz['uid'][0],
+                    [('cinesC4', None)]
+                )
+            elif comite:
+                ldap.update_uid_attribute(
+                    member_attrz['uid'][0],
+                    [('cinesC4', comite.encode('utf-8'))])
+            print('{0} mis à jour à : {1}'.format(
                 member_attrz['uid'][0],
-                [('cinesC4', comite.encode('utf-8'))])
+                comite))
 
 
 def is_ccc_group(member):
