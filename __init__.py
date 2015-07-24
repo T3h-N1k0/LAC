@@ -1160,27 +1160,34 @@ def edit_user(page,uid):
 @app.route('/delete_user/<uid>', methods=('GET', 'POST'))
 @login_required
 def delete_user(uid):
-    groupz = get_posix_groupz_from_member_uid(uid)
+    posix_groupz = get_posix_groupz_from_member_uid(uid)
+    work_groupz = get_work_groupz_from_member_uid(uid)
     dn = ldap.get_full_dn_from_uid(uid)
     if request.method == 'POST':
         user_dn = ldap.get_full_dn_from_uid(uid)
-        ldap.delete(user_dn)
-        for (group_cn, group_branch) in groupz:
+        for group_cn in work_groupz:
+            group_dn = 'cn={0},ou=grTravail,{1}'.format(
+                group_cn,app.config['LDAP_SEARCH_BASE']
+            )
+            pre_modlist = [('uniqueMember', user_dn.encode('utf-8'))]
+            ldap.remove_dn_attribute(group_dn,pre_modlist)
+        for (group_cn, group_branch) in posix_groupz:
             group_dn = get_group_full_dn(group_branch, group_cn)
             pre_modlist = [('memberUid', uid.encode('utf-8'))]
             ldap.remove_dn_attribute(group_dn,pre_modlist)
         if app.config['PROD_FLAG']:
             delete_otrs_user(uid)
+        ldap.delete(user_dn)
         populate_grouplist_redis()
         populate_people_group_redis()
         populate_work_group_redis()
         flash(u'Utilisateur {0} supprimé'.format(uid))
         return redirect(url_for('home'))
-
-    return render_template('delete_user.html',
-                           groupz=groupz,
-                           uid=uid,
-                           dn=dn)
+    return render_template(
+        'delete_user.html',
+        groupz=[group[0] for group in posix_groupz] + work_groupz,
+        uid=uid,
+        dn=dn)
 
 @app.route('/select_work_groups/<uid>', methods=('GET', 'POST'))
 @login_required
