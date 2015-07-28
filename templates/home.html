@@ -87,10 +87,10 @@ Accueil
            uid=session['uid']
            )}}">Afficher l'historique des connexions</a>
         <br>
-        <a href="{{ url_for(
+        {% if session['admin'] %}<a href="{{ url_for(
            'show_history',
            uid=session['uid']
-           )}}" target="_blank">Afficher l'historique des modifications</a>
+           )}}" target="_blank">Afficher l'historique des modifications</a>{% endif %}
       </div>
     </div>
 
