@@ -477,6 +477,12 @@ def search_user():
     Search for a posixAccount in the entire LDAP tree
     """
     form = SearchUserForm(request.form)
+    form.user_type.choices = [
+        (branch['account'],
+         branch['account'])
+        for branch in app.config['BRANCHZ']
+    ]
+    form.user_type.choices.insert(0, ("", "Tous"))
     search_resultz=""
     page = Page.query.filter_by(label = "search_user").first()
     page_attributez = Field.query.filter_by(page_id = page.id).all()
@@ -539,6 +545,12 @@ def search_group():
     Search for a posixAccount in the entire LDAP tree
     """
     form = SearchGroupForm(request.form)
+    form.group_type.choices = [
+        (branch['group'],
+         branch['group'])
+        for branch in app.config['BRANCHZ']
+    ]
+    form.group_type.choices.insert(0, ("", "Tous"))
     search_resultz=""
     page = Page.query.filter_by(label = "search_group").first()
     page_attributez = Field.query.filter_by(page_id = page.id, display=True).all()
@@ -556,7 +568,13 @@ def search_group():
             filter_list.append(
                 "(description={0})".format(form.description.data)
             )
-        base_dn = "ou=groupePosix,{0}".format(app.config['LDAP_SEARCH_BASE'])
+        if form.group_type.data == "":
+            base_dn = "ou=groupePosix,{0}".format(app.config['LDAP_SEARCH_BASE'])
+        else:
+            base_dn = "ou={0},ou=groupePosix,{1}".format(form.group_type.data,
+                                          app.config['LDAP_SEARCH_BASE'])
+
+
 
         if filter_list != [] :
             ldap_filter = "(&(objectClass=posixGroup){0})".format("".join(

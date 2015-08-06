@@ -7,13 +7,7 @@ class SearchUserForm(Form):
     sn = TextField('Nom d\'utilisateur (sn)')
     uid = TextField('Login (uid)')
     mail = TextField('Courriel (mail)')
-    user_type = SelectField(u'Type d\'utilisateur',
-                            choices=[('','Tous'),
-                                     ('ccc','Compte C.C.C.'),
-                                     ('cines','Compte CINES'),
-                                     ('deci','Compte DECI'),
-                                     ('sam','Compte S.A.M.'),
-                                     ('autre','Compte divers')])
+    user_type = SelectField(u'Type d\'utilisateur')
     ip = TextField('Adresse IP (cinesIpClient)')
     nationality = TextField(u'Nationalité (cinesNationality)')
     user_disabled = BooleanField('Uniquement les comptes inactifs : ')
@@ -22,6 +16,7 @@ class SearchGroupForm(Form):
     gid_number = TextField(u'Numéro du groupe (gidNumber)')
     cn = TextField(u'Nom du groupe (cn)')
     description = TextField(u'Description')
+    group_type = SelectField(u'Type de groupe')
 
 class ChangePassForm(Form):
     new_pass = PasswordField('Nouveau mot de passe', [
