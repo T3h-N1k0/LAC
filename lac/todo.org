@@ -68,7 +68,7 @@
 ** DONE Branche "Cines Admin" compte + Groupe : 0.2
    CLOSED: [2015-02-13 ven. 10:21]
 ** DONE Déplacer "groupe projet dans CINES" : 0.2
-   CLOSED: [2015-02-13 ven. 10:21]
+   CLOSED: [2015-03-02 lun. 10:40]
 ** DONE Si pas ldapadmin --> consulter au lieur de consulter/modifier : 0.2
    CLOSED: [2015-02-13 ven. 10:21]
 ** DONE Brider les boutons "ajout/ modifier" que pour les cn=ldapadmin,.... : 0.2
@@ -104,6 +104,24 @@
    CLOSED: [2015-02-20 ven. 11:22]
    si etat avant "membre = oui soumission= non" alors bug si "membre=oui soumissio=oui" --> resultat "membre = non soumission=oui"
    dès qu'on touche les 2 pour changer les 2 états . tester sur boulard
+** DONE Soumission afficher l'état actuel lors de l'edition (coché/décoché)
+   CLOSED: [2015-03-02 lun. 10:21]
+** DONE Ajout d'un quota deuis les groupes
+   CLOSED: [2015-03-02 lun. 10:29]
+** DONE Bug création champs vide envoyés
+   CLOSED: [2015-03-02 lun. 10:41]
+** DONE Affichage groupe : décaler le pavet comptabilité sur la droite
+   CLOSED: [2015-03-02 lun. 10:42]
+** DONE Ajouter un compteur sur les groupes et utilisateurs
+   CLOSED: [2015-03-02 lun. 10:42]
+** DONE Bug sur enregistrement adresses ip
+   CLOSED: [2015-03-02 lun. 11:21]
+** DONE Compte autre et soft ne pas mettre le pwdreset à true
+   CLOSED: [2015-03-03 mar. 10:53]
+** DONE Date de renouvellement (sur affichage groupe) a coté du login.
+   CLOSED: [2015-03-04 mer. 09:38]
+** DONE Afficher aussi les champs en lecture seule
+   CLOSED: [2015-03-12 jeu. 14:36]
 ** TODO Rendre cliquable les objet ldap
     - [ ] Utilisateurs
       Sur les groupes de travail
@@ -112,19 +130,17 @@
 ** TODO Mettre en place un refresh automatique du cache
 ** TODO Quota uniquement accessible pour admin ldap
 ** TODO Bug sur nouvelle branche
-** TODO Afficher aussi les champs en lecture seule
-** TODO Soumission afficher l'état actuel lors de l'edition (coché/décoché)
 ** TODO History lastbind
 ** TODO Forcer ppolicy pour un user (=> Admin)
-** TODO Ajout d'un quota deuis les groupes
 ** TODO Création utilisateur, ne pas afficher le groupe sur la première page
-** TODO Bug création champs vide envoyés
-** TODO Ajouter un compteur sur les groupes et utilisateurs
-** TODO Date de renouvellement (sur affichage groupe) a coté du login.
-** TODO Affichage groupe : décaler le pavet comptabilité sur la droite
 ** TODO A la suppression d'un compte le compte est supprimé de ses groupes mais pas des groupes de travail (p16500/SGI/OCCIGEN)... Ce qui est plutot embettant :)
-** TODO Compte autre et soft ne pas mettre le pwdreset à true
-** TODO Bug sur enregistrement adresses ip
+** TODO Problème cache création user WTF ????§!!
+** TODO Service
+** TODO Secu
+** TODO Dates expiration
+** TODO Use TLS
+
+
 * P2
 ** Divers
 *** TODO Conteneur

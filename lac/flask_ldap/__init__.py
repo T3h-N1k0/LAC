@@ -1,6 +1,7 @@
 # coding=utf-8
 # -*- coding: utf-8 -*-
 import os
+import re
 
 __author__ = "Nicolas CHATELAIN"
 __copyright__ = "Copyright 2014, Nicolas CHATELAIN @ CINES"
@@ -37,7 +38,7 @@ class LDAP(object):
         app.config.setdefault('LDAP_SCHEMA', 'ldaps')
         app.config.setdefault('LDAP_DOMAIN', 'ou=cines,ou=people,dc=cines,dc=fr')
         app.config.setdefault('LDAP_LOGIN_VIEW', 'login')
-        app.config.setdefault('LDAP_SEARCH_BASE', 'OU=Users,DC=example,DC=com')
+        app.config.setdefault('LDAP_SEARCH_BASE', 'dc=cines,dc=fr')
         app.config.setdefault('LDAP_LOGIN_TEMPLATE', 'login.html')
         app.config.setdefault('LDAP_SUCCESS_REDIRECT', 'test_ldap')
         app.config.setdefault('LDAP_PROFILE_KEY', 'sAMAccountName')
@@ -443,6 +444,367 @@ class LDAP(object):
         flash(u"Vous êtes à présent déconnecté")
         return redirect(url_for('login'))
 
+    def get_uid_logz(self, uid):
+        dn = self.get_full_dn_from_uid(uid)
+        ldap_filter="(&(objectClass=auditModify)(reqDN={0}))".format(dn)
+        attributes=['*']
+        base_dn=self.app.config['LDAP_LOG_BASE']
+        logz = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        return logz
+
+    def get_default_storage_list(self):
+        ldap_filter='(objectClass=cinesQuota)'
+        attributes=['cn']
+        base_dn='ou=quota,ou=system,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        storagez = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        return storagez
+
+    def get_group_quota_list(self):
+        ldap_filter='(objectClass=cinesQuota)'
+        attributes=['cn']
+        base_dn='ou=groupePosix,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        storagez = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        return storagez
+
+
+    def get_default_storage(self, cn):
+        ldap_filter='(&(objectClass=cinesQuota)(cn={0}))'.format(cn)
+        attributes=['*']
+        base_dn='ou=quota,ou=system,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+            )
+        storage = ldaphelper.get_search_results(
+            ldap.search(base_dn,ldap_filter,attributes)
+        )[0]
+        return storage
+
+    def get_storage(self, cn):
+        ldap_filter='(&(objectClass=cinesQuota)(cn={0}))'.format(cn)
+        attributes=['*']
+        base_dn='ou=groupePosix,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        storage = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )[0]
+        return storage
+
+
+    def get_sambasid_prefix(self):
+        base_dn = self.app.config['LDAP_SEARCH_BASE']
+        ldap_filter='(sambaDomainName={0})'.format(self.app.config['SAMBA_DOMAIN_NAME'])
+        attributes=['sambaSID']
+        samba_domain_name = ldaphelper.get_search_results(
+            self.search(ldap_filter=ldap_filter,
+                        attributes=attributes,
+                        base_dn=base_dn)
+        )[0]
+        sambasid_prefix = samba_domain_name.get_attributes()['sambaSID'][0]
+        return sambasid_prefix
+
+
+
+    def get_posix_group_memberz(self, branch, cn):
+        """
+        List memberz of a group inherited from people ou
+        """
+        ldap_filter='(cn={0})'.format(cn)
+        attributes=['memberUid', "entryDN"]
+        base_dn='ou={0},ou=groupePosix,{1}'.format(
+            branch,
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        records = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        group_attrz= records[0].get_attributes()
+        if 'memberUid' in group_attrz:
+            memberz = group_attrz['memberUid']
+        else:
+            memberz = []
+        return memberz
+
+    def get_posix_group_principal_memberz_from_gid(self, gid_number):
+        ldap_filter='(&(gidNumber={0})(objectClass=posixAccount))'.format(
+            gid_number
+        )
+        attributes=["uid", "entryDN"]
+        base_dn='ou=people,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        raw_memberz = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        memberz_dn = sorted([member.get_attributes()['uid'][0]
+                             for member in raw_memberz])
+        return memberz_dn
+
+
+    def get_posix_groupz_from_member_uid(self, uid):
+        ldap_filter='(&(objectClass=posixGroup)(memberUid={0}))'.format(uid)
+        attributes=['cn', 'entryDN']
+        base_dn='ou=groupePosix,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        groupz_obj = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        groupz = []
+        for group in groupz_obj:
+            group_attrz = group.get_attributes()
+            cn = group_attrz['cn'][0]
+            dn = group_attrz['entryDN'][0]
+            branch = self.get_branch_from_posix_group_dn(dn)
+            groupz.append(
+                (cn, branch))
+        return groupz
+
+    def get_branch_from_posix_group_gidnumber(self, id):
+        ldap_filter='(&(objectClass=posixGroup)(gidNumber={0}))'.format(id)
+        attributes=['entryDN']
+        base_dn='ou=groupePosix,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        group = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )[0]
+        return self.get_branch_from_posix_group_dn(
+            group.get_attributes()['entryDN'][0]
+        )
+
+
+
+    def get_work_groupz_from_member_uid(self, uid):
+        dn = self.get_full_dn_from_uid(uid)
+        ldap_filter='(&(objectClass=cinesGrWork)(uniqueMember={0}))'.format(dn)
+        attributes=['cn']
+        base_dn='ou=grTravail,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        groupz_obj = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        print('groupz_obj {0}'.format(groupz_obj))
+        groupz = []
+        for group in groupz_obj:
+            groupz.append(group.get_attributes()['cn'][0])
+        return groupz
+
+    def get_wrk_group_dn_from_cn(self, cn):
+        ldap_filter='(&(objectClass=cinesGrWork)(cn={0}))'.format(cn)
+        attributes = ['entryDN']
+        base_dn='ou=grTravail,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        group_obj = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )[0]
+        dn = group_obj.get_attributes()['entryDN'][0]
+        return dn
+
+    def get_people_group_dn_from_cn(self, cn):
+        ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
+        attributes = ['entryDN']
+        base_dn='ou=groupePosix,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        group_obj = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )[0]
+        dn = group_obj.get_attributes()['entryDN'][0]
+        return dn
+
+
+    def get_people_dn_from_ou(self, ou):
+        ldap_filter='(ou={0})'.format(ou)
+        attributes=['entryDN']
+        base_dn='ou=people,{0}'.format(
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        records = ldaphelper.get_search_results(
+            self.search(base_dn,ldap_filter,attributes)
+        )
+        full_dn = records[0].get_attributes()['entryDN'][0]
+        return full_dn
+
+    def get_people_group_memberz(self, group):
+        """
+        List memberz of a group inherited from people ou
+        """
+        ldap_filter='(objectclass=inetOrgPerson)'
+        attributes=['uid']
+        base_dn='ou={0},ou=people,{1}'.format(group,
+                                              self.app.config['LDAP_SEARCH_BASE'])
+        raw_result = self.anonymous_search(base_dn,ldap_filter,attributes)
+        if raw_result:
+            records = ldaphelper.get_search_results(
+                raw_result
+            )
+        else:
+            return None
+
+        memberz = sorted([ member.get_attributes()['uid'][0] for member in records])
+        return memberz
+
+
+    # def get_all_people_group_memberz(self):
+    #     """
+    #     List all accountz
+    #     """
+    #     ldap_filter='(objectclass=inetOrgPerson)'
+    #     attributes=['uid']
+    #     base_dn='ou=people,{0}'.format(app.config['LDAP_SEARCH_BASE'])
+    #     raw_result = self.anonymous_search(base_dn,ldap_filter,attributes)
+    #     if raw_result:
+    #         records = ldaphelper.get_search_results(
+    #             raw_result
+    #         )
+    #     else:
+    #         return None
+    #     memberz = [ member.get_attributes()['uid'][0] for member in records]
+    #     return memberz
+
+    def get_work_group_memberz(self, group):
+        """
+        List memberz of a group inherited from grTravail ou
+        """
+        ldap_filter='(objectclass=cinesGrWork)'
+        attributes=['uniqueMember']
+        base_dn='cn={0},ou=grTravail,{1}'.format(
+            group,
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        records = ldaphelper.get_search_results(
+            self.anonymous_search(base_dn,ldap_filter,attributes)
+        )
+        memberz = []
+        for member in records:
+            memberz.extend(member.get_attributes()['uniqueMember'])
+        return memberz
+
+    def get_group_full_dn(self, branch, cn):
+        ldap_filter='(objectclass=posixGroup)'
+        attributes=['entryDN']
+        base_dn='cn={0},ou={1},ou=groupePosix,{2}'.format(
+            cn,
+            branch,
+            self.app.config['LDAP_SEARCH_BASE']
+        )
+        raw_result = ldaphelper.get_search_results(
+            self.anonymous_search(base_dn,ldap_filter,attributes)
+        )
+        return raw_result[0].get_attributes()['entryDN'][0]
+
+    def get_group_branch(self, account_type):
+        for branch in self.app.config['BRANCHZ']:
+            if branch['account'] == account_type:
+                return branch['group']
+
+    def get_posix_groupz(self, branch=None):
+        ldap_filter = "(objectClass=posixGroup)"
+        base_dn = 'ou=groupePosix,{0}'.format(self.app.config['LDAP_SEARCH_BASE'])
+        if branch:
+            base_dn = ''.join(['ou={0},'.format(branch), base_dn])
+        groupz = ldaphelper.get_search_results(
+            self.anonymous_search(base_dn=base_dn,
+                                  ldap_filter=ldap_filter,
+                                  attributes=['cn', 'gidNumber']))
+        return groupz
+
+    def get_work_groupz(self):
+        ldap_filter = "(objectClass=cinesGrWork)"
+        base_dn = 'ou=grTravail,{0}'.format(self.app.config['LDAP_SEARCH_BASE'])
+        groupz = ldaphelper.get_search_results(
+            self.anonymous_search(base_dn=base_dn,
+                                  ldap_filter=ldap_filter,
+                                  attributes=['cn']))
+        return [group.get_attributes()['cn'][0] for group in groupz]
+
+    def get_posix_groupz_choices(self, branch=None):
+        ldap_groupz = self.get_posix_groupz(branch)
+        ldap_groupz_list = [('', '---')]
+        for group in ldap_groupz:
+            group_attrz = group.get_attributes()
+            ldap_groupz_list.append((group_attrz['gidNumber'][0],
+                                 group_attrz['cn'][0]))
+        sorted_by_second = sorted(ldap_groupz_list, key=lambda tup: tup[1])
+        return sorted_by_second
+
+    def  get_branch_from_posix_group_dn(self, dn):
+        search_pattern = "cn=(.+?),ou=(.+?),"
+        m = re.search(search_pattern, dn)
+        if m:
+            return m.group(2)
+        else:
+            return ''
+
+
+    def update_group_memberz_cines_c4(self, branch, group, comite):
+        memberz_uid = self.get_posix_group_memberz(branch, group)
+        if len(memberz_uid)>1:
+            ldap_filter = '(&(objectClass=posixAccount)(|{0}))'.format(
+                ''.join(['(uid={0})'.format(uid) for uid in memberz_uid]))
+        elif len(memberz_uid)==1:
+            ldap_filter = '(&(objectClass=posixAccount)(uid={0}))'.format(
+                memberz_uid[0])
+        else:
+            return
+        memberz = ldaphelper.get_search_results(
+            self.search(
+                ldap_filter=ldap_filter,
+                attributes=['cinesC4', 'dn', 'uid', 'gidNumber']
+            ))
+        for member in memberz:
+            member_attrz = member.get_attributes()
+            if (
+                    is_ccc_group(member_attrz['uid'][0])
+                    and is_principal_group(member_attrz, group)
+                    and (
+                        'cinesC4' not in member_attrz
+                         or member_attrz['cinesC4'][0] != comite
+                    )
+            ):
+                if not comite and 'cinesC4' in member_attrz:
+                    ldap.remove_uid_attribute(
+                        member_attrz['uid'][0],
+                        [('cinesC4', None)]
+                    )
+                elif comite:
+                    ldap.update_uid_attribute(
+                        member_attrz['uid'][0],
+                        [('cinesC4', comite.encode('utf-8'))])
+                print('{0} mis à jour à : {1}'.format(
+                    member_attrz['uid'][0],
+                    comite))
+
+    def get_submission_groupz_list(self):
+        ldap_filter = "(&(objectClass=cinesGrWork)(cinesGrWorkType=1))"
+        ldap_groupz = ldaphelper.get_search_results(
+            self.ldap.anonymous_search(ldap_filter=ldap_filter,
+                             attributes=['cn'])
+        )
+        ldap_groupz_list = []
+        for group in ldap_groupz:
+            group_attrz = group.get_attributes()
+            name = group_attrz['cn'][0]
+            ldap_groupz_list.append(name)
+
+        return ldap_groupz_list
+
+
+
+
+
 
 def login_required(f):
     """
@@ -453,7 +815,6 @@ def login_required(f):
         if 'logged_in' in session:
             return f(*args, **kwargs)
         return redirect(url_for(current_app.config['LDAP_LOGIN_VIEW']))
-
     return decorated
 
 def admin_login_required(f):
@@ -466,5 +827,4 @@ def admin_login_required(f):
             return f(*args, **kwargs)
         flash(u'Espace réservé aux admins')
         return redirect(url_for('home'))
-
     return decorated

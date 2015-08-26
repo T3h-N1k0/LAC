@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+  <head>
+    {% block head %}
+    <title>LAC - LDAP Au CINES - {% block title %} {% endblock title %} </title>
+    {% block head_js %}
+    {% endblock head_js %}
+
+    {% endblock head %}
+
+  </head>
+
+  <body>
+    <div class=metanav>
+      {% if not session.logged_in %}
+      <a href="{{ url_for('login') }}">Se connecter</a>
+      {% else %}
+      Connecté en tant que "{{ session['uid']}}"   <a href="{{ url_for('logout') }}">Déconnecter</a>  <a href="{{ url_for('home') }}">Accueil</a>
+      {% endif %}
+      <div style="background-color: {{ 'red' if config['PROD_FLAG'] else 'green' }}">
+        {{ config['LDAP_HOST'] }}
+      </div>
+    </div>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <ul class=flashes>
+      {% for message in messages %}
+      <li>{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+
+    {% block body %}{% endblock body %}
+
+  </body>
+</html>
