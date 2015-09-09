@@ -3,40 +3,22 @@ from functools import wraps
 from string import capwords
 from flask import current_app, request, flash, render_template
 
-# Find the stack on which we want to store the database connection.
-# Starting with Flask 0.9, the _app_ctx_stack is the correct one,
-# before that we need to use the _request_ctx_stack.
-try:
-    from flask import _app_ctx_stack as stack
-except ImportError:
-    from flask import _request_ctx_stack as stack
-from flask import session, redirect, url_for
 
 class Cache(object):
-    def __init__(self, app=None, host=None, ldap=None):
-
-        if host is not None:
-            self.redis_host = host
-        if ldap is not None:
-            self.ldap = ldap
+    def __init__(self, app=None):
         if app is not None:
             self.app = app
             self.init_app(self.app)
         else:
             self.app = None
-        self.r = redis.Redis(app.config['REDIS_HOST'])
 
     def init_app(self, app):
-        app.config.setdefault('REDIS_HOST', self.redis_host)
-        # Use the newstyle teardown_appcontext if it's available,
-        # otherwise fall back to the request context
-        if hasattr(app, 'teardown_appcontext'):
-            app.teardown_appcontext(self.teardown)
-        else:
-            app.teardown_request(self.teardown)
-
-    def teardown(self, exception):
-        ctx = stack.top
+        if not hasattr(app, 'extensions'):
+            app.extensions = {}
+        app.extensions['cache'] = self
+        app.config.setdefault('REDIS_HOST', 'localhost')
+        self.r = redis.Redis(app.config['REDIS_HOST'])
+        self.ldap = app.extensions['ldap']
 
     def add_to_work_group_if_not_member(self, group, memberz_uid):
         memberz_dn = [self.ldap.get_full_dn_from_uid(uid)
@@ -51,7 +33,7 @@ class Cache(object):
             group_dn = self.ldap.get_wrk_group_dn_from_cn(group)
             self.ldap.add_dn_attribute(group_dn, pre_modlist)
 
-        self.populate_work_group_redis()
+        self.populate_work_group()
 
     def add_to_people_group_if_not_member(self, group, memberz_uid):
         memberz_uid_filtered = [uid.encode("utf-8")
@@ -63,7 +45,7 @@ class Cache(object):
             pre_modlist = [('memberUid', memberz_uid_filtered)]
             group_dn = self.ldap.get_people_group_dn_from_cn(group)
             self.ldap.add_dn_attribute(group_dn, pre_modlist)
-            self.populate_people_group_redis()
+            self.populate_people_group()
 
     def rem_from_group_if_member(self, group, memberz_uid):
         memberz_dn = [self.ldap.get_full_dn_from_uid(uid)
@@ -78,15 +60,18 @@ class Cache(object):
             group_dn = self.ldap.get_wrk_group_dn_from_cn(group)
             self.ldap.remove_dn_attribute(group_dn, pre_modlist)
 
-        self.populate_work_group_redis()
+        self.populate_work_group()
 
     def get_posix_group_cn_by_gid(self, gid):
         return self.r.hget('grouplist', gid)
 
     def populate_grouplist(self):
-        grouplist = self.ldap.get_posix_groupz_choices()
-        for (uid, group) in grouplist:
-            self.r.hset('grouplist', uid, group)
+        ldap_groupz = self.ldap.get_posix_groupz()
+        for group in ldap_groupz:
+            group_attrz = group.get_attributes()
+            self.r.hset('grouplist',
+                        group_attrz['gidNumber'][0],
+                        group_attrz['cn'][0])
 
     def populate_work_group(self):
         for group in self.ldap.get_work_groupz():
@@ -105,3 +90,11 @@ class Cache(object):
             if memberz:
                 for member in memberz:
                     self.r.sadd("people_groupz:{0}".format(people_group), member)
+
+
+    def get_group_from_member_uid(self, uid):
+        for branch in self.app.config['BRANCHZ']:
+            print(branch)
+            people_group = branch['account']
+            if uid in self.r.smembers("people_groupz:{0}".format(people_group)):
+                return people_group

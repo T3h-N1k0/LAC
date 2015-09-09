@@ -10,31 +10,26 @@ from sqlalchemy import Table, Column, Integer, ForeignKey, func
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField, TextAreaField
-from datetime import datetime, timedelta, date
-import time
-from dateutil.relativedelta import relativedelta
-from pytz import timezone
-import pytz
-from lac.ldaphelper import get_search_results
-#import upsert
-from lac.ldap_decoder import PythonLDAPDecoder
 from ldap import SCOPE_BASE,schema
 import hashlib,binascii
-#import lac.cache
 import re
 import os
+import time
 from lac.data_modelz import *
 from lac.formz import *
 from lac.cache import Cache
-#from lac.form_helperz import *
+from lac.form_manager import FormManager
+from lac.converter import Converter
+from lac.engine import Engine
+from lac.helperz import *
 
 ### Routez
-
 ldap = LDAP(app)
-utc = pytz.utc
-cache = Cache(app, 'localhost', ldap)
+cache = Cache(app)
+converter = Converter(app)
+fm = FormManager(app)
+lac = Engine(app)
 r = cache.r
-
 
 ALLOWED_EXTENSIONS = set(['txt', 'csv'])
 
@@ -45,11 +40,7 @@ app.add_url_rule('/logout', 'logout', ldap.logout, methods=['GET', 'POST'])
 @app.route('/')
 @login_required
 def home():
-    # cache.populate_people_group()
-    # cache.populate_grouplist()
-    # cache.populate_work_group()
     return render_template('home.html')
-
 
 @app.route('/search_user', methods=['POST', 'GET'])
 @login_required
@@ -100,18 +91,9 @@ def search_user():
             ))
         else:
             ldap_filter = "(objectClass=posixAccount)"
-
-        print("Search filter : {0}".format(ldap_filter))
-        #print("ROOT_DN : {0}".format(base_dn))
-
-        print(search_attributez)
-        raw_resultz = ldap.search(ldap_filter=ldap_filter,
+        search_resultz = ldap.search(ldap_filter=ldap_filter,
                                   attributes=search_attributez,
                                   base_dn=base_dn)
-
-        print(raw_resultz)
-        search_resultz = get_search_results(raw_resultz)
-
     return render_template('search_user.html',
                            userz=search_resultz,
                            form=form,
@@ -163,18 +145,9 @@ def search_group():
             ))
         else:
             ldap_filter = "(objectClass=posixGroup)"
-
-        print("Search filter : {0}".format(ldap_filter))
-        print("ROOT_DN : {0}".format(base_dn))
-
-        print(search_attributez)
-        raw_resultz = ldap.search(ldap_filter=ldap_filter,
+        search_resultz = ldap.search(ldap_filter=ldap_filter,
                                   attributes=search_attributez,
                                   base_dn=base_dn)
-
-        print(raw_resultz)
-        search_resultz = get_search_results(raw_resultz)
-
     return render_template('search_group.html',
                            groupz=search_resultz,
                            form=form,
@@ -189,7 +162,7 @@ def change_password(uid):
     Change the password for a given UID
     """
     form=ChangePassForm(request.form)
-    pwd_policy = get_user_pwd_policy(uid)
+    pwd_policy = ldap.get_user_pwd_policy(uid)
     pwd_min_length = pwd_policy['pwdMinLength'][0]
     # pwd_max_age =
 
@@ -197,7 +170,7 @@ def change_password(uid):
 
     if request.method == 'POST' and form.validate():
         pre_modlist = []
-        if get_group_from_member_uid(uid) == 'cines':
+        if cache.get_group_from_member_uid(uid) == 'cines':
             nt_hash = hashlib.new(
                 'md4',
                 form.new_pass.data.encode('utf-16le')
@@ -208,12 +181,12 @@ def change_password(uid):
         if uid != session['uid']:
             pre_modlist.append(('userPassword',
                                 form.new_pass.data.encode('utf-8')))
-            if get_group_from_member_uid(uid) not in ['autre', 'soft']:
+            if cache.get_group_from_member_uid(uid) not in ['autre', 'soft']:
                 pre_modlist.append(('pwdReset', 'TRUE'))
             flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
             ldap.update_uid_attribute(uid, pre_modlist)
             return redirect(url_for('show_user',
-                                    page= get_group_from_member_uid(uid),
+                                    page= cache.get_group_from_member_uid(uid),
                                     uid=uid))
         else:
             ldap.change_passwd(uid, session['password'], form.new_pass.data)
@@ -224,13 +197,10 @@ def change_password(uid):
             if pre_modlist:
                 ldap.update_uid_attribute(uid, pre_modlist)
             return redirect(url_for('home'))
-
-
     return render_template('change_password.html',
                            form=form,
                            uid=uid,
                            pwd_min_length=pwd_min_length)
-
 
 @app.route('/people/<group>')
 @login_required
@@ -242,31 +212,19 @@ def show_group_memberz(group):
                            group=group,
                            memberz_count=memberz_count)
 
-
-
-# @app.route('/details/<uid>')
-# @login_required
-# def get_account_detailz(uid):
-#     detailz = get_uid_detailz(uid)
-#     print(detailz)
-#     return render_template('show_detailz.html', account=detailz)
-
 @app.route('/infoz')
 @login_required
 def infoz():
     return render_template('infoz.html', session = session)
-
 
 @app.route('/whoami')
 @login_required
 def get_my_infoz():
     return redirect(url_for('get_account_detailz', uid=session['uid']))
 
-
 @app.route('/anonymous_detailz/<uid>')
 def test(uid):
     return ldap.get_full_dn_from_uid(uid)
-
 
 @app.route('/show_user/<page>/<uid>')
 @login_required
@@ -277,12 +235,10 @@ def show_user(page, uid):
         page_id = page.id,
         display=True
     ).order_by(Field.priority).all()
-
-    uid_detailz = get_uid_detailz(uid)
+    uid_detailz = ldap.get_uid_detailz(uid)
     if uid_detailz is None:
         return redirect(url_for('home'))
     uid_attributez = uid_detailz.get_attributes()
-
     if 'cinesIpClient' in uid_attributez:
         uid_attributez['cinesIpClient'] = [
             ip for ip in uid_attributez['cinesIpClient'][0].split(";")
@@ -298,7 +254,6 @@ def show_user(page, uid):
             uid_attributez['cinesSoumission'][0])
     else:
         submission_list = []
-
     blockz =sorted(
         set(
             [field.block for field in page_fieldz]
@@ -310,7 +265,7 @@ def show_user(page, uid):
                            blockz=blockz,
                            uid_attributez=uid_attributez,
                            page_fieldz=page_fieldz,
-                           is_active=is_active(uid_detailz),
+                           is_active=lac.is_active(uid_detailz),
                            work_groupz=work_groupz,
                            sec_groupz=sec_groupz,
                            submission_list=submission_list)
@@ -323,23 +278,18 @@ def edit_page(page_label=None):
     Customize page attributes
     """
     page = Page.query.filter_by(label=page_label).first()
-
     if page is None:
         pagez = Page.query.all()
         return render_template('list_viewz.html',
                                pagez=pagez)
-
-    raw_form = generate_edit_page_admin_form(page)
+    raw_form = fm.generate_edit_page_admin_form(page)
     form = raw_form['form']
     attr_label_list = raw_form['attr_label_list']
-
     if request.method == 'POST' :
         page_oc_id_list = raw_form['page_oc_id_list']
         page_unic_attr_id_list = raw_form['page_unic_attr_id_list']
-
-
         if attr_label_list is not None:
-            update_fields_from_edit_page_admin_form(form, attr_label_list, page)
+            lac.update_fields_from_edit_page_admin_form(form, attr_label_list, page)
         if form.oc_form.selected_oc.data is not None:
             # On traite les ObjectClass ajoutées
             for oc_id in form.oc_form.selected_oc.data :
@@ -364,7 +314,6 @@ def edit_page(page_label=None):
                                            attr_to_del_list
                                        )
                     ).delete(synchronize_session='fetch')
-
         if form.attr_form.selected_attr.data is not None:
             # On traite les Attributes ajoutées
             for attr_id in form.attr_form.selected_attr.data :
@@ -372,7 +321,6 @@ def edit_page(page_label=None):
                     print("Creation de l'attribut id {0}".format(attr_id))
                     attr = LDAPAttribute.query.filter_by(id = attr_id).first()
                     create_default_field(attr, page)
-
         if page_unic_attr_id_list is not None:
             # On traite les Attributes supprimées
             for attr_id in page_unic_attr_id_list:
@@ -381,28 +329,21 @@ def edit_page(page_label=None):
                     Field.query.filter_by(
                         id=attr_id
                     ).delete()
-
         db.session.commit()
-
-        raw_form = generate_edit_page_admin_form(page)
+        raw_form = fm.generate_edit_page_admin_form(page)
         form = raw_form['form']
         attr_label_list = raw_form['attr_label_list']
-
     return render_template('edit_page.html',
                            page=page,
                            attr_label_list = attr_label_list,
                            form=form)
 
-
 @app.route('/lac_adminz/', methods=('GET', 'POST'))
 @admin_login_required
 def edit_lac_admin():
     form = SelectMemberzForm(request.form)
-
     populate_lac_admin_choices(form)
-
     memberz = [ get_uid_from_dn(dn) for dn in ldap.get_lac_admin_memberz() ]
-
     if request.method == 'POST':
         if form.selected_memberz.data is not None:
             memberz_to_add = []
@@ -434,11 +375,8 @@ def edit_lac_admin():
 @admin_login_required
 def edit_ldap_admin():
     form = SelectMemberzForm(request.form)
-
     populate_ldap_admin_choices(form)
-
     memberz = [ get_uid_from_dn(dn) for dn in ldap.get_ldap_admin_memberz() ]
-
     if request.method == 'POST':
         if form.selected_memberz.data is not None:
             memberz_to_add = []
@@ -478,7 +416,6 @@ def add_page():
             db.session.commit()
             flash(u'Vue correctement ajoutée')
             return render_template('home.html')
-
     return render_template('add_page.html',
                            form=form)
 
@@ -489,7 +426,7 @@ def reset_schema():
     Delete all values in DB for tables LDAPObjectClass & LDAPAttribute
     Columnpy back LDAP schema in DB
     """
-    subschema = get_subschema()
+    subschema = ldap.get_subschema()
     all_oc_oid = subschema.listall(schema.ObjectClass)
     # Suppression du contenu des tables LDAP
     LDAPObjectClass.query.delete()
@@ -532,24 +469,19 @@ def update_schema():
     Check DB schema consistency over LDAP
     Update if necessary
     """
-    subschema = get_subschema()
+    subschema = ldap.get_subschema()
     all_oc_oid = subschema.listall(schema.ObjectClass)
     db_oc_list_labelz =  [oc.label for oc in LDAPObjectClass.query.all()]
-
     infoz = []
-
     # On parse chaque ObjectClass récupéré de LDAP
     for oid in all_oc_oid:
         ldap_oc_name = subschema.get_obj(schema.ObjectClass, oid).names[0]
-
         # On ne récupère pas les classes dans la liste
         if ldap_oc_name not in ('subschema', 'subentry', 'objectClass'):
-
             ldap_oc_attrs = subschema.attribute_types( [ldap_oc_name] )
             ldap_must_attrs = ldap_oc_attrs[0]
             ldap_may_attrs = ldap_oc_attrs[1]
             ldap_all_attrs = []
-
             # Création de l'ObjectClass s'il n'est pas déjà présent
             if ldap_oc_name in db_oc_list_labelz:
                 db_oc = LDAPObjectClass.query.filter_by(
@@ -561,7 +493,6 @@ def update_schema():
                 infoz.append(
                     u'Création de l\'ObjectClass {0}'.format(ldap_oc_name)
                 )
-
             db_oc_attr_label_list =  [
                 oc_attr.ldapattribute.label
                 for oc_attr in  LDAPObjectClassAttribute.query.filter_by(
@@ -619,16 +550,10 @@ def update_schema():
                         )
                     )
     db.session.commit()
-
     if not infoz:
         infoz.append(u'Aucune donnée mise à jour')
-
     flash(u'\n'.join(infoz))
     return redirect(url_for('home'))
-
-
-
-
 
 @app.route('/hello/')
 @app.route('/hello/<name>')
@@ -636,11 +561,7 @@ def update_schema():
 def hello(name=None):
     return render_template('test.html', name=session['uid'])
 
-
-
-# @app.route('/add_user/<page_label>/<uid>', methods=('GET', 'POST'))
 @app.route('/add_user/<page_label>', methods=('GET', 'POST'))
-# @app.route('/add_user/', methods=('GET', 'POST'))
 @login_required
 def add_user(page_label):
     pages = Page.query.all()
@@ -648,46 +569,37 @@ def add_user(page_label):
         label = page_label
     ).first()
     existing_userz = [
-        user.get_attributes()['uid'][0] for user in get_all_users()]
-
-    set_validators_to_form_field(
+        user.get_attributes()['uid'][0] for user in ldap.get_all_users()]
+    fm.set_validators_to_form_field(
         AddUserForm, 'uid',[validators.NoneOf(existing_userz)])
-
     page = Page.query.filter_by(
         label = ldap_object_type.label
     ).first()
     fieldz = Field.query.filter_by(page_id = page.id,edit = True).order_by(Field.priority).all()
-    EditForm = generate_add_user_form_class(page)
+    EditForm = fm.generate_add_user_form_class(page)
     edit_form = EditForm(request.form)
-
-
     edit_blockz =sorted(
         set(
             [field.block for field in fieldz]
         )
     )
-
-
     if request.method == 'POST':
-        create_ldap_object_from_add_user_form(
+        lac.create_ldap_object_from_add_user_form(
             edit_form,
             fieldz,
             page)
-
         if app.config['PROD_FLAG']:
-            upsert_otrs_user(edit_form.uid.data)
+            lac.upsert_otrs_user(edit_form.uid.data)
         return redirect(url_for('show_user',
                                 page=page_label,
                                 uid = edit_form.uid.data))
     else:
-
-        set_edit_user_form_values(edit_form,fieldz)
+        fm.set_edit_user_form_values(edit_form,fieldz)
         return render_template('add_user.html',
                                page=page.label,
                                fieldz=fieldz,
                                edit_blockz=edit_blockz,
                                edit_form=edit_form)
-
     return render_template('add_user.html',
                            add_form=add_form,
                            page=page_label)
@@ -697,54 +609,46 @@ def add_user(page_label):
 def edit_user(page,uid):
     dn = ldap.get_full_dn_from_uid(uid)
     page = Page.query.filter_by(label=page).first()
-    EditForm = generate_edit_user_form_class(page)
+    EditForm = fm.generate_edit_user_form_class(page)
     form = EditForm(request.form)
     edit_fieldz = Field.query.filter_by(
         page_id = page.id,
         edit = True
     ).order_by(Field.priority).all()
-
     edit_blockz =sorted(
         set(
             [field.block for field in edit_fieldz]
         )
     )
-
     show_fieldz = Field.query.filter_by(
         page_id = page.id,
         display=True
     ).order_by(Field.priority).all()
-
     show_blockz =sorted(
         set(
             [field.block for field in show_fieldz]
         )
     )
-
-    uid_detailz = get_uid_detailz(uid)
+    uid_detailz = ldap.get_uid_detailz(uid)
     if uid_detailz is None:
         return redirect(url_for('home'))
     uid_attributez = uid_detailz.get_attributes()
-
     if 'cinesIpClient' in uid_attributez:
         uid_attributez['cinesIpClient'] = [
             ip for ip in uid_attributez['cinesIpClient'][0].split(";")
         ]
-
     if request.method == 'POST':
-        update_ldap_object_from_edit_user_form(form, edit_fieldz, uid, page)
-
+        lac.update_ldap_object_from_edit_user_form(form, edit_fieldz, uid, page)
         for group in form.wrk_groupz.selected_groupz.data:
             cache.add_to_work_group_if_not_member(group, [uid])
         for group in ldap.get_work_groupz_from_member_uid(uid):
             if group not in form.wrk_groupz.selected_groupz.data:
                 cache.rem_from_group_if_member(group, [uid])
-
         if page.label in app.config['OTRS_ACCOUNT'] and app.config['PROD_FLAG']:
-            upsert_otrs_user(uid)
+            lac.upsert_otrs_user(uid)
         return redirect(url_for('show_user', page=page.label, uid=uid))
     else:
-        set_edit_user_form_values(form, edit_fieldz, uid)
+        fm.set_edit_user_form_values(form, edit_fieldz, uid)
     return render_template('edit_user.html',
                            form=form,
                            page=page,
@@ -791,8 +695,7 @@ def delete_user(uid):
 @app.route('/select_work_groups/<uid>', methods=('GET', 'POST'))
 @login_required
 def select_work_groups(uid):
-    form = generate_select_work_group_form(uid)
-
+    form = fm.generate_select_work_group_form(uid)
     if request.method == 'POST':
         for group in form.selected_groupz.data:
             cache.add_to_work_group_if_not_member(group, [uid])
@@ -801,21 +704,11 @@ def select_work_groups(uid):
                 cache.rem_from_group_if_member(group, [uid])
         flash(u'Groupes de travail mis à jour')
         return redirect(url_for('show_user',
-                                page=get_group_from_member_uid(uid),
+                                page=cache.get_group_from_member_uid(uid),
                                 uid=uid))
     return render_template('select_work_groups.html',
                            form=form,
                            uid=uid)
-
-# @app.route('/select_edit_group_attributes/', methods=('GET', 'POST'))
-# @login_required
-# def select_edit_group_attributes():
-#     view_form = EditGroupViewForm(request.form)
-#     view_form.attr_form.available_attr.choices = [
-#         (attr.id, attr.label)
-#         for attr in LDAPAttribute.query.all()
-#     ]
-#     view_form.attr_form.selected_attr.choices = []
 
 @app.route('/select_group_type/', methods=('GET', 'POST'))
 @login_required
@@ -825,30 +718,24 @@ def select_group_type():
     form.group_type.choices = [(ot.label, ot.description)
                                    for ot in ldap_object_types
                                    if ot.apply_to == 'group']
-
     if request.method == 'POST':
         return redirect(url_for('add_group',
                                 page_label = form.group_type.data))
 
-
-# @app.route('/add_group/', methods=('GET', 'POST'))
 @app.route('/add_group/<page_label>', methods=('GET', 'POST'))
 @login_required
 def add_group(page_label=None):
     pages = Page.query.all()
-
     if page_label in app.config['C4_TYPE_GROUPZ']:
         add_form = AddC4GroupForm(request.form)
         add_form.cn.choices = get_c4_groupz_choices()
     else:
         existing_groupz = [
-            group.get_attributes()['cn'][0] for group in get_all_groups()]
-
-        set_validators_to_form_field(
+            group.get_attributes()['cn'][0] for group in ldap.get_all_groups()]
+        fm.set_validators_to_form_field(
             AddGenericGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
         add_form = AddGenericGroupForm(request.form)
-    add_form.filesystem.choices = get_filesystem_choices()
-
+    add_form.filesystem.choices = fm.get_filesystem_choices()
     if request.method == 'POST':
         if add_form.cn.data and add_form.validate():
             if create_ldap_object_from_add_group_form(add_form, page_label):
@@ -867,31 +754,26 @@ def add_group(page_label=None):
 def edit_group(branch, group_cn):
     dn = ldap.get_group_full_dn(branch, group_cn)
     page = Page.query.filter_by(label=branch).first()
-    form = generate_edit_group_form(page)
-
+    form = fm.generate_edit_group_form(page)
     ldap_filter='(cn={0})'.format(group_cn)
     attributes=['gidNumber']
     base_dn='ou={0},ou=groupePosix,{1}'.format(
         branch,
         app.config['LDAP_SEARCH_BASE']
     )
-    raw_detailz = ldap.search(ldap_filter=ldap_filter,
-                              attributes=attributes,
-                              base_dn=base_dn)
-    if raw_detailz:
-        gid_number = get_search_results(raw_detailz)[0].get_attributes()['gidNumber'][0]
-
+    gid_number = ldap.search(
+        ldap_filter=ldap_filter,
+        attributes=attributes,
+        base_dn=base_dn)[0].get_attributes()['gidNumber'][0]
     selected_memberz = [member for member in ldap.get_posix_group_memberz(
         branch, group_cn
     )]
-
     if branch == 'grProjet':
         accountz = ldap.get_people_group_memberz('cines')
     else:
         accountz = ldap.get_people_group_memberz(
-            get_account_branch_from_group_branch(branch)
+            lac.get_account_branch_from_group_branch(branch)
         )
-
     available_memberz = [
         account for account in accountz
         if account not in selected_memberz
@@ -902,18 +784,15 @@ def edit_group(branch, group_cn):
     form.memberz.available_memberz.choices =[
         (member, member) for member in available_memberz
     ]
-
     fieldz = Field.query.filter_by(
         page_id = page.id,
         edit = True
     ).order_by(Field.priority).all()
-
     blockz =sorted(
         set(
             [field.block for field in fieldz]
         )
     )
-
     if request.method == 'POST':
         if branch == 'grCcc':
             ressource = C4Ressource.query.filter_by(
@@ -923,13 +802,11 @@ def edit_group(branch, group_cn):
             else:
                 comite = ''
             update_group_memberz_cines_c4(branch, group_cn, comite)
-
-        update_ldap_object_from_edit_group_form(form,page,group_cn)
+        lac.update_ldap_object_from_edit_group_form(form,page,group_cn)
         flash(u'Groupe {0} mis à jour'.format(group_cn))
         return redirect(url_for('show_groups', branch=page.label))
     else:
-        set_edit_group_form_values(form, fieldz, branch, group_cn)
-
+        fm.set_edit_group_form_values(form, fieldz, branch, group_cn)
     return render_template('edit_group.html',
                            form=form,
                            page=page,
@@ -955,7 +832,6 @@ def delete_group(branch, cn):
                             branch=branch,
                             cn=cn))
 
-
 @app.route('/show_group/<branch>/<cn>')
 @login_required
 def show_group(branch, cn):
@@ -964,34 +840,28 @@ def show_group(branch, cn):
         page_id = page.id,
         display=True
     ).order_by(Field.priority).all()
-
     ldap_filter='(cn={0})'.format(cn)
     attributes=['*','+']
     base_dn='ou={0},ou=groupePosix,{1}'.format(
         branch,
         app.config['LDAP_SEARCH_BASE']
     )
-    raw_detailz = ldap.search(ldap_filter=ldap_filter,
+    cn_detailz = ldap.search(ldap_filter=ldap_filter,
                               attributes=attributes,
                               base_dn=base_dn)
-    if not raw_detailz:
+    if not cn_detailz:
         flash(u'Groupe non trouvé')
         return redirect(url_for('show_groups',
                                 branch=branch))
-
-    cn_attributez=get_search_results(raw_detailz)[0].get_attributes()
-
+    cn_attributez=cn_detailz[0].get_attributes()
     if 'memberUid' in cn_attributez:
         cn_attributez['memberUid'] = sorted(cn_attributez['memberUid'])
     principal_memberz = ldap.get_posix_group_principal_memberz_from_gid(
             cn_attributez['gidNumber'][0]
         )
-
     dn = cn_attributez['entryDN'][0]
-    print("arg {0}".format(raw_detailz))
     default_storagez_labelz = [storage.get_attributes()['cn'][0]
                        for storage in ldap.get_default_storage_list()]
-
     kustom_storagez_labelz = [
         storage.get_attributes()['cn'][0]
         for storage in ldap.get_group_quota_list()
@@ -999,7 +869,6 @@ def show_group(branch, cn):
                 0
         ].split('.')[1] == cn_attributez['gidNumber'][0]
     ]
-
     quotaz = []
     for storage in default_storagez_labelz:
         if kustom_storagez_labelz:
@@ -1008,7 +877,6 @@ def show_group(branch, cn):
                     quotaz.append((storage, kustom_storage))
         else:
             quotaz.append((storage, None))
-
     if branch == 'grCcc':
         ressource = C4Ressource.query.filter_by(code_projet = cn).first()
         projet = C4Projet.query.filter_by(
@@ -1031,14 +899,11 @@ def show_group(branch, cn):
         manager = None
         bull_computed = None
         ibm_computed = None
-
     blockz =sorted(
         set(
             [field.block for field in page_fieldz]
         )
     )
-
-
     return render_template('show_group.html',
                            blockz=blockz,
                            cn = cn,
@@ -1053,19 +918,9 @@ def show_group(branch, cn):
                            principal_memberz=principal_memberz,
                            quotaz=quotaz)
 
-# @app.route('/delete_group/<cn>', methods=('GET', 'POST'))
-# @login_required
-# def delete_group(cn):
-#     group_dn = ldap.get_full_dn_from_cn(cn)
-#     ldap.delete(group_dn)
-#     flash(u'Groupe {0} supprimé'.format(cn))
-#     return redirect(url_for('home'))
-
 @app.route('/show_groups/<branch>')
-# @app.route('/show_groups/')
 @login_required
 def show_groups(branch):
-    # print(branch)
     groupz = [group.get_attributes()['cn'][0]
               for group in  ldap.get_posix_groupz(branch)]
     groupz_count = len(groupz)
@@ -1073,7 +928,6 @@ def show_groups(branch):
                            groupz=groupz,
                            branch=branch,
                            groupz_count=groupz_count)
-
 
 @app.route('/edit_by_group/', methods=('GET', 'POST'))
 @login_required
@@ -1089,31 +943,25 @@ def edit_by_group():
         attrz_list = session['edit_by_group_fieldz_id']
     else:
         attrz_list = []
-
     if 'edit_by_group_memberz_uid' in session:
         groupz_memberz = session['edit_by_group_memberz_uid']
     else:
         groupz_memberz = []
     # print('attrz_list : {0}'.format(attrz_list))
-    edit_form = generate_kustom_batch_edit_form(page, attrz_list)
+    edit_form = fm.generate_kustom_batch_edit_form(page, attrz_list)
     group_form = SelectGroupzForm(request.form)
     group_form.available_groupz.choices = ldap.get_posix_groupz_choices()
     group_form.selected_groupz.choices = []
-
-
     if request.method == 'POST':
-
         if view_form.attr_form.selected_attr.data:
             group_form = SelectGroupzForm(request.form)
             group_form.available_groupz.choices = ldap.get_posix_groupz_choices()
             group_form.selected_groupz.choices = []
-
             session[
                 'edit_by_group_fieldz_id'
             ] = view_form.attr_form.selected_attr.data
             return render_template('edit_by_group.html',
                                    group_form=group_form)
-
         elif group_form.selected_groupz.data:
             groupz_id = group_form.selected_groupz.data
             groupz_infoz = [
@@ -1121,28 +969,23 @@ def edit_by_group():
                  cache.get_posix_group_cn_by_gid(id))
                 for id in groupz_id
             ]
-            groupz_memberz = get_posix_groupz_memberz(groupz_infoz)
-
+            groupz_memberz = ldap.get_posix_groupz_memberz(groupz_infoz)
             session[
                 'edit_by_group_memberz_uid'
             ] = groupz_memberz
-
             fieldz = Field.query.filter(
                 Field.id.in_(session['edit_by_group_fieldz_id'])
             ).all()
             print('fieldz {0}'.format(fieldz))
-
-            edit_form = generate_kustom_batch_edit_form(
+            edit_form = fm.generate_kustom_batch_edit_form(
                 page,
                 session['edit_by_group_fieldz_id']
             )
-
             return render_template('edit_by_group.html',
                                    edit_form=edit_form,
                                    fieldz=fieldz,
                                    attributez=[field.label.encode('utf-8')
                                                       for field in fieldz])
-
         elif edit_form.action.data :
             fieldz = Field.query.filter(
                 Field.id.in_(session['edit_by_group_fieldz_id'])
@@ -1168,7 +1011,6 @@ def edit_by_group():
     return render_template('edit_by_group.html',
                            view_form=view_form)
 
-
 @app.route('/edit_submission/<uid>', methods=('GET', 'POST'))
 @login_required
 def edit_submission(uid):
@@ -1178,39 +1020,23 @@ def edit_submission(uid):
         (group, group)
         for group in ldap.get_submission_groupz_list()
     ]
-    uid_attributez=get_uid_detailz(uid).get_attributes()
+    uid_attributez=ldap.get_uid_detailz(uid).get_attributes()
     if 'cinesSoumission' in uid_attributez:
         submission_list = get_list_from_submission_attr(
             uid_attributez['cinesSoumission'][0])
     else:
         submission_list = []
-
-    print('submission_list {0}'.format(submission_list))
     work_groupz = {}
     for group in ldap.get_submission_groupz_list():
         is_member = dn in r.smembers( "wrk_groupz:{0}".format(group))
         is_submission = (group, '1') in submission_list
         work_groupz[group] = {'is_member': is_member,
                               'is_submission': is_submission}
-
-    print("work_groupz {0}".format(work_groupz))
     if request.method == 'POST':
-        wrk_group = form.wrk_group.data
-        is_submission = form.submission.data
-        is_member = form.member.data
-        if is_submission and is_member:
-            cache.add_to_work_group_if_not_member(wrk_group, [uid])
-            set_submission(uid, wrk_group, '1')
-        elif is_member and not is_submission:
-            cache.add_to_work_group_if_not_member(wrk_group, [uid])
-            set_submission(uid, wrk_group, '0')
-        elif not is_member:
-            cache.rem_from_group_if_member(wrk_group, [uid])
-            set_submission(uid, wrk_group, '0')
+        lac.update_user_submission(uid, form)
         return redirect(url_for('show_user',
-                                page = get_group_from_member_uid(uid),
+                                page = cache.get_group_from_member_uid(uid),
                                 uid = uid))
-
     return render_template('edit_submission.html',
                            form=form,
                            dn=dn,
@@ -1220,40 +1046,9 @@ def edit_submission(uid):
 @app.route('/edit_group_submission/', methods=('GET', 'POST'))
 @login_required
 def edit_group_submission():
-    form = EditGroupSubmissionForm(request.form)
-    form.submission_form.wrk_group.choices = [
-        (group, group)
-        for group in ldap.get_submission_groupz_list()
-    ]
-    form.group_form.available_groupz.choices = ldap.get_posix_groupz_choices()
-    form.group_form.selected_groupz.choices = []
-
+    form = fm.generate_edit_group_submission()
     if request.method == 'POST':
-        groupz_id = form.group_form.selected_groupz.data
-
-        groupz_infoz = [
-            (ldap.get_branch_from_posix_group_gidnumber(id),
-             cache.get_posix_group_cn_by_gid(id))
-            for id in groupz_id
-        ]
-        groupz_memberz = get_posix_groupz_memberz(groupz_infoz)
-
-        wrk_group = form.submission_form.wrk_group.data
-        is_submission = form.submission_form.submission.data
-        is_member = form.submission_form.member.data
-
-        if is_submission and is_member:
-            cache.add_to_work_group_if_not_member(wrk_group, groupz_memberz_uid)
-            for uid in groupz_memberz_uid:
-                set_submission(uid, wrk_group, '1')
-        elif is_member and not is_submission:
-            cache.add_to_work_group_if_not_member(wrk_group, groupz_memberz_uid)
-            for uid in groupz_memberz_uid:
-                set_submission(uid, wrk_group, '0')
-        elif not is_member:
-            cache.rem_from_group_if_member(wrk_group, groupz_memberz_uid)
-            for uid in groupz_memberz_uid:
-                set_submission(uid, wrk_group, '0')
+        lac.update_group_submission(form)
         return redirect(url_for('home'))
     return render_template('edit_group_submission.html',
                            form=form)
@@ -1261,15 +1056,14 @@ def edit_group_submission():
 @app.route('/toggle_account/<uid>')
 @login_required
 def toggle_account(uid):
-    user = get_uid_detailz(uid)
+    user = ldap.get_uid_detailz(uid)
     if is_active(user):
-        disable_account(user)
+        lac.disable_account(user)
     else:
-        enable_account(user)
+        lac.enable_account(user)
     return redirect(url_for('show_user',
-                            page = get_group_from_member_uid(uid),
+                            page = cache.get_group_from_member_uid(uid),
                             uid = uid))
-
 
 @app.route('/edit_default_quota/')
 @app.route('/edit_default_quota/<storage_cn>', methods=('GET', 'POST'))
@@ -1277,21 +1071,18 @@ def toggle_account(uid):
 def edit_default_quota(storage_cn=None):
     storagez_labelz = [storage.get_attributes()['cn'][0]
                        for storage in ldap.get_default_storage_list()]
-
     if storage_cn is not None:
         dn = ldap.get_full_dn_from_cn(storage_cn)
         storage = ldap.get_default_storage(storage_cn).get_attributes()
         form = EditDefaultQuotaForm(request.form)
-
         if request.method == 'POST' and form.validate():
             update_default_quota(storage_cn, form)
             return redirect(url_for('home'))
-        set_default_quota_form_values(form, storage)
+        fm.set_default_quota_form_values(form, storage)
         return render_template('edit_default_quota.html',
                                form=form,
                                dn=dn,
                                storage_cn=storage_cn)
-
     else:
         return render_template('edit_default_quota.html',
                                storagez=storagez_labelz)
@@ -1300,60 +1091,41 @@ def edit_default_quota(storage_cn=None):
 @app.route('/edit_quota/<storage_cn>', methods=('GET', 'POST'))
 @admin_login_required
 def edit_quota(storage_cn=None):
-    storagez = ldap.get_group_quota_list()
-    storagez_labelz = [storage.get_attributes()['cn'][0]
-                       for storage in storagez]
-
     if storage_cn is not None:
         dn = ldap.get_full_dn_from_cn(storage_cn)
         storage = ldap.get_storage(storage_cn).get_attributes()
         form = EditQuotaForm(request.form)
-
         if request.method == 'POST' and form.validate():
             update_quota(storage, form)
             return redirect(url_for('home'))
-        default_fieldz = set_quota_form_values(form, storage)
+        default_fieldz = fm.set_quota_form_values(form, storage)
         return render_template('edit_quota.html',
                                form=form,
                                dn=dn,
                                storage_cn=storage_cn,
                                default_fieldz=default_fieldz)
-
     else:
         return render_template('edit_quota.html',
-                               storagez=storagez_labelz)
+                               storagez=lac.get_storagez_labelz())
 
 @app.route('/add_quota/', methods=('GET', 'POST'))
 @app.route('/add_quota/<storage>/<group>', methods=('GET', 'POST'))
 @admin_login_required
 def add_quota(storage=None, group=None):
+    form = fm.generate_create_quota_form()
     if storage and group:
         create_ldap_quota(storage, group)
         return redirect(
             url_for('edit_quota',
                     storage_cn = '{0}.{1}'.format(storage, group)))
-
-    form = CreateQuotaForm(request.form)
-
-    default_storagez = ldap.get_default_storage_list()
-    form.default_quota.choices = [
-        (storage.get_attributes()['cn'][0],
-         storage.get_attributes()['cn'][0])
-        for storage in default_storagez ]
-    form.group.choices = ldap.get_posix_groupz_choices()
-
     if (request.method == 'POST' and form.validate()):
         niou_cn = '{0}.{1}'.format(
             form.default_quota.data,
             form.group.data)
-
-
         create_ldap_quota(form.default_quota.data, form.group.data)
         return redirect(url_for('edit_quota',
                                 storage_cn = niou_cn))
-
     return render_template('add_quota.html', form=form)
-
 
 @app.route('/delete_quota/<storage_cn>')
 @login_required
@@ -1366,85 +1138,39 @@ def delete_quota(storage_cn):
 @app.route('/get_backup_file/<userz>/<attributez>')
 @login_required
 def get_backup_file(userz, attributez):
-    userz = [user.encode('utf-8')
-             for user in userz.split(',')]
-    attributez = [attribute.encode('utf-8')
-                  for attribute in attributez.split(',')]
-    file_name = "backup_{0}.txt".format(
-        datetime.now().strftime("%d%b%HH%M_%Ss"))
-    file_content = " ".join(attributez)
-    for user in userz:
-        user_attr = get_search_results(
-            ldap.search(
-                ldap_filter="(uid={0})".format(user),
-                attributes=attributez
-            )
-        )[0].get_attributes()
-        line = ",".join(["{0}={1}".format(key, value)
-                for key, value in user_attr.iteritems()])
-        line = ",".join(["uid={0}".format(user),line])
-        file_content = "\n".join([file_content, line])
-    response = make_response(file_content)
-    response.headers['Content-Disposition'] = 'attachment; filename={0}'.format(
-        file_name)
+    response = lac.generate_backup_file_response(userz, attributez)
     return response
 
 @app.route('/edit_file/', methods=('GET', 'POST'))
 @login_required
 def edit_file():
-
     page = Page.query.filter_by(label='edit_file').first()
-    view_form = EditGroupViewForm(request.form)
-    view_form.attr_form.available_attr.choices = [
-        (attr.id, attr.label)
-        for attr in Field.query.filter_by(page_id = page.id).all()
-    ]
-    view_form.attr_form.selected_attr.choices = []
     if 'edit_file_fieldz_id' in session:
         attrz_list = session['edit_file_fieldz_id']
     else:
         attrz_list = []
-
     if 'edit_file_memberz_uid' in session:
         userz = session['edit_file_memberz_uid']
     else:
         userz = []
-
-    edit_form = generate_kustom_batch_edit_form(page, attrz_list)
+    edit_form = fm.generate_kustom_batch_edit_form(page, attrz_list)
     file_form = UserzFileForm(request.form)
-
+    view_form = fm.generate_edit_file_view_form(page)
     if request.method == 'POST':
-
         if view_form.attr_form.selected_attr.data:
-            group_form = SelectGroupzForm(request.form)
-            group_form.available_groupz.choices = ldap.get_posix_groupz_choices()
-            group_form.selected_groupz.choices = []
-
-            session[
-                'edit_file_fieldz_id'
-            ] = view_form.attr_form.selected_attr.data
-            return render_template('edit_file.html',
-                                   file_form=file_form)
-
+            session['edit_file_fieldz_id'] = view_form.attr_form.selected_attr.data
+            return render_template('edit_file.html',file_form=file_form)
         elif file_form.userz_file and edit_form.submited.data == 'False' :
             userz_file = request.files[file_form.userz_file.name]
             if userz_file and allowed_file(userz_file.filename):
-                # filename = secure_filename(file.filename)
                 userz = userz_file.read().split('\n')
             else:
                 flash('Format du fichier incorrect')
                 return render_template('edit_file.html',
                                        file_form=file_form)
-
-            session[
-                'edit_file_memberz_uid'
-            ] = userz
-
-            fieldz = Field.query.filter(
-                Field.id.in_(session['edit_file_fieldz_id'])
-            ).all()
-
-            edit_form = generate_kustom_batch_edit_form(
+            session['edit_file_memberz_uid'] = userz
+            fieldz = Field.query.filter(Field.id.in_(attrz_list)).all()
+            edit_form = fm.generate_kustom_batch_edit_form(
                 page,
                 attrz_list
             )
@@ -1454,31 +1180,11 @@ def edit_file():
                                    fieldz=fieldz,
                                    attributez=[field.label.encode('utf-8')
                                                       for field in fieldz])
-
         elif edit_form.submited.data == 'True' :
-
-            fieldz = Field.query.filter(
-                Field.id.in_(attrz_list)
-            ).all()
-            pre_modlist = []
-            for field in fieldz:
-                pre_modlist.append(
-                    (field.label,
-                     getattr(edit_form, field.label).data.encode('utf-8'))
-                )
-            if edit_form.action.data == '0':
-                for uid in userz:
-                    ldap.add_uid_attribute(uid, pre_modlist)
-            elif edit_form.action.data == '1':
-                for uid in userz:
-                    ldap.update_uid_attribute(uid, pre_modlist)
-            flash(u'Les utilisateurs ont été mis à jour')
+            update_users_by_file(edit_form, attrz_list)
             return redirect(url_for('home'))
-
-
     return render_template('edit_file.html',
                            view_form=view_form)
-
 
 @app.route('/edit_ldap_object_type/<ldap_object_type_label>',
            methods=('GET', 'POST'))
@@ -1487,62 +1193,16 @@ def edit_ldap_object_type(ldap_object_type_label):
     if ldap_object_type_label is not None:
         ldap_object_type = LDAPObjectType.query.filter_by(
             label = ldap_object_type_label).first()
-        selected_oc_choices = get_ot_oc_choices(ldap_object_type)
-        ot_oc_id_list = [oc[0] for oc in selected_oc_choices]
-        ppolicy_choices = [(ppolicy.get_attributes()['cn'][0],
-                            ppolicy.get_attributes()['cn'][0])
-                           for ppolicy in get_all_ppolicies()
-        ]
-        ppolicy_choices.append(('', 'Aucune'))
-        available_oc_choices = filter(
-            None,
-            [(oc.id,oc.label)
-             if oc.id not in ot_oc_id_list
-             and oc is not None
-             else None for oc in LDAPObjectClass.query.all()]
-        )
         form = LDAPObjectTypeForm(request.form)
         if request.method == 'POST':
-            ldap_object_type.label = form.label.data
-            ldap_object_type.description = form.description.data
-            ldap_object_type.ranges = form.ranges.data
-            ldap_object_type.apply_to = form.apply_to.data
-            ldap_object_type.ppolicy = form.ppolicy.data
-            db.session.add(ldap_object_type)
-            if form.object_classes.selected_oc.data is not None:
-                # On traite les ObjectClass ajoutées
-                for oc_id in form.object_classes.selected_oc.data :
-                    if oc_id not in ot_oc_id_list:
-                        print("Creation de l'Object Class id {0}".format(oc_id))
-                        ot_oc =  LDAPObjectTypeObjectClass(
-                            ldap_object_type.id, oc_id)
-                        db.session.add(ot_oc)
-                        # On traite les ObjectClass supprimées
-                        # et les fieldz associés en cascade
-                for oc_id in ot_oc_id_list:
-                    if oc_id not in form.object_classes.selected_oc.data:
-                        print("Suppression de l'Object Class id {0}".format(oc_id))
-                        LDAPObjectTypeObjectClass.query.filter_by(
-                            ldapobjecttype_id=ldap_object_type.id,
-                            ldapobjectclass_id= oc_id
-                        ).delete()
-            db.session.commit()
-            if form.set_ppolicy.data :
-                set_group_ppolicy(ldap_object_type.label,
-                                  ldap_object_type.ppolicy)
-            flash(u'{0} mis à jour'.format(ldap_object_type.description))
+            print(form.apply_to.data)
+            lac.create_ldap_object_from_add_object_type_form(form,
+                                                             ldap_object_type)
             return redirect(url_for('home'))
-        form.label.data = ldap_object_type.label
-        form.description.data = ldap_object_type.description
-        form.ranges.data = ldap_object_type.ranges
-        form.apply_to.data = ldap_object_type.apply_to
-        form.ppolicy.data = ldap_object_type.ppolicy
-        form.ppolicy.choices = ppolicy_choices
-        form.object_classes.selected_oc.choices = selected_oc_choices
-        form.object_classes.available_oc.choices = available_oc_choices
-
+        fm.set_edit_ldap_object_type_form_valuez(ldap_object_type, form)
         return render_template('edit_ldap_object_type.html',
                                form=form)
+
     else:
         flash(u'Type d\'ID non trouvé')
         return redirect(url_for('show_ldap_object_types'))
@@ -1554,7 +1214,6 @@ def add_ldap_object_type():
     if request.method == 'POST' and form.validate():
         ldap_object_type = LDAPObjectType()
         ldap_object_type.label = form.label.data
-        # ldap_object_type.ranges = form.ranges.data
         db.session.add(ldap_object_type)
         db.session.commit()
         flash(u'Type d\'objet LDAP "{0}" ajouté'.format(ldap_object_type.label))
@@ -1573,8 +1232,6 @@ def delete_ldap_object_types(ldap_object_type_label):
     flash(u'Objet {0} supprimé de la bdd'.format(ldap_object_type_label))
     return redirect(url_for('show_ldap_object_types'))
 
-
-
 @app.route('/show_ldap_object_types/')
 @login_required
 def show_ldap_object_types():
@@ -1582,12 +1239,11 @@ def show_ldap_object_types():
     return render_template('show_ldap_object_types.html',
                            ldap_object_types=ldap_object_types)
 
-
 @app.route('/show_ppolicies/')
 @login_required
 def show_ppolicies():
     ppolicies = [ppolicy.get_attributes()['cn'][0]
-                 for ppolicy in get_all_ppolicies()]
+                 for ppolicy in ldap.get_all_ppolicies()]
     return render_template('show_ppolicies.html',
                            ppolicies=ppolicies)
 
@@ -1597,37 +1253,25 @@ def add_ppolicy():
     form = AddPolicyForm(request.form)
     if request.method == 'POST' and form.validate():
         cn = form.cn.data.encode('utf-8')
-        dn = "cn={0},ou=policies,ou=system,{1}".format(
-            cn,
-            app.config['LDAP_SEARCH_BASE'])
-        add_record=[('cn',[cn]),
-                    ('pwdAttribute', ['userPassword']),
-                    ('objectClass', ['device', 'pwdPolicy'])]
-        if ldap.add(dn, add_record):
-            flash(u'PPolicy {0} ajoutée'.format(cn))
-        return redirect(url_for('edit_ppolicy',
-                                ppolicy_label= cn))
-    return render_template('add_ppolicy.html',
-                           form=form)
-
+        lac.add_ppolicy(cn)
+        return redirect(url_for('edit_ppolicy',ppolicy_label= cn))
+    return render_template('add_ppolicy.html',form=form)
 
 @app.route('/edit_ppolicy/<ppolicy_label>',
            methods=('GET', 'POST'))
 @login_required
 def edit_ppolicy(ppolicy_label):
     page = Page.query.filter_by(label = 'ppolicy').first()
-    form = generate_edit_ppolicy_form_class(page)(request.form)
+    form = fm.generate_edit_ppolicy_form_class(page)(request.form)
     fieldz = Field.query.filter_by(page_id = page.id,edit = True).all()
     fieldz_labelz = [field.label for field in fieldz]
-
     if request.method == 'POST' and form.validate() :
-        update_ldap_object_from_edit_ppolicy_form(form,
+        lac.update_ldap_object_from_edit_ppolicy_form(form,
                                                   fieldz_labelz,
                                                   ppolicy_label)
         return redirect(url_for('home'))
     else:
-        set_edit_ppolicy_form_values(form, fieldz_labelz, ppolicy_label)
-
+        fm.set_edit_ppolicy_form_values(form, fieldz_labelz, ppolicy_label)
     return render_template('edit_ppolicy.html',
                            form=form,
                            page=page,
@@ -1653,7 +1297,6 @@ def add_filesystem():
         return redirect(url_for('show_filesystems'))
     return render_template('add_filesystem.html',
                            form = add_form)
-
 
 @app.route('/edit_filesystem/<fs_label>',methods=('GET', 'POST'))
 @login_required
@@ -1681,7 +1324,6 @@ def delete_filesystem(fs_label):
     flash(u'Système de fichier {0} supprimé'.format(fs_label))
     return redirect(url_for('show_filesystems'))
 
-
 @app.route('/show_shells')
 @login_required
 def show_shells():
@@ -1702,7 +1344,6 @@ def add_shell():
         return redirect(url_for('show_shells'))
     return render_template('add_shell.html',
                            form = add_form)
-
 
 @app.route('/edit_shell/<shell_label>',methods=('GET', 'POST'))
 @login_required
@@ -1749,16 +1390,15 @@ def show_history(uid):
             raw_new_valuez = log_attrz['reqMod']
         if 'reqOld' in log_attrz:
             raw_old_valuez = log_attrz['reqOld']
-        new_valuez_dict = get_dict_from_raw_log_valuez(raw_new_valuez)
-        old_valuez_dict = get_dict_from_raw_log_valuez(raw_old_valuez)
+        new_valuez_dict = lac.get_dict_from_raw_log_valuez(raw_new_valuez)
+        old_valuez_dict = lac.get_dict_from_raw_log_valuez(raw_old_valuez)
         log = {'modified_by': log_attrz['reqAuthzID'][0],
-               'modified_date': generalized_time_sec_to_datetime(
+               'modified_date': converter.generalized_time_sec_to_datetime(
                    log_attrz['reqStart'][0] ),
                'new_valuez': new_valuez_dict,
                'old_valuez': old_valuez_dict}
         logz.append(log)
     ordered_logz = sorted(logz, key=lambda k: k['modified_date'], reverse=True)
-
     return render_template('show_history.html',
                                uid = uid,
                                logz=ordered_logz)
@@ -1771,246 +1411,15 @@ def refresh_cache():
     cache.populate_work_group()
     return redirect(url_for('home'))
 
-### Helperz
-
-def get_dict_from_raw_log_valuez(raw_valuez):
-    valuez = {}
-    for raw_value in raw_valuez:
-        # print(raw_value)
-        raw_value_split = raw_value.split(":")
-        attr_name = raw_value_split[0]
-        attr_operation = raw_value_split[1][:1]
-        attr_value = raw_value_split[1][1:]
-        if attr_name in [
-                'userPassword',
-                'sambaNTPassword',
-                'pwdHistory'
-        ]:
-            attr_value = '<PASSWORD_HASH>'
-        elif attr_name in [
-        'pwdChangedTime',
-        'modifyTimestamp',
-        'pwdFailureTime',
-        ]:
-            if attr_value != "":
-                attr_value = generalized_time_to_datetime(
-                    attr_value.strip())
-
-
-        if attr_name not in [
-                'entryCSN',
-                'modifiersName',
-                'modifyTimestamp',
-                'uidNumber'
-        ]:
-            if attr_name in valuez:
-                valuez[attr_name].append(
-                    (attr_value ,
-                     attr_operation)
-                )
-            else:
-                valuez[attr_name] = [(attr_value, attr_operation)]
-    return valuez
-
-def allowed_file(filename):
-    print("filename : {0}".format(filename))
-    print(filename.rsplit('.', 1)[1])
-
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
-
-def set_default_quota_form_values(form, storage):
-    default_size_unit = form.cinesQuotaSizeHard.unit.default
-    default_inode_unit = form.cinesQuotaInodeHard.unit.default
-    cinesQuotaSizeHard = int(
-        storage['cinesQuotaSizeHard'][0]
-    ) / default_size_unit
-    cinesQuotaSizeSoft = int(
-        storage['cinesQuotaSizeSoft'][0]
-    ) / default_size_unit
-    cinesQuotaInodeHard = int(
-        storage['cinesQuotaInodeHard'][0]
-    ) / default_inode_unit
-    cinesQuotaInodeSoft = int(
-        storage['cinesQuotaInodeSoft'][0]
-    ) / default_inode_unit
-    form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard
-    form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft
-    form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard
-    form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft
-
-def get_default_quota_form_value(storage, default_storage, form, field_name):
-    default_inode_unit = form.cinesQuotaInodeHardTemp.unit.default
-    default_size_unit = form.cinesQuotaSizeHardTemp.unit.default
-
-    if field_name in storage:
-        stored_value = storage[field_name][0]
-        default = False
-    else:
-        stored_value = default_storage[
-            app.config['QUOTA_FIELDZ'][field_name]['default']
-        ][0]
-        default = True
-
-    display_value = int(stored_value) / (
-        default_size_unit if app.config[
-            'QUOTA_FIELDZ'][field_name]['type'] == 'size'
-        else default_inode_unit
-    )
-
-    return (display_value, default)
-
-def set_quota_form_values(form, storage):
-    default_storage_cn = storage['cn'][0].split('.')[0]
-    default_storage = ldap.get_default_storage(default_storage_cn).get_attributes()
-    date_now = datetime.now()
-
-    default_fieldz = []
-    cinesQuotaSizeHard = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaSizeHard')
-    cinesQuotaSizeSoft = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaSizeSoft')
-    cinesQuotaInodeHard = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaInodeHard')
-    cinesQuotaInodeSoft = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaInodeSoft')
-    cinesQuotaSizeHardTemp = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaSizeHardTemp')
-    cinesQuotaSizeSoftTemp = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaSizeSoftTemp')
-    cinesQuotaInodeHardTemp = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaInodeHardTemp')
-    cinesQuotaInodeSoftTemp = get_default_quota_form_value(
-        storage,
-        default_storage,
-        form,
-        'cinesQuotaInodeSoftTemp')
-    cinesQuotaSizeTempExpire = datetime.fromtimestamp(
-        float(storage['cinesQuotaSizeTempExpire'][0])
-    ) if 'cinesQuotaSizeTempExpire' in storage else date_now
-    cinesQuotaInodeTempExpire =  datetime.fromtimestamp(
-        float(storage['cinesQuotaInodeTempExpire'][0])
-    ) if 'cinesQuotaInodeTempExpire' in storage else date_now
-
-    form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard[0]
-    form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft[0]
-    form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard[0]
-    form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft[0]
-    form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp[0]
-    form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp[0]
-    form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp[0]
-    form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp[0]
-    form.cinesQuotaSizeTempExpire.data = cinesQuotaSizeTempExpire
-    form.cinesQuotaInodeTempExpire.data = cinesQuotaInodeTempExpire
-    if cinesQuotaSizeHard[1]:
-        default_fieldz.append('cinesQuotaSizeHard')
-    if cinesQuotaSizeSoft[1]:
-        default_fieldz.append('cinesQuotaSizeSoft')
-    if cinesQuotaInodeHard[1]:
-        default_fieldz.append('cinesQuotaInodeHard')
-    if cinesQuotaInodeSoft[1]:
-        default_fieldz.append('cinesQuotaInodeSoft')
-    if cinesQuotaSizeHardTemp[1]:
-        default_fieldz.append('cinesQuotaSizeHardTemp')
-    if cinesQuotaSizeSoftTemp[1]:
-        default_fieldz.append('cinesQuotaSizeSoftTemp')
-    if cinesQuotaInodeHardTemp[1]:
-         default_fieldz.append('cinesQuotaInodeHardTemp')
-    if cinesQuotaInodeSoftTemp[1]:
-        default_fieldz.append('cinesQuotaInodeSoftTemp')
-
-    return default_fieldz
-
-def disable_account(user):
-    user_attr = user.get_attributes()
-    new_shadow_expire_datetime = datetime.now() - timedelta(days=1)
-    new_shadow_expire = str(datetime_to_days_number(new_shadow_expire_datetime))
-    ldap.update_uid_attribute(user_attr['uid'][0],
-                              [('shadowExpire', new_shadow_expire)]
-                          )
-    flash(u'Compte {0} désactivé'.format(user_attr['uid'][0]))
-
-def enable_account(user):
-    user_uid = user.get_attributes()['uid'][0]
-    if get_group_from_member_uid(user_uid) == 'ccc':
-        new_shadow_expire_datetime = days_number_to_datetime(
-            user.get_attributes()['cinesdaterenew'][0]
-        ) + relativedelta(
-            months = +app.config['SHADOW_DURATION']
-        )
-        new_shadow_expire = str(
-            datetime_to_days_number(new_shadow_expire_datetime))
-        ldap.update_uid_attribute(user_uid,
-                                  [('shadowExpire', new_shadow_expire)]
-        )
-    else:
-        ldap.remove_uid_attribute(user_uid,
-                                  [('shadowExpire', None)])
-def populate_lac_admin_choices(form):
-    memberz = [ get_uid_from_dn(dn) for dn in ldap.get_lac_admin_memberz() ]
-    all_userz = get_all_users()
-    selected_memberz = [ (uid, uid) for uid in memberz ]
-    available_userz = [ (user.get_attributes()['uid'][0],
-                         user.get_attributes()['uid'][0])
-                        for user in all_userz
-                        if user.get_attributes()['uid'][0] not in memberz]
-    form.available_memberz.choices = available_userz
-    form.selected_memberz.choices = selected_memberz
-
-
-def populate_ldap_admin_choices(form):
-    memberz = [ get_uid_from_dn(dn) for dn in ldap.get_ldap_admin_memberz() ]
-    all_userz = get_all_users()
-    selected_memberz = [ (uid, uid) for uid in memberz ]
-    available_userz = [ (user.get_attributes()['uid'][0],
-                         user.get_attributes()['uid'][0])
-                        for user in all_userz
-                        if user.get_attributes()['uid'][0] not in memberz]
-    form.available_memberz.choices = available_userz
-    form.selected_memberz.choices = selected_memberz
-
-
-def get_c4_groupz_choices():
-    existing_groupz = [
-        group.get_attributes()['cn'][0] for group in get_all_groups()]
-    c4_projectz = C4Projet.query.all()
-    c4_groupz_choices = [(project.code_projet, project.code_projet)
-                         for project in c4_projectz
-                         if project.code_projet not in existing_groupz]
-    c4_groupz_choices.insert(0, ('', '---'))
-
-    return c4_groupz_choices
+### Funkz to load at app startup
 
 @app.before_first_request
 def init_populate_grouplist():
     cache.populate_grouplist()
 
-
 @app.before_first_request
 def init_populate_people_group():
     cache.populate_people_group()
-
 
 @app.before_first_request
 def init_populate_work_group():
@@ -2018,809 +1427,23 @@ def init_populate_work_group():
 
 @app.before_first_request
 def init_populate_last_used_idz():
-    populate_last_used_idz()
-
-def populate_last_used_idz():
-    ignore_ot_list = ['reserved', 'grLight', 'grPrace']
-    ldap_otz = LDAPObjectType.query.all()
-    for ldap_ot in ldap_otz:
-        if ldap_ot.label not in ignore_ot_list:
-            last_used_id = get_last_used_id(ldap_ot)
-            id_range = get_range_list_from_string(ldap_ot.ranges)
-            if int(last_used_id) not in id_range:
-                last_used_id = id_range[0]
-            ldap_ot.last_used_id = last_used_id
-            db.session.add(ldap_ot)
-    db.session.commit()
-
-
-
-
-def create_ldapattr_if_not_exists(label):
-    db_attr = LDAPAttribute.query.filter_by(
-        label = label
-    ).first()
-    if db_attr is None:
-        db_attr = LDAPAttribute(label=label)
-    return db_attr
-
-
-def create_ldap_object_from_add_group_form(form, page_label):
-    ot = LDAPObjectType.query.filter_by(label = page_label).first()
-    cn = form.cn.data.encode('utf-8')
-    description = form.description.data.encode('utf-8')
-    filesystem = form.filesystem.data.encode('utf-8')
-    id_number = str(get_next_id_from_ldap_ot(ot))
-    object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8') for oc_ot in
-                      LDAPObjectTypeObjectClass.query.filter_by(
-                          ldapobjecttype_id = ot.id).all()]
-    if not object_classes:
-        flash(u'ObjectClasss manquants pour ce type d\'objet')
-        return 0
-
-    full_dn = "cn={0},ou={1},ou=groupePosix,{2}".format(cn,
-                                         ot.label,
-                                         app.config['LDAP_SEARCH_BASE'])
-    add_record = [('cn', [cn]),
-                  ('gidNumber', [id_number]),
-                  ('fileSystem', [filesystem]),
-                  ('objectClass', object_classes)]
-    if description:
-        add_record.append(('description', [description]))
-
-    if ldap.add(full_dn, add_record):
-        ot.last_used_id= id_number
-        db.session.add(ot)
-        db.session.commit()
-        cache.populate_grouplist()
-        cache.populate_people_group()
-        flash(u'Groupe créé')
-        return 1
-
-
-def create_ldap_object_from_add_user_form(form, fieldz, page):
-    ldap_ot = LDAPObjectType.query.filter_by(
-        label=page.label
-    ).first()
-    ldap_ot_ocz = LDAPObjectTypeObjectClass.query.filter_by(
-        ldapobjecttype_id = ldap_ot.id
-    ).all()
-    ot_oc_list = [oc.ldapobjectclass.label.encode('utf-8')
-                  for oc in ldap_ot_ocz]
-
-    form_attributez = []
-    uid = form.uid.data
-    for field in fieldz:
-        form_field_values = [
-            convert_display_mode_to_ldap(
-                entry.data,
-                field.fieldtype.type
-            )
-            for entry in getattr(form, field.label).entries
-]
-        if (field.label not in ['cinesUserToPurge', 'cn', 'cinesIpClient']
-            and form_field_values != [''] ):
-            form_attributez.append((field.label, form_field_values))
-        if (field.label == 'cinesIpClient' and form_field_values != ['']):
-            form_attributez.append((field.label, ';'.join(form_field_values)))
-        if field.label == 'gidNumber':
-            gid_number = form_field_values[0]
-            cache.add_to_people_group_if_not_member(
-                cache.get_posix_group_cn_by_gid(gid_number),
-                [uid.encode('utf-8')])
-    uid_number = get_next_id_from_ldap_ot(ldap_ot)
-    add_record = [('uid', [uid.encode('utf-8')]),
-                  ('cn', [uid.encode('utf-8')]),
-                  ('uidNumber', [str(uid_number).encode('utf-8')]),
-                  ('objectClass', ot_oc_list)]
-
-    add_record.extend(form_attributez)
-
-    add_record.append(
-        ('homeDirectory', "/home/{0}".format(uid).encode('utf-8')))
-
-    if 'cinesusr' in ot_oc_list:
-        add_record.append(
-            ('cinesSoumission', [get_initial_submission()])
-        )
-
-    if 'sambaSamAccount' in ot_oc_list:
-        add_record.append(
-            ('sambaSID', "{0}-{1}".format(ldap.get_sambasid_prefix(),
-                                                 uid_number))
-        )
-    if  page.label == 'ccc' and gid_number:
-        group_cn = cache.get_posix_group_cn_by_gid(gid_number)
-        ressource = C4Ressource.query.filter_by(
-                                        code_projet = group_cn).first()
-        if ressource:
-            comite = ressource.comite.ct
-        else:
-            comite = ''
-        if comite != '':
-            add_record.append(
-                ('cinesC4', comite.encode('utf-8'))
-            )
-
-    if ldap_ot.ppolicy != '':
-        add_record.append(
-            ('pwdPolicySubentry',
-             'cn={0},ou=policies,ou=system,{1}'.format(
-                 ldap_ot.ppolicy,
-                 app.config['LDAP_SEARCH_BASE'])
-            )
-        )
-
-    parent_dn = ldap.get_people_dn_from_ou(ldap_ot.label)
-    full_dn = "uid={0};{1}".format(uid,parent_dn)
-    if ldap.add(full_dn, add_record):
-        ldap_ot.last_used_id= uid_number
-        db.session.add(ldap_ot)
-        db.session.commit()
-        cache.populate_grouplist()
-        cache.populate_people_group()
-    else:
-        flash(u'L\'utilisateur n\'a pas été créé')
-
-    return True
-
-
-def create_ldap_quota(storage, group_id):
-    niou_cn = '{0}.{1}'.format(
-        storage,
-        group_id)
-    print("plop  : {0}".format(storage))
-    default_storage = ldap.get_default_storage(
-        storage).get_attributes()
-
-    default_size_unit = get_attr(
-        get_attr(SizeQuotaForm, 'unit'),'kwargs')['default']
-    default_inode_unit = get_attr(
-        get_attr(InodeQuotaForm, 'unit'),'kwargs')['default']
-    cinesQuotaSizeHard = str(int(
-        default_storage['cinesQuotaSizeHard'][0]
-    ) / default_size_unit)
-    cinesQuotaSizeSoft = str(int(
-        default_storage['cinesQuotaSizeSoft'][0]
-    ) / default_size_unit)
-    cinesQuotaInodeHard = str(int(
-        default_storage['cinesQuotaInodeHard'][0]
-    ) / default_inode_unit)
-    cinesQuotaInodeSoft = str(int(
-        default_storage['cinesQuotaInodeSoft'][0]
-    ) / default_inode_unit)
-    add_record = [('cn', [niou_cn]),
-                  ('objectClass', ['top', 'cinesQuota']),
-                  ('cinesQuotaSizeHard', cinesQuotaSizeHard),
-                  ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
-                  ('cinesQuotaInodeHard', cinesQuotaInodeHard),
-                  ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)
-    ]
-    print(group_id)
-    group_full_dn = ldap.get_full_dn_from_cn(
-        cache.get_posix_group_cn_by_gid(group_id))
-    full_dn = 'cn={0},{1}'.format(niou_cn,group_full_dn)
-    ldap.add(full_dn, add_record)
-    flash(u'Quota initialisé')
-
-def get_next_id_from_ldap_ot(ldap_ot):
-    id_range = get_range_list_from_string(ldap_ot.ranges)
-    next_index = id_range.index(ldap_ot.last_used_id)+1
-    if ldap_ot.apply_to == 'group':
-        id_type = 'gidNumber'
-    else:
-        id_type = 'uidNumber'
-    while 1:
-        test_id = id_range[next_index]
-        ldap_filter = '({0}={1})'.format(id_type, test_id)
-        raw_result = ldap.search(ldap_filter=ldap_filter,
-                                 attributes = [id_type])
-        if not raw_result:
-            return test_id
-        next_index += 1
-
-def get_range_list_from_string(rangez_string):
-    rangez = rangez_string.split(';')
-    rangez_lst = []
-    for range_string in rangez:
-        if range_string != '':
-            range_split = range_string.split('-')
-            rangez_lst.extend(range(
-                int(range_split[0]),
-                int(range_split[1])+1))
-    return sorted(set(rangez_lst))
-
-def get_last_used_id(ldap_ot):
-    attributes=['gidNumber'] if ldap_ot.apply_to == 'group' else ['uidNumber']
-    if ldap_ot.apply_to == 'group':
-        ldap_filter = '(objectClass=posixGroup)'
-    else:
-        ldap_filter = '(objectClass=posixAccount)'
-    base_dn='ou={0},ou={1},{2}'.format(
-        ldap_ot.label,
-        'groupePosix' if ldap_ot.apply_to == 'group' else 'people',
-        app.config['LDAP_SEARCH_BASE']
-    )
-    raw_resultz = ldap.search(base_dn,ldap_filter,attributes)
-    if raw_resultz:
-        resultz = get_search_results(
-        raw_resultz
-        )
-    else:
-        return 0
-    # print('{0} results : {1}'.format(
-    #     ldap_ot.label,
-    #     resultz))
-
-    max_id= 0
-    for result in resultz:
-        result_id = int(result.get_attributes()[attributes[0]][0])
-        if result_id > max_id:
-            max_id = result_id
-    return str(max_id)
-
-def get_filesystem_choices():
-    filesystems = Filesystem.query.all()
-    fs_choices = [ (fs.label, fs.description) for fs in filesystems]
-    return fs_choices
-
-def update_ldap_object_from_edit_ppolicy_form(form, attributes, cn):
-    ppolicy_attrz = get_ppolicy(cn).get_attributes()
-    pre_modlist = []
-    for attr in attributes:
-        field_value = getattr(form, attr).data.encode('utf-8')
-        print('form_field_value : {0}'.format(field_value))
-        if attr not in ppolicy_attrz or ppolicy_attrz[attr][0] != field_value:
-            # if attr == 'pwdMustChange':
-            #     pre_modlist.append((attr, [True if field_value else False]))
-            # else:
-            pre_modlist.append((attr, [field_value]))
-    print(pre_modlist)
-    ldap.update_cn_attribute(cn, pre_modlist)
-
-def update_ldap_object_from_edit_user_form(form, fieldz, uid, page):
-    uid_attributez = get_uid_detailz(uid).get_attributes()
-    pre_modlist = []
-    for field in fieldz:
-        form_values = [
-            convert_display_mode_to_ldap(
-                entry.data,
-                field.fieldtype.type
-            )
-            for entry in getattr(form, field.label).entries
-        ]
-        if field.label == 'cinesIpClient':
-            form_values = ';'.join(form_values)
-        if (field.label not in uid_attributez
-            or uid_attributez[field.label] != form_values):
-            if form_values == [''] or (field.label == 'cinesUserToPurge'
-                                       and True not in form_values):
-                form_values = None
-            if (
-                    field.label == 'cinesUserToPurge'
-                    and form_values
-                    and True in form_values
-            ):
-                form_values = ['1']
-            pre_modlist.append((field.label, form_values))
-
-            if  page.label == 'ccc' and field.label == 'gidNumber':
-                group_cn = cache.get_posix_group_cn_by_gid(form_values[0])
-                ressource = C4Ressource.query.filter_by(
-                                        code_projet = group_cn).first()
-                if ressource:
-                    comite = ressource.comite.ct
-                else:
-                    comite = ''
-                if comite != '':
-                    pre_modlist.append(
-                        ('cinesC4', comite.encode('utf-8'))
-                    )
-                print('Group: {0} && Comite: {1}'.format(group_cn, comite))
-
-    # print(pre_modlist)
-    ldap.update_uid_attribute(uid, pre_modlist)
-
-def upsert_otrs_user(uid):
-    user_attrz = get_uid_detailz(uid).get_attributes()
-    otrs_user = OTRSCustomerUser.query.filter_by(login = uid).first()
-    if not otrs_user:
-        otrs_user = OTRSCustomerUser(login = uid)
-
-    if 'telephoneNumber' in user_attrz:
-        telephone_number = ';'.join(
-            [phone for phone in user_attrz['telephoneNumber']])
-    else:
-        telephone_number = ''
-    user_type = LDAPObjectType.query.filter_by(
-        label = get_group_from_member_uid(uid)
-    ).first().description
-    first_gr_name = cache.get_posix_group_cn_by_gid(user_attrz['gidNumber'][0])
-    otrs_user.email = user_attrz['mail'][0]
-    otrs_user.customer_id = user_attrz['uidNumber'][0]
-    otrs_user.first_name = user_attrz['givenName'][0]
-    otrs_user.last_name = user_attrz['sn'][0]
-    otrs_user.phone = telephone_number
-    otrs_user.comments = '{0}; {1}'.format(user_type, first_gr_name)
-    otrs_user.valid_id = 1
-    otrs_user.create_time = datetime.now()
-    db.session.add(otrs_user)
-    db.session.commit()
-
-def delete_otrs_user(uid):
-    date = datetime.now().strftime("%Y%m%d%H%M")
-    disabled_login = "".join(['ZDEL', date, "_", uid])
-    # print(disabled_login)
-    otrs_user = OTRSCustomerUser.query.filter_by(login = uid).first()
-    otrs_user.login = disabled_login
-    otrs_user.valid_id = 2
-    db.session.add(otrs_user)
-
-    otrs_ticketz = OTRSTicket.query.filter_by(customer_user_id = uid).all()
-    for ticket in otrs_ticketz:
-        ticket.customer_user_id = disabled_login
-        db.session.add(ticket)
-
-    if is_cines_group(uid):
-        OTRSUser.query.filter_by(login=uid).update(
-            {
-                'valid_id': 2,
-                'login': disabled_login,
-                'change_time': datetime.now()
-            }, synchronize_session=False
-        )
-    db.session.commit()
-
-def update_ldap_object_from_edit_group_form(form, page, group_cn):
-    ldap_filter='(&(cn={0})(objectClass=posixGroup))'.format(group_cn)
-    attributes=['*','+']
-    detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
-    group_attributez = get_search_results(
-        detailz
-    )[0].get_attributes()
-    pagefieldz = Field.query.filter_by(page_id = page.id,
-                                       edit = True).all()
-    pre_modlist = []
-    for field in pagefieldz:
-        form_field_values = [entry.data.encode('utf-8')
-                             for entry in getattr(form, field.label).entries]
-        print('form_field_values : {0}'.format(form_field_values))
-        if ((field.label not in group_attributez)
-            or (group_attributez[field.label] != form_field_values)):
-            pre_modlist.append((field.label, form_field_values))
-    print(form.memberz.selected_memberz.data)
-    pre_modlist.append(
-        ('memberuid',
-         [
-             member.encode('utf-8') for member in
-             form.memberz.selected_memberz.data
-         ])
-    )
-    ldap.update_cn_attribute(group_cn, pre_modlist)
-
-def generate_kustom_batch_edit_form(page, attributez):
-    page_fieldz = dict(
-        (row.label, row)
-        for row in Field.query.filter_by(page_id = page.id).all()
-    )
-
-    class EditGroupForm(EditGroupBaseForm):
-        pass
-
-    for field_id in attributez:
-        print('field_id {0}'.format(field_id))
-        field = Field.query.filter_by(
-            id = field_id
-        ).first()
-        append_field_to_form(field,
-                             EditGroupForm)
-
-    form = EditGroupForm(request.form)
-    return form
-
-def generate_edit_group_form(page):
-    page_fieldz = Field.query.filter_by(page_id = page.id).all()
-
-    class EditGroupForm(EditGroupBaseForm):
-        pass
-
-    for field in page_fieldz:
-        append_fieldlist_to_form(field,
-                                 EditGroupForm)
-    return EditGroupForm(request.form)
-
-def generate_select_work_group_form(uid):
-    actual_work_groupz = ldap.get_work_groupz_from_member_uid(uid)
-    available_work_groupz = ldap.get_work_groupz()
-    selected_choices = [(group, group) for group in actual_work_groupz]
-    available_choices = [(group, group) for group in available_work_groupz
-                         if group not in actual_work_groupz]
-    form = SelectGroupzForm(request.form)
-    form.available_groupz.choices = available_choices
-    form.selected_groupz.choices = selected_choices
-
-    return form
-
-def generate_edit_user_form_class(page):
-    page_fieldz = Field.query.filter_by(page_id = page.id,
-                                        edit = True).all()
-    class EditForm(Form):
-        wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
-
-    for field in page_fieldz:
-        append_fieldlist_to_form(field, EditForm, page.label)
-
-    return EditForm
-
-def generate_add_user_form_class(page):
-    page_fieldz = Field.query.filter_by(page_id = page.id,
-                                        edit = True).all()
-    uid = TextField(u'Login (uid)')
-    class EditForm(Form):
-        wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
-
-    for field in page_fieldz:
-        append_fieldlist_to_form(field, EditForm, page.label)
-    setattr(EditForm,
-            "uid",
-            TextField("Login"))
-
-    return EditForm
-
-def generate_edit_ppolicy_form_class(page):
-    page_fieldz = Field.query.filter_by(page_id = page.id,
-                                        edit = True).all()
-    class EditForm(Form):
-        pass
-
-    for field in page_fieldz:
-        append_field_to_form(field, EditForm)
-
-    return EditForm
-
-
-def set_edit_group_form_values(form, fieldz, branch, cn=None):
-    if cn:
-        ldap_filter='(cn={0})'.format(cn)
-        attributes=['*','+']
-        base_dn='ou={0},ou=groupePosix,{1}'.format(
-            branch,
-            app.config['LDAP_SEARCH_BASE']
-        )
-
-        detailz = ldap.search(ldap_filter=ldap_filter,
-                              attributes=attributes,
-                              base_dn=base_dn)
-
-        group_attributez = get_search_results(
-            detailz
-        )[0].get_attributes()
-    else:
-        group_attributez = {}
-
-    for field in fieldz:
-        form_field = getattr(form, field.label)
-        while(len(form_field.entries)>0):
-            form_field.pop_entry()
-        if field.label in group_attributez and len(
-                group_attributez[field.label]):
-            for field_value in group_attributez[field.label]:
-                form_field.append_entry(
-                    convert_to_display_mode(field_value,
-                                            field.fieldtype.type))
-        else:
-            form_field.append_entry()
-
-
-def set_edit_user_form_values(form, fieldz, uid=None):
-    actual_work_groupz = ldap.get_work_groupz_from_member_uid(uid)
-    available_work_groupz = ldap.get_work_groupz()
-    selected_choices = [(group, group) for group in actual_work_groupz]
-    available_choices = [(group, group) for group in available_work_groupz
-                         if group not in actual_work_groupz]
-
-    form.wrk_groupz.available_groupz.choices = available_choices
-    form.wrk_groupz.selected_groupz.choices = selected_choices
-
-    if uid:
-        uid_attributez = get_uid_detailz(uid).get_attributes()
-    else:
-        uid_attributez = {}
-
-    for field in fieldz:
-        form_field = getattr(form, field.label)
-        while(len(form_field.entries)>0):
-            form_field.pop_entry()
-        if field.label in uid_attributez and len(uid_attributez[field.label]):
-            if field.label == "cinesIpClient":
-                uid_attributez[field.label] = [
-                    ip_address
-                    for ip_address in uid_attributez[field.label][0].split(";")
-                ]
-            for field_value in uid_attributez[field.label]:
-                if field.label != 'gidNumber':
-                    form_field.append_entry(
-                        convert_to_display_mode(field_value,
-                                                field.fieldtype.type))
-                else:
-                    form_field.append_entry(field_value)
-        else:
-            form_field.append_entry()
-
-
-
-def set_edit_ppolicy_form_values(form, fieldz_namez, ppolicy_cn=None):
-    if ppolicy_cn:
-        ppolicy_attz = get_ppolicy(ppolicy_cn).get_attributes()
-    else:
-        ppolicy_attz = {}
-
-    for field_name in fieldz_namez:
-        field = getattr(form, field_name)
-        if field_name in ppolicy_attz and len(ppolicy_attz[field_name]):
-            for field_value in ppolicy_attz[field_name]:
-                field.data = field_value.decode('utf-8')
-
-def generate_edit_page_admin_form(page):
-
-    # selection des attributs hérités des object classes
-    select_oc_choices = get_page_oc_choices(page)
-
-    page_oc_id_list = [oc[0] for oc in select_oc_choices]
-
-    page_oc_attr_list = get_attr_from_oc_id_list(page_oc_id_list)
-
-    page_oc_attr_id_list = [ a.id for a in page_oc_attr_list ]
-
-    print("page_oc_attr_id_list : {0}".format(page_oc_attr_id_list))
-
-    # Sélection des attributs indépendants des object classes
-    page_unic_attr_list = Field.query.filter(
-        Field.page_id==page.id,
-        ~Field.ldapattribute_id.in_(page_oc_attr_id_list)
-    ).all()
-    print("page_unic_attr_list : {0}".format(page_unic_attr_list))
-
-    print("fuuu {0}".format([a.ldapattribute_id for a in page_unic_attr_list]))
-    page_unic_attr_id_list = [attr.id for attr in page_unic_attr_list]
-    print("page_unic_attr_id_list {0}".format(page_unic_attr_id_list))
-
-    select_unic_attr_choices = filter(None, [(attr.id,
-                                              attr.label)
-                                             for attr in page_unic_attr_list ])
-
-    attributes = set(page_oc_attr_list)
-
-    attributes.update(
-        [attr.ldapattribute for attr in page_unic_attr_list]
-    )
-
-    if attributes is not None:
-        attr_label_list = sorted(set([ attr.label for attr in attributes ]))
-    else:
-        attr_label_list = set([])
-
-    class EditPageForm(EditPageViewForm):
-        pass
-
-
-    for label in attr_label_list:
-        existing_field = Field.query.filter_by(label=label,
-                                               page_id=page.id).first()
-        class EditFieldForm(Form):
-            display = BooleanField('Affichage du champ ',
-                                   default=existing_field.display
-                                   if existing_field is not None else None)
-            edit = BooleanField(u'Champ éditable ',
-                                   default=existing_field.edit
-                                   if existing_field is not None else None)
-            restrict = BooleanField(u'Champ restreint aux admins',
-                                    default=existing_field.restrict
-                                   if existing_field is not None else None)
-            multivalue = BooleanField(u'Champ multi-valeur',
-                                    default=existing_field.multivalue
-                                   if existing_field is not None else None)
-
-            display_mode = SelectField('Mode d\'affichage',
-                                       default=existing_field.fieldtype_id
-                                       if existing_field is not None else None,
-                                       choices=get_display_mode_choices())
-            desc = TextField(u'Description du champ',
-                             default=existing_field.description
-                             if existing_field is not None else None)
-            priority = TextField(u'Priorité',
-                                 default=existing_field.priority
-                                 if existing_field is not None else None)
-            block = SelectField('Bloc',
-                               default=existing_field.block
-                               if existing_field is not None else None,
-                               choices=[
-                                   (x, x) for x in list(
-                                       ' ABCDEFGHIJKLMNOPQRSTUVWXYZ')
-                               ])
-        setattr(EditPageForm, label, FormField(EditFieldForm))
-
-    form = EditPageForm(request.form)
-    form.oc_form.available_oc.choices = get_available_oc_choices(
-        page_oc_id_list
-    )
-    form.oc_form.selected_oc.choices = select_oc_choices
-    form.attr_form.available_attr.choices = get_available_unic_attr_choices(
-        page_unic_attr_id_list
-    )
-    form.attr_form.selected_attr.choices = select_unic_attr_choices
-
-    return {'form' : form,
-            'attr_label_list': attr_label_list,
-            'page_oc_id_list': page_oc_id_list,
-            'page_unic_attr_id_list': page_unic_attr_id_list}
-
-
-def update_fields_from_edit_page_admin_form(form, attributes, page):
-    Field.query.filter(Field.page_id == page.id,
-                       ~Field.label.in_(attributes)
-    ).delete(synchronize_session='fetch')
-
-    for attribute in attributes:
-        attribute_field = getattr(form, attribute)
-        upsert_field(attribute, attribute_field, page)
-
-
-def create_default_field(attribute, page):
-    print("Create default {0} for {1}".format(attribute, page.label))
-    field_type = FieldType.query.filter_by(type='Text').first()
-    page_attr = Field(label = attribute.label,
-                      page = page,
-                      ldapattribute = attribute,
-                      fieldtype=field_type)
-    db.session.add(page_attr)
-    db.session.commit()
-    return page_attr
-
-def upsert_field(attr_label, form_field, page):
-    print('Upsert field {0}'.format(attr_label))
-    attribute = LDAPAttribute.query.filter_by(label = attr_label).first()
-    field_type = FieldType.query.filter_by(
-        id=form_field.display_mode.data
-    ).first()
-    existing_field = Field.query.filter_by(page_id=page.id,
-                                           label=attribute.label,
-                                           ldapattribute_id=attribute.id
-    ).first()
-    if existing_field is not None:
-        existing_field.display = form_field.display.data
-        existing_field.edit = form_field.edit.data
-        existing_field.restrict = form_field.restrict.data
-        existing_field.fieldtype = field_type
-        existing_field.description = form_field.desc.data
-        existing_field.multivalue = form_field.multivalue.data
-        existing_field.priority = form_field.priority.data
-        existing_field.block = form_field.block.data
-    else:
-        new_field = Field(label=attribute.label,
-                          page=page,
-                          ldapattribute=attribute,
-                          display=form_field.display.data,
-                          edit=form_field.edit.data,
-                          restrict=form_field.restrict.data,
-                          fieldtype=field_type,
-                          description=form_field.desc.data,
-                          multivalue=form_field.multivalue.data,
-                          priority=form_field.priority.data,
-                          block=form_field.block.data)
-        db.session.add(new_field)
-def add_user_to_lac_admin(user):
-    ldap.update_uid_attribute(user, pre_modlist)
-
-
-def get_account_branch_from_group_branch(group_branch):
-    for branch in app.config['BRANCHZ']:
-        if branch['group'] == group_branch:
-            print( branch['account'])
-            return branch['account']
-
-
-def get_display_mode_choices():
-    field_types = FieldType.query.all()
-    display_mode_choices = [(field_type.id, field_type.type)
-                            for field_type in field_types]
-    return display_mode_choices
-
-def get_available_unic_attr_choices(page_unic_attr_id_list):
-    available_unic_attr = LDAPAttribute.query.all()
-    available_unic_attr_choices = filter(
-        None, [(attr.id,attr.label)
-               if attr.id not in page_unic_attr_id_list
-               and attr is not None
-               else None for attr in available_unic_attr]
-    )
-    return available_unic_attr_choices
-
-def get_available_oc_choices(selected_oc_id_list):
-    available_oc = LDAPObjectClass.query.all()
-    available_oc_choices = filter(None, [(oc.id,oc.label)
-                                      if oc.id not in selected_oc_id_list
-                                      and oc is not None
-                                      else None for oc in available_oc])
-    return available_oc_choices
-
-def get_page_oc_choices(page):
-    page_oc_list = PageObjectClass.query.filter_by(page_id=page.id).all()
-    select_oc_choices = filter(None,[(oc.ldapobjectclass.id,
-                                      oc.ldapobjectclass.label)
-                                     for oc in page_oc_list ])
-    return select_oc_choices
-
-def get_ot_oc_choices(object_type):
-    ot_oc_list = LDAPObjectTypeObjectClass.query.filter_by(
-        ldapobjecttype_id=object_type.id).all()
-    select_oc_choices = filter(None,[(oc.ldapobjectclass.id,
-                                      oc.ldapobjectclass.label)
-                                     for oc in ot_oc_list ])
-    return select_oc_choices
-
-def get_attr_from_oc_id_list(oc_id_list):
-    oc_attr_list = LDAPObjectClassAttribute.query.filter(
-        LDAPObjectClassAttribute.ldapobjectclass_id.in_(oc_id_list)
-    ).all()
-    oc_attr_id_list = [oc_attr.ldapattribute_id for oc_attr in oc_attr_list]
-    attr_list = LDAPAttribute.query.filter(
-        LDAPAttribute.id.in_(oc_attr_id_list)
-    ).all()
-    return attr_list
-
-def get_group_from_member_uid(uid):
-    for branch in app.config['BRANCHZ']:
-        people_group = branch['account']
-        if uid in r.smembers("people_groupz:{0}".format(people_group)):
-            return people_group
-app.jinja_env.globals.update(
-    get_group_from_member_uid=get_group_from_member_uid
-)
-
-def get_cinesdaterenew_from_uid(uid):
-    page = Page.query.filter_by(label='ccc').first()
-    field = Field.query.filter_by(
-        page_id = page.id,
-        label = 'cinesdaterenew').first()
-    ldap_filter='(uid={0})'.format(uid)
-    attributes=['cinesdaterenew']
-    base_dn='ou=people,{0}'.format(
-        app.config['LDAP_SEARCH_BASE']
-    )
-    records = get_search_results(
-        ldap.search(base_dn,ldap_filter,attributes)
-    )
-    uid_attrz= records[0].get_attributes()
-    if 'cinesdaterenew' in uid_attrz:
-        date_renew = convert_to_display_mode(
-            uid_attrz['cinesdaterenew'][0], field.fieldtype.type
-        )
-    else:
-        date_renew = ''
-    return date_renew
-app.jinja_env.globals.update(
-    get_cinesdaterenew_from_uid=get_cinesdaterenew_from_uid)
+    lac.populate_last_used_idz()
 
 def get_attr(form, name):
     return getattr(form, name)
-app.jinja_env.globals.update(get_attr=get_attr)
 
 def get_type(obj):
     return str(type(obj))
+
+# jinja funkz
+
+app.jinja_env.globals.update(get_attr=get_attr)
+
+app.jinja_env.globals.update(
+    get_cinesdaterenew_from_uid=lac.get_cinesdaterenew_from_uid)
+
+
 app.jinja_env.globals.update(get_type=get_type)
-
-def get_posix_groupz_memberz(groupz_infoz):
-    memberz = []
-    for branch, cn in groupz_infoz:
-        memberz.extend(ldap.get_posix_group_memberz(branch, cn))
-    return memberz
-
-# def get_groupz_person_memberz(group_list):
-#     memberz = []
-#     for group in group_list:
-#         memberz.extend(ldap.get_people_group_memberz(group))
-#     return memberz
 
 app.jinja_env.globals.update(
     get_branch_from_posix_group_gidnumber=ldap.get_branch_from_posix_group_gidnumber
@@ -2830,440 +1453,14 @@ app.jinja_env.globals.update(
     get_branch_from_posix_group_dn=ldap.get_branch_from_posix_group_dn
 )
 
-def get_list_from_submission_attr(sub_attr):
-    sub_list = []
-    for group in sub_attr.split(';'):
-        split_group = group.split('=')
-        if split_group != ['']:
-            sub_list.append((split_group[0],split_group[1]))
-    return sub_list
-
-def get_initial_submission():
-    submission_groupz_list = ldap.get_submission_groupz_list()
-    initial_submission = ''.join([
-        '{0}=0;'.format(submission_group)
-        for submission_group in submission_groupz_list
-    ])
-    return initial_submission
-
-def get_user_pwd_policy(uid):
-    ldap_filter = "(&(objectClass=posixAccount)(uid={0}))".format(uid)
-    user = get_search_results(
-        ldap.anonymous_search(ldap_filter=ldap_filter,
-                          attributes=['pwdPolicySubentry'])
-    )[0].get_attributes()
-    if 'pwdPolicySubentry' in user:
-        subentry_filter = '(entryDN={0})'.format(user['pwdPolicySubentry'][0])
-    else:
-        subentry_filter = '(&(objectClass=pwdPolicy)(cn=passwordDefault))'
-    base_dn = 'ou=policies,ou=system,{0}'.format(app.config['LDAP_SEARCH_BASE'])
-    pwd_policy = get_search_results(
-        ldap.anonymous_search(ldap_filter=subentry_filter,
-                         attributes=['*'])
-    )[0].get_attributes()
-    return pwd_policy
-
-def get_uid_detailz(uid):
-    ldap_filter='(uid={0})'.format(uid)
-    attributes=['*','+']
-    raw_detailz = ldap.search(ldap_filter=ldap_filter,attributes=attributes)
-    if not raw_detailz:
-        flash(u'Utilisateur {0} non trouvé'.format(uid))
-        uid_detailz = None
-    else:
-        uid_detailz = get_search_results(raw_detailz)[0]
-
-    return uid_detailz
-
-
-
-# def get_lac_admin_memberz():
-#     ldap_filter='(cn=lacadmin)'
-#     attributes=['member']
-#     raw_resultz = get_search_results(
-#         ldap.search(ldap_filter=ldap_filter,attributes=attributes)
-#     )
-#     memberz = raw_resultz[0].get_attributes()['member']
-#     return memberz
-
-def get_uid_from_dn(dn):
-    m = re.search('uid=(.+?),', dn)
-    if m:
-        return m.group(1)
-    else:
-        return ''
-
-def get_all_users():
-    base_dn = "ou=people,{0}".format(app.config['LDAP_SEARCH_BASE'])
-    ldap_filter='(objectclass=inetOrgPerson)'
-    attributes=['*','+']
-    userz = get_search_results(
-        ldap.search(ldap_filter=ldap_filter,
-                    attributes=attributes,
-                    base_dn=base_dn)
-    )
-    return userz
-
-def get_all_groups():
-    base_dn = "{0}".format(app.config['LDAP_SEARCH_BASE'])
-    ldap_filter='(objectclass=posixGroup)'
-    attributes=['*','+']
-    groupz = get_search_results(
-        ldap.search(ldap_filter=ldap_filter,
-                    attributes=attributes,
-                    base_dn=base_dn)
-    )
-    return groupz
-
-def get_all_ppolicies():
-    base_dn = "ou=policies,ou=system,{0}".format(app.config['LDAP_SEARCH_BASE'])
-    ldap_filter='(objectclass=pwdPolicy)'
-    attributes=['*','+']
-    userz = get_search_results(
-        ldap.search(ldap_filter=ldap_filter,
-                    attributes=attributes,
-                    base_dn=base_dn)
-    )
-    return userz
-
-def get_ppolicy(ppolicy_label):
-    base_dn = "ou=policies,ou=system,{0}".format(app.config['LDAP_SEARCH_BASE'])
-    ldap_filter='(&(objectclass=pwdPolicy)(cn={0}))'.format(ppolicy_label)
-    attributes=['*','+']
-    ppolicy = get_search_results(
-        ldap.search(ldap_filter=ldap_filter,
-                    attributes=attributes,
-                    base_dn=base_dn)
-    )[0]
-    return ppolicy
-
-def get_subschema():
-    ldap_filter='(objectclass=*)'
-    base_dn='cn=subschema'
-    attributes=['*','+']
-    scope=SCOPE_BASE
-    raw_schema = ldap.search(ldap_filter=ldap_filter,
-                          base_dn=base_dn,
-                          attributes=attributes,
-                          scope=scope)
-    subschema_entry = get_search_results(raw_schema)[0]
-    subschema_subentry = subschema_entry.get_attributes()
-    subschema = schema.subentry.SubSchema( subschema_subentry )
-    return subschema
-
-def process_ldap_result(resultz):
-    for result in resultz:
-        print("Pretty print : {0}".format(result.pretty_print()))
-        for attribute in result.get_attributes():
-            if attribute == 'gidNumber':
-                result[line][1][attribute][0]=cache.get_posix_group_cn_by_gid(
-                    result[line][1][attribute][0]
-                )
-            if attribute == 'createTimestamp' or attribute == 'authTimestamp':
-                result[line][1][attribute][0]= generalized_time_to_datetime(
-                    result[line][1][attribute][0]
-                )
-
-            if attribute == 'cinesdaterenew':
-                result[line][1][attribute][0] = datetime.fromtimestamp(
-                    # 86400 == nombre de secondes par jour
-                    int(result[line][1][attribute][0]) * 86400
-                )
-    return result
-
-def is_active(user):
-    user_attrz = user.get_attributes()
-    if 'shadowExpire' in user_attrz and datetime.now()>days_number_to_datetime(
-            user_attrz['shadowExpire'][0]
-    ):
-        return False
-    else:
-        return True
-
-
-def set_submission(uid, group, state):
-    old_cines_soumission = get_search_results(
-        ldap.search(
-            ldap_filter='(uid={0})'.format(uid),
-            attributes=['cinesSoumission']
-        )
-    )[0].get_attributes()['cinesSoumission'][0]
-    if group in old_cines_soumission:
-        new_cines_soumission = re.sub(r'(.*{0}=)\d(.*)'.format(group),
-                                  r"\g<1>{0}\2".format(str(state)),
-                                  old_cines_soumission)
-    else:
-        new_cines_soumission = "{0}{1}={2};".format(old_cines_soumission,
-                                                    group,
-                                                    state)
-    pre_modlist = [('cinesSoumission', new_cines_soumission)]
-    ldap.update_uid_attribute(uid, pre_modlist)
-    flash(u'Soumission mis à jour pour le groupe {0}'.format(group))
-
-def set_group_ppolicy(group, ppolicy):
-    memberz = ldap.get_people_group_memberz(group)
-    ppolicy_value = 'cn={0},ou=policies,ou=system,{1}'.format(
-        ppolicy,
-        app.config['LDAP_SEARCH_BASE']) if ppolicy != '' else None
-    pre_modlist= [('pwdPolicySubentry',
-                   ppolicy_value)]
-
-    for member in memberz:
-        ldap.update_uid_attribute(member, pre_modlist)
-
-def update_default_quota(storage_cn, form):
-    cinesQuotaSizeHard = get_quota_value_from_form(
-        form,
-        'cinesQuotaSizeHard')
-    cinesQuotaSizeSoft = get_quota_value_from_form(
-        form,
-        'cinesQuotaSizeSoft')
-    cinesQuotaInodeHard = get_quota_value_from_form(
-        form,
-        'cinesQuotaInodeHard')
-    cinesQuotaInodeSoft = get_quota_value_from_form(
-        form,
-        'cinesQuotaInodeSoft')
-    pre_modlist = [('cinesQuotaSizeHard', cinesQuotaSizeHard),
-                   ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
-                   ('cinesQuotaInodeHard', cinesQuotaInodeHard),
-                   ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
-    ldap.update_cn_attribute(storage_cn, pre_modlist)
-
-def get_quota_value_from_form(form, quota):
-    field = getattr(form, quota)
-    value = str(
-        int(
-            field.value.data
-        ) * int(
-            field.unit.data)
-    ).encode('utf-8')
-    return value
-
-def update_quota(storage, form):
-    default_storage_cn = storage['cn'][0].split('.')[0]
-    default_storage = ldap.get_default_storage(default_storage_cn).get_attributes()
-
-    pre_modlist = []
-
-    for field_name in app.config['QUOTA_FIELDZ']:
-        form_value = get_quota_value_from_form(
-            form,
-            field_name)
-        default_field = app.config['QUOTA_FIELDZ'][field_name]['default']
-        if (
-                form_value != default_storage[default_field][0]
-                and (field_name not in storage
-                     or  form_value != storage[field_name][0])
-        ):
-            print('form_value : {0} field_name : {1}  default_storage[default_field] : {2}'.format(form_value, field_name,  default_storage[default_field]))
-            pre_modlist.append((field_name, form_value))
-
-
-    cinesQuotaSizeTempExpire = datetime_to_timestamp(
-        form.cinesQuotaSizeTempExpire.data
-    ).encode('utf-8')
-    if cinesQuotaSizeTempExpire != storage['cinesQuotaSizeTempExpire']:
-        pre_modlist.append(('cinesQuotaSizeTempExpire',
-                            cinesQuotaSizeTempExpire))
-
-    cinesQuotaInodeTempExpire = datetime_to_timestamp(
-        form.cinesQuotaInodeTempExpire.data
-    ).encode('utf-8')
-
-    if cinesQuotaInodeTempExpire != storage['cinesQuotaInodeTempExpire']:
-        pre_modlist.append(('cinesQuotaInodeTempExpire',
-                            cinesQuotaInodeTempExpire))
-    ldap.update_cn_attribute(storage['cn'][0], pre_modlist)
-
-
-
-def is_ccc_group(member):
-    return 'ccc' == get_group_from_member_uid(member)
-
-def is_cines_group(uid):
-    return 'cines' == get_group_from_member_uid(uid)
-
-def is_principal_group(member, group):
-    return cache.get_posix_group_cn_by_gid(member['gidNumber'][0]) == group
-
-
-def generalized_time_to_datetime(generalized_time):
-    if len(generalized_time) > 14:
-        m = re.search('^\d{14}', generalized_time)
-        generalized_time = '{0}Z'.format(m.group(0))
-    created_datetime = datetime.strptime(
-        generalized_time, "%Y%m%d%H%M%SZ"
-    )
-    created_datetime = utc.localize(created_datetime)
-    created_datetime = created_datetime.astimezone(
-        timezone(app.config['TIMEZONE'])
-    )
-    return created_datetime
-
-
-def datetime_to_generalized_time(da_datetime):
-    return da_datetime.strftime("%Y%m%d%H%M%SZ")
-
-
-def generalized_time_sec_to_datetime(generalized_time):
-    created_datetime = datetime.strptime(
-        generalized_time, "%Y%m%d%H%M%S.%fZ"
-    )
-    created_datetime = utc.localize(created_datetime)
-    created_datetime = created_datetime.astimezone(
-        timezone(app.config['TIMEZONE'])
-    )
-    return created_datetime
-
-def datetime_to_generalized_time_sec(da_datetime):
-    return da_datetime.strftime("%Y%m%d%H%M%S.%fZ")
-
-def datetime_to_timestamp(date):
-    return str(int(time.mktime(
-        datetime.strptime(str(date), "%Y-%m-%d").timetuple()
-    )))
-
-
-def datetime_to_days_number(datetime):
-    return (int(datetime.strftime("%s"))/86400)+1
-
-def days_number_to_datetime(nb):
-    return datetime.fromtimestamp(
-        # 86400 == nombre de secondes par jour
-        int(nb) * 86400
-    )
-
-def convert_to_display_mode(value, display_mode):
-    if display_mode in  ('Text', 'Filesystem', 'Shell', 'TextArea') :
-        return value.decode('utf-8')
-    elif display_mode == 'Datetime' :
-        return value.strftime(
-            app.config['DATE_FORMAT'])
-    elif display_mode == 'Generalizedtime' :
-        return generalized_time_to_datetime(value)
-    elif display_mode == 'GIDNumber' :
-        return cache.get_posix_group_cn_by_gid(value)
-    elif display_mode == 'DaysNumber' :
-        return days_number_to_datetime(value)
-    elif display_mode == 'Checkbox' :
-        if value == True:
-            return "Oui"
-        else:
-            return "Non"
-
 app.jinja_env.globals.update(
-    convert_to_display_mode = convert_to_display_mode
+    get_group_from_member_uid=cache.get_group_from_member_uid
 )
-
-def convert_display_mode_to_ldap(value, display_mode):
-    if value is None:
-        return ''
-    if display_mode in  ('Text', 'Filesystem', 'Shell') :
-        return value.encode('utf-8')
-    elif display_mode == 'Generalizedtime' :
-        return datetime_to_generalized_time(value).encode('utf-8')
-    elif display_mode == 'DaysNumber' :
-        return str(datetime_to_days_number(value)).encode('utf-8')
-    else:
-        return value.encode('utf-8')
-
-def set_validators_to_form_field(form, field, validators):
-    form_field_kwargs = get_attr(
-        get_attr(form, field),'kwargs')
-
-    # print(get_attr(form, field))
-    # if 'validators' in form_field_kwargs:
-    #     form_field_kwargs['validators'].extend(validators)
-    # else:
-    form_field_kwargs['validators'] = validators
-
-    # print(form_field_kwargs['validators'])
-
-# def get_gid_from_posix_group_cn(cn):
-#     for gid, group_cn in r.hgetall('grouplist').iteritems():
-#         if group_cn == cn:
-#             return gid
-
 
 app.jinja_env.globals.update(
     get_posix_group_cn_by_gid=cache.get_posix_group_cn_by_gid
 )
-def get_shellz_choices():
-    shellz = Shell.query.all()
-    shellz_choices = [ (shell.path, shell.label) for shell in shellz ]
-    return shellz_choices
 
-def append_field_to_form(field, form):
-    if field.fieldtype.type == 'Text':
-        setattr(form,
-                field.label,
-                TextField(field.description))
-    elif field.fieldtype.type in app.config['DATE_FIELDTYPEZ']:
-        setattr(form,
-                field.label,
-                DateField(field.description,
-                          format=app.config['DATE_FORMAT']))
-    elif  field.fieldtype.type == 'GIDNumber':
-        setattr(form,
-                field.label,
-                SelectField(field.description,
-                            choices=ldap.get_posix_groupz_choices()))
-    elif field.fieldtype.type == 'Submission':
-        setattr(form,
-                field.label,
-                FormField(EditSubmissionForm))
-    elif  field.fieldtype.type == 'Shell':
-        setattr(form,
-                field.label,
-                SelectField(field.description,
-                            choices=get_shellz_choices()))
-    elif  field.fieldtype.type == 'Filesystem':
-        setattr(form,
-                field.label,
-                SelectField(field.description,
-                            choices=get_filesystem_choices()))
-    elif  field.fieldtype.type == 'Checkbox':
-        setattr(form,
-                field.label,
-                BooleanField(field.description))
-    elif  field.fieldtype.type == 'TextArea':
-        setattr(form,
-                field.label,
-                TextAreaField(field.description))
-
-def append_fieldlist_to_form(field, form, branch=None):
-    if field.fieldtype.type == 'Text':
-        setattr(form,
-                field.label,
-                FieldList(TextField(field.description)))
-    elif field.fieldtype.type in app.config['DATE_FIELDTYPEZ']:
-        setattr(form,
-                field.label,
-                FieldList(DateField(field.description,
-                                    format=app.config['DATE_FORMAT'])))
-    elif  field.fieldtype.type == 'GIDNumber':
-        setattr(form,
-                field.label,
-                FieldList(SelectField(
-                    field.description,
-                    choices=ldap.get_posix_groupz_choices(ldap.get_group_branch(branch))
-                )))
-    elif  field.fieldtype.type == 'Shell':
-        setattr(form,
-                field.label,
-                FieldList(SelectField(field.description,
-                                      choices=get_shellz_choices())))
-    elif  field.fieldtype.type == 'Filesystem':
-        setattr(form,
-                field.label,
-                FieldList(SelectField(field.description,
-                                      choices=get_filesystem_choices())))
-    elif  field.fieldtype.type == 'Checkbox':
-        setattr(form,
-                field.label,
-                FieldList(BooleanField(field.description)))
-    elif  field.fieldtype.type == 'TextArea':
-        setattr(form,
-                field.label,
-                FieldList(TextAreaField(field.description)))
+app.jinja_env.globals.update(
+    convert_to_display_mode = converter.to_display_mode
+)

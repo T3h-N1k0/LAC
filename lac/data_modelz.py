@@ -405,3 +405,14 @@ class C4IBM(db.Model):
     grpunix = db.Column(db.String(255), primary_key=True)
     walltime = db.Column(db.Float())
     nbcoeurs = db.Column(db.Integer)
+
+
+def get_attr_from_oc_id_list(oc_id_list):
+    oc_attr_list = LDAPObjectClassAttribute.query.filter(
+        LDAPObjectClassAttribute.ldapobjectclass_id.in_(oc_id_list)
+    ).all()
+    oc_attr_id_list = [oc_attr.ldapattribute_id for oc_attr in oc_attr_list]
+    attr_list = LDAPAttribute.query.filter(
+        LDAPAttribute.id.in_(oc_attr_id_list)
+    ).all()
+    return attr_list

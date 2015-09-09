@@ -40,6 +40,7 @@ app.config['SQLALCHEMY_BINDS'] = {
 
 }
 db = SQLAlchemy(app)
+
 Bootstrap(app)
 
 

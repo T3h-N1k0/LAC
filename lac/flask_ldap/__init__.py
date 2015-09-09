@@ -50,6 +50,11 @@ class LDAP(object):
             app.teardown_request(self.teardown)
 
         self.login_func = app.config['LDAP_LOGIN_VIEW']
+        self.ldap_search_base = app.config['LDAP_SEARCH_BASE']
+        if not hasattr(app, 'extensions'):
+            app.extensions = {}
+
+        app.extensions['ldap'] = self
 
     def connect(self):
         self.conn = ldap.initialize('{0}://{1}:{2}'.format(
@@ -73,16 +78,16 @@ class LDAP(object):
                          ldap_filter=None,
                          attributes=None,
                          scope=ldap.SCOPE_SUBTREE):
+        if not base_dn:
+            base_dn = self.ldap_search_base
         try:
-            if base_dn==None:
-                base_dn=self.app.config['LDAP_SEARCH_BASE']
             self.connect()
             self.conn.simple_bind_s("","")
             records = self.conn.search_s(
                 base_dn, scope, ldap_filter, attributes
             )
             self.conn.unbind_s()
-            return records
+            return ldaphelper.get_search_results(records)
 
         except ldap.LDAPError as e:
             print(e)
@@ -91,36 +96,35 @@ class LDAP(object):
             return self.other_err(e)
 
 
-    def admin_search(self,
-               base_dn=None,
-               ldap_filter=None,
-               attributes=None,
-               scope=ldap.SCOPE_SUBTREE):
+    # def admin_search(self,
+    #            base_dn=self.app.config['LDAP_SEARCH_BASE'],
+    #            ldap_filter=None,
+    #            attributes=None,
+    #            scope=ldap.SCOPE_SUBTREE):
 
-        if base_dn==None:
-            base_dn=self.app.config['LDAP_SEARCH_BASE']
+    #     dn = self.get_full_dn_from_uid(self.app.config['LAC_ADMIN_USER'])
+    #     try:
+    #         self.connect()
 
-        dn = self.get_full_dn_from_uid(self.app.config['LAC_ADMIN_USER'])
-        try:
-            self.connect()
+    #         self.conn.simple_bind_s(dn,
+    #                                 self.app.config['LAC_ADMIN_PASS'])
 
-            self.conn.simple_bind_s(dn,
-                                    self.app.config['LAC_ADMIN_PASS'])
+    #         records = self.conn.search_s(base_dn,
+    #                                      scope,
+    #                                      ldap_filter,
+    #                                      attributes)
+    #         self.conn.unbind_s()
+    #         if records:
+    #             return ldaphelper.get_search_results(records)
+    #         else:
+    #             return None
 
-            records = self.conn.search_s(base_dn,
-                                         scope,
-                                         ldap_filter,
-                                         attributes)
-            self.conn.unbind_s()
-            #print('recordz {0}'.format(records))
-            return records
-
-        except ldap.LDAPError as e:
-            print(e)
-            return self.ldap_err(e)
-        except Exception as e:
-            print('error : {0}'.format(e))
-            return self.other_err(e)
+    #     except ldap.LDAPError as e:
+    #         print(e)
+    #         return self.ldap_err(e)
+    #     except Exception as e:
+    #         print('error : {0}'.format(e))
+    #         return self.other_err(e)
 
 
     def search(self,
@@ -128,22 +132,24 @@ class LDAP(object):
                ldap_filter='',
                attributes=None,
                scope=ldap.SCOPE_SUBTREE):
+        if not base_dn:
+            base_dn = self.ldap_search_base
         try:
-            if base_dn==None:
-                base_dn=self.app.config['LDAP_SEARCH_BASE']
-            # print("ldap_filter : {0}".format(ldap_filter))
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
             records = self.conn.search_s(base_dn, scope, ldap_filter, attributes)
             self.conn.unbind_s()
-            return records
-
+            if records:
+                return ldaphelper.get_search_results(records)
+            else:
+                return None
         except ldap.LDAPError as e:
             print(e)
             return self.ldap_err(e)
         except Exception as e:
             return self.other_err(e)
             print(e)
+
     def change_passwd(self, uid, old_pass, new_pass):
         try:
             dn = self.get_full_dn_from_uid(uid)
@@ -180,7 +186,6 @@ class LDAP(object):
             return self.other_err(e)
 
     def is_lac_admin(self, uid):
-        # print("lac admin ? : {0}".format(self.get_lac_admin_memberz()))
         try:
             if self.get_full_dn_from_uid(uid) in self.get_lac_admin_memberz():
                 return True
@@ -189,7 +194,7 @@ class LDAP(object):
             return False
 
     def is_ldap_admin(self, uid):
-        # print("ldap admin ? : {0}".format(self.get_lac_admin_memberz()))
+
         try:
             if self.get_full_dn_from_uid(uid) in self.get_ldap_admin_memberz():
                 return True
@@ -203,34 +208,25 @@ class LDAP(object):
             result = self.search(ldap_filter=filter)
         else:
             result = self.anonymous_search(ldap_filter=filter)
-        return result[0][0]
+        return result[0].get_dn() if result else None
 
     def get_full_dn_from_uid(self, uid):
-        # print('uid {0}'.format(uid))
         filter='(uid={0})'.format(uid)
-        # print(filter)
-        # if 'logged_in' in session:
-        #     result = self.search(ldap_filter=filter)
-        # else:
         result = self.anonymous_search(ldap_filter=filter)
-        return result[0][0] if result else None
+        return result[0].get_dn() if result else None
 
     def get_ldap_admin_memberz(self):
         ldap_filter='(cn=ldapadmin)'
         attributes=['member']
-        raw_resultz = ldaphelper.get_search_results(
-            self.search(ldap_filter=ldap_filter,attributes=attributes)
-        )
-        memberz = raw_resultz[0].get_attributes()['member']
+        resultz = self.search(ldap_filter=ldap_filter,attributes=attributes)
+        memberz = resultz[0].get_attributes()['member']
         print("memberz {0}".format(memberz))
         return memberz
 
     def get_lac_admin_memberz(self):
         ldap_filter='(cn=lacadmin)'
         attributes=['member']
-        raw_resultz = ldaphelper.get_search_results(
-            self.search(ldap_filter=ldap_filter,attributes=attributes)
-        )
+        raw_resultz = self.search(ldap_filter=ldap_filter,attributes=attributes)
         memberz = raw_resultz[0].get_attributes()['member']
         return memberz
 
@@ -240,55 +236,18 @@ class LDAP(object):
         mod_attrs = [(ldap.MOD_REPLACE, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
-        # try:
-        #     self.connect()
-        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
-        #     self.conn.modify_s(dn, mod_attrs)
-        #     self.conn.unbind_s()
-
-        # except ldap.LDAPError as e:
-        #     print(e)
-        #     return self.ldap_err(e)
-        # except Exception as e:
-        #     print(e)
-        #     return self.other_err(e)
 
     def add_uid_attribute(self, uid, pre_modlist):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_ADD, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
-        # try:
-        #     self.connect()
-        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
-        #     self.conn.modify_s(dn, mod_attrs)
-        #     self.conn.unbind_s()
-
-        # except ldap.LDAPError as e:
-        #     print(e)
-        #     return self.ldap_err(e)
-        # except Exception as e:
-        #     print(e)
-        #     return self.other_err(e)
 
     def add_cn_attribute(self, cn, pre_modlist):
         dn = self.get_full_dn_from_cn(cn)
         mod_attrs = [(ldap.MOD_ADD, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
-        # try:
-        #     self.connect()
-        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
-        #     print('modify_s({0}, {1})'.format(dn,mod_attrs))
-        #     self.conn.modify_s(dn, mod_attrs)
-        #     self.conn.unbind_s()
-
-        # except ldap.LDAPError as e:
-        #     print(e)
-        #     return self.ldap_err(e)
-        # except Exception as e:
-        #     print(e)
-        #     return self.other_err(e)
 
     def add_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_ADD, name, values)
@@ -301,38 +260,12 @@ class LDAP(object):
         mod_attrs = [(ldap.MOD_DELETE, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
-        # try:
-        #     self.connect()
-        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
-        #     print('modify_s({0}, {1})'.format(dn,mod_attrs[0]))
-        #     self.conn.modify_s(dn, mod_attrs)
-        #     self.conn.unbind_s()
-
-        # except ldap.LDAPError as e:
-        #     print(e)
-        #     return self.ldap_err(e)
-        # except Exception as e:
-        #     print(e)
-        #     return self.other_err(e)
 
     def remove_cn_attribute(self, cn, pre_modlist):
         dn = self.get_full_dn_from_cn(cn)
         mod_attrs = [(ldap.MOD_DELETE, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
-        # try:
-        #     self.connect()
-        #     self.conn.simple_bind_s(session['user_dn'], session['password'])
-        #     print('modify_s({0}, {1})'.format(dn,mod_attrs[0]))
-        #     self.conn.modify_s(dn, mod_attrs)
-        #     self.conn.unbind_s()
-
-        # except ldap.LDAPError as e:
-        #     print(e)
-        #     return self.ldap_err(e)
-        # except Exception as e:
-        #     print(e)
-        #     return self.other_err(e)
 
     def remove_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_DELETE, name, values)
@@ -349,7 +282,7 @@ class LDAP(object):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-            print('modify_s({0}, {1})'.format(dn,mod_attrs))
+#            print('modify_s({0}, {1})'.format(dn,mod_attrs))
             self.conn.modify_s(dn, mod_attrs)
             self.conn.unbind_s()
 
@@ -364,7 +297,7 @@ class LDAP(object):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-            print('add_s({0}, {1})'.format(dn,add_record))
+#            print('add_s({0}, {1})'.format(dn,add_record))
             self.conn.add_s(dn, add_record)
             self.conn.unbind_s()
             return True
@@ -379,7 +312,7 @@ class LDAP(object):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-            print('delete_s({0})'.format(dn))
+#            print('delete_s({0})'.format(dn))
             self.conn.delete_s(dn)
             self.conn.unbind_s()
             return True
@@ -392,12 +325,10 @@ class LDAP(object):
 
     def is_cines_account(self, username):
         ldap_filter = '(&(objectClass=cinesusr)(uid={0}))'.format(username)
-        base_dn='ou=cines,ou=people,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        raw_result = self.anonymous_search(ldap_filter=ldap_filter,
-                              base_dn=base_dn)
-
+        base_dn='ou=cines,ou=people,{0}'.format(self.ldap_search_base)
+        raw_result = self.anonymous_search(
+            ldap_filter=ldap_filter,
+            base_dn=base_dn)
         return False if not raw_result else True
 
     def login(self):
@@ -449,70 +380,52 @@ class LDAP(object):
         ldap_filter="(&(objectClass=auditModify)(reqDN={0}))".format(dn)
         attributes=['*']
         base_dn=self.app.config['LDAP_LOG_BASE']
-        logz = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
-        return logz
+        return self.search(base_dn,ldap_filter,attributes)
 
     def get_default_storage_list(self):
         ldap_filter='(objectClass=cinesQuota)'
         attributes=['cn']
-        base_dn='ou=quota,ou=system,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        storagez = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
-        return storagez
+        base_dn='ou=quota,ou=system,{0}'.format(self.ldap_search_base)
+        storagez = self.search(base_dn,ldap_filter,attributes)
+        if storagez:
+            return storagez
+        else:
+            return []
+
 
     def get_group_quota_list(self):
         ldap_filter='(objectClass=cinesQuota)'
         attributes=['cn']
-        base_dn='ou=groupePosix,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        storagez = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
-        return storagez
+        base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
+        quotaz = self.search(base_dn,ldap_filter,attributes)
+        if quotaz:
+            return quotaz
+        else:
+            return []
 
 
     def get_default_storage(self, cn):
         ldap_filter='(&(objectClass=cinesQuota)(cn={0}))'.format(cn)
         attributes=['*']
-        base_dn='ou=quota,ou=system,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-            )
-        storage = ldaphelper.get_search_results(
-            ldap.search(base_dn,ldap_filter,attributes)
-        )[0]
-        return storage
+        base_dn='ou=quota,ou=system,{0}'.format(self.ldap_search_base)
+        return self.search(base_dn,ldap_filter,attributes)[0]
 
     def get_storage(self, cn):
         ldap_filter='(&(objectClass=cinesQuota)(cn={0}))'.format(cn)
         attributes=['*']
-        base_dn='ou=groupePosix,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        storage = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )[0]
-        return storage
-
+        base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
+        return self.search(base_dn,ldap_filter,attributes)[0]
 
     def get_sambasid_prefix(self):
-        base_dn = self.app.config['LDAP_SEARCH_BASE']
-        ldap_filter='(sambaDomainName={0})'.format(self.app.config['SAMBA_DOMAIN_NAME'])
+        base_dn = self.ldap_search_base
+        ldap_filter='(sambaDomainName={0})'.format(
+            self.app.config['SAMBA_DOMAIN_NAME']
+        )
         attributes=['sambaSID']
-        samba_domain_name = ldaphelper.get_search_results(
-            self.search(ldap_filter=ldap_filter,
-                        attributes=attributes,
-                        base_dn=base_dn)
-        )[0]
-        sambasid_prefix = samba_domain_name.get_attributes()['sambaSID'][0]
+        sambasid_prefix = self.search(base_dn,
+                           ldap_filter,
+                           attributes)[0].get_attributes()['sambaSID'][0]
         return sambasid_prefix
-
-
 
     def get_posix_group_memberz(self, branch, cn):
         """
@@ -522,12 +435,10 @@ class LDAP(object):
         attributes=['memberUid', "entryDN"]
         base_dn='ou={0},ou=groupePosix,{1}'.format(
             branch,
-            self.app.config['LDAP_SEARCH_BASE']
+            self.ldap_search_base
         )
-        records = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
-        group_attrz= records[0].get_attributes()
+        group = self.search(base_dn,ldap_filter,attributes)[0]
+        group_attrz= group.get_attributes()
         if 'memberUid' in group_attrz:
             memberz = group_attrz['memberUid']
         else:
@@ -539,101 +450,73 @@ class LDAP(object):
             gid_number
         )
         attributes=["uid", "entryDN"]
-        base_dn='ou=people,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        raw_memberz = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
-        memberz_dn = sorted([member.get_attributes()['uid'][0]
-                             for member in raw_memberz])
+        base_dn='ou=people,{0}'.format(self.ldap_search_base)
+        memberz = self.search(base_dn,ldap_filter,attributes)
+        if memberz:
+            memberz_dn = sorted([member.get_attributes()['uid'][0]
+                                 for member in memberz])
+        else:
+            memberz_dn = []
         return memberz_dn
 
 
     def get_posix_groupz_from_member_uid(self, uid):
         ldap_filter='(&(objectClass=posixGroup)(memberUid={0}))'.format(uid)
         attributes=['cn', 'entryDN']
-        base_dn='ou=groupePosix,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        groupz_obj = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
+        base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
+        groupz_obj = self.search(base_dn,ldap_filter,attributes)
         groupz = []
         for group in groupz_obj:
             group_attrz = group.get_attributes()
             cn = group_attrz['cn'][0]
             dn = group_attrz['entryDN'][0]
             branch = self.get_branch_from_posix_group_dn(dn)
-            groupz.append(
-                (cn, branch))
+            groupz.append((cn, branch))
         return groupz
 
     def get_branch_from_posix_group_gidnumber(self, id):
         ldap_filter='(&(objectClass=posixGroup)(gidNumber={0}))'.format(id)
         attributes=['entryDN']
-        base_dn='ou=groupePosix,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        group = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )[0]
+        base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
+        group = self.search(base_dn,ldap_filter,attributes)[0]
         return self.get_branch_from_posix_group_dn(
             group.get_attributes()['entryDN'][0]
         )
-
-
 
     def get_work_groupz_from_member_uid(self, uid):
         dn = self.get_full_dn_from_uid(uid)
         ldap_filter='(&(objectClass=cinesGrWork)(uniqueMember={0}))'.format(dn)
         attributes=['cn']
-        base_dn='ou=grTravail,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        groupz_obj = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
-        print('groupz_obj {0}'.format(groupz_obj))
+        print(dn)
+        base_dn='ou=grTravail,{0}'.format(self.ldap_search_base)
+        groupz_obj = self.search(base_dn,ldap_filter,attributes)
         groupz = []
-        for group in groupz_obj:
-            groupz.append(group.get_attributes()['cn'][0])
+        if groupz_obj:
+            for group in groupz_obj:
+                groupz.append(group.get_attributes()['cn'][0])
         return groupz
 
     def get_wrk_group_dn_from_cn(self, cn):
         ldap_filter='(&(objectClass=cinesGrWork)(cn={0}))'.format(cn)
         attributes = ['entryDN']
-        base_dn='ou=grTravail,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        group_obj = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )[0]
+        base_dn='ou=grTravail,{0}'.format(self.ldap_search_base)
+        group_obj = self.search(base_dn,ldap_filter,attributes)[0]
         dn = group_obj.get_attributes()['entryDN'][0]
         return dn
 
     def get_people_group_dn_from_cn(self, cn):
         ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
         attributes = ['entryDN']
-        base_dn='ou=groupePosix,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        group_obj = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )[0]
+        base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
+        group_obj = self.search(base_dn,ldap_filter,attributes)[0]
         dn = group_obj.get_attributes()['entryDN'][0]
         return dn
-
 
     def get_people_dn_from_ou(self, ou):
         ldap_filter='(ou={0})'.format(ou)
         attributes=['entryDN']
-        base_dn='ou=people,{0}'.format(
-            self.app.config['LDAP_SEARCH_BASE']
-        )
-        records = ldaphelper.get_search_results(
-            self.search(base_dn,ldap_filter,attributes)
-        )
+        base_dn='ou=people,{0}'.format(self.ldap_search_base)
+        records = self.search(base_dn,ldap_filter,attributes)
         full_dn = records[0].get_attributes()['entryDN'][0]
         return full_dn
 
@@ -644,35 +527,15 @@ class LDAP(object):
         ldap_filter='(objectclass=inetOrgPerson)'
         attributes=['uid']
         base_dn='ou={0},ou=people,{1}'.format(group,
-                                              self.app.config['LDAP_SEARCH_BASE'])
-        raw_result = self.anonymous_search(base_dn,ldap_filter,attributes)
-        if raw_result:
-            records = ldaphelper.get_search_results(
-                raw_result
+                                              self.ldap_search_base)
+        records = self.anonymous_search(base_dn,ldap_filter,attributes)
+        if records:
+            return sorted(
+                [member.get_attributes()['uid'][0]
+                 for member in records]
             )
         else:
             return None
-
-        memberz = sorted([ member.get_attributes()['uid'][0] for member in records])
-        return memberz
-
-
-    # def get_all_people_group_memberz(self):
-    #     """
-    #     List all accountz
-    #     """
-    #     ldap_filter='(objectclass=inetOrgPerson)'
-    #     attributes=['uid']
-    #     base_dn='ou=people,{0}'.format(app.config['LDAP_SEARCH_BASE'])
-    #     raw_result = self.anonymous_search(base_dn,ldap_filter,attributes)
-    #     if raw_result:
-    #         records = ldaphelper.get_search_results(
-    #             raw_result
-    #         )
-    #     else:
-    #         return None
-    #     memberz = [ member.get_attributes()['uid'][0] for member in records]
-    #     return memberz
 
     def get_work_group_memberz(self, group):
         """
@@ -682,11 +545,9 @@ class LDAP(object):
         attributes=['uniqueMember']
         base_dn='cn={0},ou=grTravail,{1}'.format(
             group,
-            self.app.config['LDAP_SEARCH_BASE']
+            self.ldap_search_base
         )
-        records = ldaphelper.get_search_results(
-            self.anonymous_search(base_dn,ldap_filter,attributes)
-        )
+        records = self.anonymous_search(base_dn,ldap_filter,attributes)
         memberz = []
         for member in records:
             memberz.extend(member.get_attributes()['uniqueMember'])
@@ -698,12 +559,10 @@ class LDAP(object):
         base_dn='cn={0},ou={1},ou=groupePosix,{2}'.format(
             cn,
             branch,
-            self.app.config['LDAP_SEARCH_BASE']
+            self.ldap_search_base
         )
-        raw_result = ldaphelper.get_search_results(
-            self.anonymous_search(base_dn,ldap_filter,attributes)
-        )
-        return raw_result[0].get_attributes()['entryDN'][0]
+        resultz = self.anonymous_search(base_dn,ldap_filter,attributes)
+        return resultz[0].get_attributes()['entryDN'][0]
 
     def get_group_branch(self, account_type):
         for branch in self.app.config['BRANCHZ']:
@@ -712,35 +571,23 @@ class LDAP(object):
 
     def get_posix_groupz(self, branch=None):
         ldap_filter = "(objectClass=posixGroup)"
-        base_dn = 'ou=groupePosix,{0}'.format(self.app.config['LDAP_SEARCH_BASE'])
+        base_dn = 'ou=groupePosix,{0}'.format(self.ldap_search_base)
         if branch:
             base_dn = ''.join(['ou={0},'.format(branch), base_dn])
-        groupz = ldaphelper.get_search_results(
-            self.anonymous_search(base_dn=base_dn,
+        return self.anonymous_search(base_dn=base_dn,
                                   ldap_filter=ldap_filter,
-                                  attributes=['cn', 'gidNumber']))
-        return groupz
+                                  attributes=['cn', 'gidNumber'])
 
     def get_work_groupz(self):
         ldap_filter = "(objectClass=cinesGrWork)"
-        base_dn = 'ou=grTravail,{0}'.format(self.app.config['LDAP_SEARCH_BASE'])
-        groupz = ldaphelper.get_search_results(
-            self.anonymous_search(base_dn=base_dn,
+        base_dn = 'ou=grTravail,{0}'.format(self.ldap_search_base)
+        groupz = self.anonymous_search(base_dn=base_dn,
                                   ldap_filter=ldap_filter,
-                                  attributes=['cn']))
+                                  attributes=['cn'])
         return [group.get_attributes()['cn'][0] for group in groupz]
 
-    def get_posix_groupz_choices(self, branch=None):
-        ldap_groupz = self.get_posix_groupz(branch)
-        ldap_groupz_list = [('', '---')]
-        for group in ldap_groupz:
-            group_attrz = group.get_attributes()
-            ldap_groupz_list.append((group_attrz['gidNumber'][0],
-                                 group_attrz['cn'][0]))
-        sorted_by_second = sorted(ldap_groupz_list, key=lambda tup: tup[1])
-        return sorted_by_second
 
-    def  get_branch_from_posix_group_dn(self, dn):
+    def get_branch_from_posix_group_dn(self, dn):
         search_pattern = "cn=(.+?),ou=(.+?),"
         m = re.search(search_pattern, dn)
         if m:
@@ -749,62 +596,120 @@ class LDAP(object):
             return ''
 
 
-    def update_group_memberz_cines_c4(self, branch, group, comite):
-        memberz_uid = self.get_posix_group_memberz(branch, group)
-        if len(memberz_uid)>1:
-            ldap_filter = '(&(objectClass=posixAccount)(|{0}))'.format(
-                ''.join(['(uid={0})'.format(uid) for uid in memberz_uid]))
-        elif len(memberz_uid)==1:
-            ldap_filter = '(&(objectClass=posixAccount)(uid={0}))'.format(
-                memberz_uid[0])
-        else:
-            return
-        memberz = ldaphelper.get_search_results(
-            self.search(
-                ldap_filter=ldap_filter,
-                attributes=['cinesC4', 'dn', 'uid', 'gidNumber']
-            ))
-        for member in memberz:
-            member_attrz = member.get_attributes()
-            if (
-                    is_ccc_group(member_attrz['uid'][0])
-                    and is_principal_group(member_attrz, group)
-                    and (
-                        'cinesC4' not in member_attrz
-                         or member_attrz['cinesC4'][0] != comite
-                    )
-            ):
-                if not comite and 'cinesC4' in member_attrz:
-                    ldap.remove_uid_attribute(
-                        member_attrz['uid'][0],
-                        [('cinesC4', None)]
-                    )
-                elif comite:
-                    ldap.update_uid_attribute(
-                        member_attrz['uid'][0],
-                        [('cinesC4', comite.encode('utf-8'))])
-                print('{0} mis à jour à : {1}'.format(
-                    member_attrz['uid'][0],
-                    comite))
-
     def get_submission_groupz_list(self):
         ldap_filter = "(&(objectClass=cinesGrWork)(cinesGrWorkType=1))"
-        ldap_groupz = ldaphelper.get_search_results(
-            self.ldap.anonymous_search(ldap_filter=ldap_filter,
+        ldap_groupz = self.anonymous_search(ldap_filter=ldap_filter,
                              attributes=['cn'])
-        )
         ldap_groupz_list = []
         for group in ldap_groupz:
             group_attrz = group.get_attributes()
             name = group_attrz['cn'][0]
             ldap_groupz_list.append(name)
-
         return ldap_groupz_list
 
+    def get_all_users(self):
+        base_dn = "ou=people,{0}".format(self.ldap_search_base)
+        ldap_filter='(objectclass=inetOrgPerson)'
+        attributes=['*','+']
+        userz = self.search(ldap_filter=ldap_filter,
+                             attributes=attributes,
+                             base_dn=base_dn)
+        return userz
 
+    def get_all_groups(self):
+        base_dn = "{0}".format(self.ldap_search_base)
+        ldap_filter='(objectclass=posixGroup)'
+        attributes=['*','+']
+        return self.search(ldap_filter=ldap_filter,
+                        attributes=attributes,
+                        base_dn=base_dn)
 
+    def get_all_ppolicies(self):
+        base_dn = "ou=policies,ou=system,{0}".format(self.ldap_search_base)
+        ldap_filter='(objectclass=pwdPolicy)'
+        attributes=['*','+']
+        return self.search(ldap_filter=ldap_filter,
+                             attributes=attributes,
+                             base_dn=base_dn)
 
+    def get_ppolicy(self, ppolicy_label):
+        base_dn = "ou=policies,ou=system,{0}".format(self.ldap_search_base)
+        ldap_filter='(&(objectclass=pwdPolicy)(cn={0}))'.format(ppolicy_label)
+        attributes=['*','+']
+        return self.search(ldap_filter=ldap_filter,
+                             attributes=attributes,
+                             base_dn=base_dn)[0]
 
+    def get_subschema(self):
+        ldap_filter='(objectclass=*)'
+        base_dn='cn=subschema'
+        attributes=['*','+']
+        scope=SCOPE_BASE
+        subschema_subentry = self.search(ldap_filter=ldap_filter,
+                                      base_dn=base_dn,
+                                      attributes=attributes,
+                                      scope=scope)[0].get_attributes()
+        return schema.subentry.SubSchema( subschema_subentry )
+
+    def set_submission(self, uid, group, state):
+        old_cines_soumission = self.search(
+                ldap_filter='(uid={0})'.format(uid),
+                attributes=['cinesSoumission']
+            )[0].get_attributes()['cinesSoumission'][0]
+        if group in old_cines_soumission:
+            new_cines_soumission = re.sub(r'(.*{0}=)\d(.*)'.format(group),
+                                      r"\g<1>{0}\2".format(str(state)),
+                                      old_cines_soumission)
+        else:
+            new_cines_soumission = "{0}{1}={2};".format(old_cines_soumission,
+                                                        group,
+                                                        state)
+        pre_modlist = [('cinesSoumission', new_cines_soumission)]
+        self.update_uid_attribute(uid, pre_modlist)
+        flash(u'Soumission mis à jour pour le groupe {0}'.format(group))
+
+    def set_group_ppolicy(self, group, ppolicy):
+        memberz = self.get_people_group_memberz(group)
+        ppolicy_value = 'cn={0},ou=policies,ou=system,{1}'.format(
+            ppolicy,
+            self.ldap_search_base) if ppolicy != '' else None
+        pre_modlist= [('pwdPolicySubentry',
+                       ppolicy_value)]
+        for member in memberz:
+            self.update_uid_attribute(member, pre_modlist)
+
+    def get_uid_detailz(self, uid):
+        ldap_filter='(uid={0})'.format(uid)
+        attributes=['*','+']
+        return self.search(ldap_filter=ldap_filter,
+                                  attributes=attributes)[0]
+
+    def get_user_pwd_policy(self, uid):
+        ldap_filter = "(&(objectClass=posixAccount)(uid={0}))".format(uid)
+        user = self.anonymous_search(ldap_filter=ldap_filter,
+                                     attributes=['pwdPolicySubentry']
+                                 )[0].get_attributes()
+        if 'pwdPolicySubentry' in user:
+            subentry_filter = '(entryDN={0})'.format(user['pwdPolicySubentry'][0])
+        else:
+            subentry_filter = '(&(objectClass=pwdPolicy)(cn=passwordDefault))'
+        base_dn = 'ou=policies,ou=system,{0}'.format(self.ldap_search_base)
+        return self.anonymous_search(ldap_filter=subentry_filter,
+                             attributes=['*'])[0].get_attributes()
+
+    def get_posix_groupz_memberz(self, groupz_infoz):
+        memberz = []
+        for branch, cn in groupz_infoz:
+            memberz.extend(self.get_posix_group_memberz(branch, cn))
+        return memberz
+
+    def get_initial_submission(self):
+        submission_groupz_list = self.get_submission_groupz_list()
+        initial_submission = ''.join([
+            '{0}=0;'.format(submission_group)
+            for submission_group in submission_groupz_list
+        ])
+        return initial_submission
 
 def login_required(f):
     """
