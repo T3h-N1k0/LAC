@@ -2563,6 +2563,18 @@ def create_ldap_object_from_add_user_form(form, fieldz, page):
         add_record.append(
             ('cinesSoumission', [get_initial_submission()])
         )
+    new_shadow_expire_datetime = datetime.now() + relativedelta(
+        months = +app.config['SHADOW_DURATION']
+    )
+    new_shadow_expire = str(
+        datetime_to_days_number(new_shadow_expire_datetime))
+    add_record.append(
+        ('shadowlastchange',
+         [str(datetime_to_days_number(datetime.now()))]
+     )
+    )
+    add_record.append(
+        ('shadowexpire', [new_shadow_expire] ))
 
     if 'sambaSamAccount' in ot_oc_list:
         add_record.append(
@@ -4144,7 +4156,7 @@ def get_sambasid_prefix():
 if __name__ == '__main__':
     app.debug = app.config['DEBUG']
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(day=2)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=2)
     # toolbar = DebugToolbarExtension(app)
     decoder = PythonLDAPDecoder(app.config['ENCODING'])
     app.run(host='0.0.0.0')
