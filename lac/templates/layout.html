@@ -93,10 +93,12 @@
           <li class="dropdown">
             <a data-toggle="dropdown" href="#">Autres<b class="caret"></b></a>
             <ul class="dropdown-menu">
+              {% if session['admin'] %}
               <li class="dropdown-header">Quotas</li>
               <li><a href="{{ url_for('edit_quota')}}">Quotas spécifiques</a> </li>
               <li><a href="{{ url_for('edit_default_quota')}}">Quotas par defaut</a></li>
               <li class="divider"></li>
+              {% endif %}
               <li><a href="{{ url_for('show_filesystems')}}">Systèmes de fichier</a></li>
               <li class="divider"></li>
               <li><a href="{{ url_for('refresh_cache')}}">Rafraichir le cache</a></li>
