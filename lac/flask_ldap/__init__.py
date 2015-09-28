@@ -681,8 +681,13 @@ class LDAP(object):
     def get_uid_detailz(self, uid):
         ldap_filter='(uid={0})'.format(uid)
         attributes=['*','+']
-        return self.search(ldap_filter=ldap_filter,
-                                  attributes=attributes)[0]
+        resultz = self.search(ldap_filter=ldap_filter,
+                                  attributes=attributes)
+        if resultz:
+            return resultz[0]
+        else:
+            flash(u'Utilisateur {0} non trouvé'.format(uid))
+            return None
 
     def get_user_pwd_policy(self, uid):
         ldap_filter = "(&(objectClass=posixAccount)(uid={0}))".format(uid)

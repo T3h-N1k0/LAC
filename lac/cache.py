@@ -98,3 +98,10 @@ class Cache(object):
             people_group = branch['account']
             if uid in self.r.smembers("people_groupz:{0}".format(people_group)):
                 return people_group
+
+    def update_work_groupz_memberz(self, uid, selected_groupz, actual_groupz):
+        for group in selected_groupz:
+            self.add_to_work_group_if_not_member(group, [uid])
+        for group in actual_groupz:
+            if group not in selected_groupz:
+                self.rem_from_group_if_member(group, [uid])

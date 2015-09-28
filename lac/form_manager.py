@@ -3,7 +3,7 @@
 from flask import current_app, request, flash, render_template
 from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField, TextAreaField
 from lac.formz import *
-import lac.helperz
+import lac.helperz as helperz
 from data_modelz import *
 
 class FormManager(object):
@@ -258,8 +258,8 @@ class FormManager(object):
         return value
 
     def populate_lac_admin_choices(self, form):
-        memberz = [ get_uid_from_dn(dn) for dn in ldap.get_lac_admin_memberz() ]
-        all_userz = get_all_users()
+        memberz = [ helperz.get_uid_from_dn(dn) for dn in self.ldap.get_lac_admin_memberz() ]
+        all_userz = self.ldap.get_all_users()
         selected_memberz = [ (uid, uid) for uid in memberz ]
         available_userz = [ (user.get_attributes()['uid'][0],
                              user.get_attributes()['uid'][0])
@@ -270,8 +270,8 @@ class FormManager(object):
 
 
     def populate_ldap_admin_choices(form):
-        memberz = [get_uid_from_dn(dn) for dn in ldap.get_ldap_admin_memberz()]
-        all_userz = get_all_users()
+        memberz = [helperz.get_uid_from_dn(dn) for dn in ldap.get_ldap_admin_memberz()]
+        all_userz = self.ldap.get_all_users()
         selected_memberz = [ (uid, uid) for uid in memberz ]
         available_userz = [ (user.get_attributes()['uid'][0],
                              user.get_attributes()['uid'][0])
@@ -281,7 +281,7 @@ class FormManager(object):
         form.selected_memberz.choices = selected_memberz
 
 
-    def get_c4_groupz_choices():
+    def get_c4_groupz_choices(self):
         existing_groupz = [
             group.get_attributes()['cn'][0] for group in get_all_groups()]
         c4_projectz = C4Projet.query.all()
@@ -350,6 +350,30 @@ class FormManager(object):
                 for field_value in ppolicy_attz[field_name]:
                     field.data = field_value.decode('utf-8')
 
+    def generate_edit_lac_admin_form(self):
+        form = SelectMemberzForm(request.form)
+        self.populate_lac_admin_choices(form)
+        return form
+
+    def generate_edit_ldap_admin_form(self):
+        form = SelectMemberzForm(request.form)
+        self.populate_ldap_admin_choices(form)
+        return form
+
+    def generate_add_c4_group_form(self):
+        form = AddC4GroupForm(request.form)
+        form.cn.choices = self.get_c4_groupz_choices()
+        return form
+
+    def generate_add_group_form(self):
+        existing_groupz = [
+            group.get_attributes()['cn'][0]
+            for group in self.ldap.get_all_groups()]
+        self.set_validators_to_form_field(
+            AddGenericGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
+        form = AddGenericGroupForm(request.form)
+        form.filesystem.choices = self.get_filesystem_choices()
+        return form
 
     def generate_edit_page_admin_form(self, page):
 
@@ -468,6 +492,26 @@ class FormManager(object):
                                      EditGroupForm)
         return EditGroupForm(request.form)
 
+    def generate_search_user_form(self):
+        form = SearchUserForm(request.form)
+        form.user_type.choices = [
+            (branch['account'],
+             branch['account'])
+            for branch in self.app.config['BRANCHZ']
+        ]
+        form.user_type.choices.insert(0, ("", "Tous"))
+        return form
+
+    def generate_search_group_form(self):
+        form = SearchGroupForm(request.form)
+        form.group_type.choices = [
+            (branch['group'],
+             branch['group'])
+            for branch in self.app.config['BRANCHZ']
+        ]
+        form.group_type.choices.insert(0, ("", "Tous"))
+        return form
+
     def generate_select_work_group_form(self, uid):
         actual_work_groupz = self.ldap.get_work_groupz_from_member_uid(uid)
         available_work_groupz = self.ldap.get_work_groupz()
@@ -479,16 +523,17 @@ class FormManager(object):
         form.selected_groupz.choices = selected_choices
         return form
 
-    def generate_edit_user_form_class(self, page):
+    def generate_edit_user_form(self, page):
         page_fieldz = Field.query.filter_by(page_id = page.id,
                                             edit = True).all()
         class EditForm(Form):
             wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
         for field in page_fieldz:
             self.append_fieldlist_to_form(field, EditForm, page.label)
-        return EditForm
+        form = EditForm(request.form)
+        return form
 
-    def generate_add_user_form_class(self, page):
+    def generate_add_user_form(self, page):
         page_fieldz = Field.query.filter_by(page_id = page.id,
                                             edit = True).all()
         uid = TextField(u'Login (uid)')
@@ -499,7 +544,8 @@ class FormManager(object):
         setattr(EditForm,
                 "uid",
                 TextField("Login"))
-        return EditForm
+        form = EditForm(request.form)
+        return form
 
     def generate_edit_ppolicy_form_class(self, page):
         page_fieldz = Field.query.filter_by(page_id = page.id,

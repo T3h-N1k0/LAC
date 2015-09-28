@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import hashlib
+import time
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
 
-from flask import current_app, request, flash, render_template
+from flask import current_app, request, flash, render_template, session, redirect, url_for
 
 from lac.data_modelz import *
 
@@ -72,6 +74,87 @@ class Engine(object):
             self.ldap.remove_uid_attribute(user_uid,
                                       [('shadowExpire', None)])
 
+    def get_search_user_fieldz(self):
+        page = Page.query.filter_by(label = "search_user").first()
+        page_attributez = Field.query.filter_by(page_id = page.id).all()
+        return page_attributez
+
+    def get_search_user_attributez(self):
+        search_attributez = [attr.label.encode('utf-8')
+                             for attr in self.get_search_user_fieldz()]
+        return search_attributez
+
+    def get_resultz_from_search_user_form(self, form):
+        filter_list =[]
+        if form.uid_number.data != "" :
+            filter_list.append("(uidNumber={0})".format(form.uid_number.data))
+        if form.sn.data != "" :
+            filter_list.append("(sn={0})".format(form.sn.data))
+        if form.uid.data != "" :
+            filter_list.append("(uid={0})".format(form.uid.data))
+        if form.mail.data != "":
+            filter_list.append("(mail={0})".format(form.mail.data))
+        if form.user_disabled.data :
+            filter_list.append("(shadowExpire=0)")
+        if form.ip.data :
+            filter_list.append("(cinesIpClient={0})".format(form.ip.data))
+        if form.nationality.data :
+            filter_list.append("(cinesNationality={0})".format(
+                form.nationality.data))
+        if form.user_type.data == "":
+            base_dn = "ou=people,{0}".format(self.ldap_search_base)
+        else:
+            base_dn = "ou={0},ou=people,{1}".format(form.user_type.data,
+                                          self.ldap_search_base)
+        if filter_list != [] :
+            ldap_filter = "(&(objectClass=posixAccount){0})".format("".join(
+                filter_list
+            ))
+        else:
+            ldap_filter = "(objectClass=posixAccount)"
+        search_resultz = self.ldap.search(
+            ldap_filter=ldap_filter,
+            attributes=self.get_search_user_attributez(),
+            base_dn=base_dn)
+        return search_resultz
+
+    def get_search_group_fieldz(self):
+        page = Page.query.filter_by(label = "search_group").first()
+        page_attributez = Field.query.filter_by(page_id = page.id, display=True).all()
+        return page_attributez
+
+    def get_search_group_attributez(self):
+        search_attributez = [attr.label.encode('utf-8')
+                             for attr in self.get_search_group_fieldz()]
+        return search_attributez
+
+    def get_resultz_from_search_group_form(self, form):
+        filter_list =[]
+        if form.gid_number.data != "" :
+            filter_list.append("(gidNumber={0})".format(form.gid_number.data))
+        if form.cn.data != "" :
+            filter_list.append("(cn={0})".format(form.cn.data))
+        if form.description.data :
+            filter_list.append(
+                "(description={0})".format(form.description.data)
+            )
+        if form.group_type.data == "":
+            base_dn = "ou=groupePosix,{0}".format(self.ldap_search_base)
+        else:
+            base_dn = "ou={0},ou=groupePosix,{1}".format(form.group_type.data,
+                                                         self.ldap_search_base)
+        if filter_list != [] :
+            ldap_filter = "(&(objectClass=posixGroup){0})".format("".join(
+                filter_list
+            ))
+        else:
+            ldap_filter = "(objectClass=posixGroup)"
+        search_resultz = self.ldap.search(
+            ldap_filter=ldap_filter,
+            attributes=self.get_search_group_attributez(),
+            base_dn=base_dn)
+        return search_resultz
+
     def update_group_memberz_cines_c4(self, branch, group, comite):
         memberz_uid = self.ldap.get_posix_group_memberz(branch, group)
         if len(memberz_uid)>1:
@@ -108,6 +191,137 @@ class Engine(object):
                 print('{0} mis à jour à : {1}'.format(
                     member_attrz['uid'][0],
                     comite))
+
+    def update_password_from_form(self, form, uid):
+        pre_modlist = []
+        if self.cache.get_group_from_member_uid(uid) == 'cines':
+            nt_hash = hashlib.new(
+                'md4',
+                form.new_pass.data.encode('utf-16le')
+            ).hexdigest().upper()
+            pre_modlist = [('sambaPwdLastSet', str(int(time.time()))),
+                           ('sambaNTPassword', nt_hash)]
+
+        if uid != session['uid']:
+            pre_modlist.append(('userPassword',
+                                form.new_pass.data.encode('utf-8')))
+            if self.cache.get_group_from_member_uid(uid) not in ['autre', 'soft']:
+                pre_modlist.append(('pwdReset', 'TRUE'))
+            flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
+            self.ldap.update_uid_attribute(uid, pre_modlist)
+            return redirect(url_for('show_user',
+                                    page= self.cache.get_group_from_member_uid(uid),
+                                    uid=uid))
+        else:
+            self.ldap.change_passwd(uid, session['password'], form.new_pass.data)
+            flash(
+                u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
+            )
+
+            if pre_modlist:
+                self.ldap.update_uid_attribute(uid, pre_modlist)
+            return redirect(url_for('home'))
+
+    def update_page_from_form(self, page, raw_form):
+        form = raw_form['form']
+        page_oc_id_list = raw_form['page_oc_id_list']
+        page_unic_attr_id_list = raw_form['page_unic_attr_id_list']
+        attr_label_list = raw_form['attr_label_list']
+        if attr_label_list is not None:
+            self.update_fields_from_edit_page_admin_form(form, attr_label_list, page)
+        if form.oc_form.selected_oc.data is not None:
+            # On traite les ObjectClass ajoutées
+            for oc_id in form.oc_form.selected_oc.data :
+                if oc_id not in page_oc_id_list:
+                    print("Creation de l'Object Class id {0}".format(oc_id))
+                    page_oc =  PageObjectClass(page.id, oc_id)
+                    db.session.add(page_oc)
+            # On traite les ObjectClass supprimées
+            # et les fieldz associés en cascade
+            for oc_id in page_oc_id_list:
+                if oc_id not in form.oc_form.selected_oc.data:
+                    print("Suppression de l'Object Class id {0}".format(oc_id))
+                    PageObjectClass.query.filter_by(page_id=page.id,
+                                                    ldapobjectclass_id= oc_id
+                    ).delete()
+                    attr_to_del_list = [
+                        attr.id for attr in get_attr_from_oc_id_list([oc_id])
+                    ]
+                    print("Attributs à supprimer {0}".format(attr_to_del_list))
+                    Field.query.filter(Field.page_id==page.id,
+                                       Field.ldapattribute_id.in_(
+                                           attr_to_del_list
+                                       )
+                    ).delete(synchronize_session='fetch')
+        if form.attr_form.selected_attr.data is not None:
+            # On traite les Attributes ajoutées
+            for attr_id in form.attr_form.selected_attr.data :
+                if attr_id not in page_unic_attr_id_list:
+                    print("Creation de l'attribut id {0}".format(attr_id))
+                    attr = LDAPAttribute.query.filter_by(id = attr_id).first()
+                    self.create_default_field(attr, page)
+        if page_unic_attr_id_list is not None:
+            # On traite les Attributes supprimées
+            for attr_id in page_unic_attr_id_list:
+                if attr_id not in form.attr_form.selected_attr.data:
+                    print("Suppression de l'attribut id {0}".format(attr_id))
+                    Field.query.filter_by(
+                        id=attr_id
+                    ).delete()
+        db.session.commit()
+
+    def update_lac_admin_from_form(self, form):
+        memberz = [ get_uid_from_dn(dn)
+                    for dn in self.ldap.get_lac_admin_memberz() ]
+        if form.selected_memberz.data is not None:
+            memberz_to_add = []
+            for member in form.selected_memberz.data:
+                if member not in memberz:
+                    print('ajout de {0}'.format(member))
+                    memberz_to_add.append(self.ldap.get_full_dn_from_uid(member))
+            if memberz_to_add:
+                self.ldap.add_cn_attribute('lacadmin',
+                                           [('member', member.encode('utf8'))
+                                            for member in memberz_to_add]
+                                       )
+        if memberz is not None:
+            memberz_to_del = []
+            for member in memberz:
+                if member not in form.selected_memberz.data:
+                    print('suppression de {0}'.format(member))
+                    memberz_to_del.append(self.ldap.get_full_dn_from_uid(member))
+            if memberz_to_del:
+                self.ldap.remove_cn_attribute('lacadmin',
+                                              [('member', member.encode('utf8'))
+                                               for member in memberz_to_del]
+                                   )
+
+    def update_ldap_admin_from_form(self, form):
+        memberz = [ get_uid_from_dn(dn)
+                    for dn in self.ldap.get_ldap_admin_memberz() ]
+        if form.selected_memberz.data is not None:
+            memberz_to_add = []
+            for member in form.selected_memberz.data:
+                if member not in memberz:
+                    print('ajout de {0}'.format(member))
+                    memberz_to_add.append(self.ldap.get_full_dn_from_uid(member))
+            if memberz_to_add:
+                ldap.add_cn_attribute('ldapadmin',
+                                      [('member', member.encode('utf8'))
+                                        for member in memberz_to_add]
+                                   )
+        if memberz is not None:
+            memberz_to_del = []
+            for member in memberz:
+                if member not in form.selected_memberz.data:
+                    print('suppression de {0}'.format(member))
+                    memberz_to_del.append(self.ldap.get_full_dn_from_uid(member))
+            if memberz_to_del:
+                self.ldap.remove_cn_attribute('ldapadmin',
+                                          [('member', member.encode('utf8'))
+                                           for member in memberz_to_del]
+                                   )
+        fm.populate_ldap_admin_choices(form)
 
     def get_last_used_id(self, ldap_ot):
         attributes=['gidNumber'] if ldap_ot.apply_to == 'group' else ['uidNumber']
@@ -589,6 +803,20 @@ class Engine(object):
                 }, synchronize_session=False
             )
         db.session.commit()
+
+    def remove_user_from_all_groupz(self, uid, posix_groupz, work_groupz):
+        user_dn = self.ldap.get_full_dn_from_uid(uid)
+        for group_cn in work_groupz:
+            group_dn = 'cn={0},ou=grTravail,{1}'.format(
+                group_cn,
+                self.ldap_search_base
+            )
+            pre_modlist = [('uniqueMember', user_dn.encode('utf-8'))]
+            self.ldap.remove_dn_attribute(group_dn,pre_modlist)
+        for (group_cn, group_branch) in posix_groupz:
+            group_dn = self.ldap.get_group_full_dn(group_branch, group_cn)
+            pre_modlist = [('memberUid', uid.encode('utf-8'))]
+            self.ldap.remove_dn_attribute(group_dn,pre_modlist)
 
 
     def update_user_submission(self, uid, form):
