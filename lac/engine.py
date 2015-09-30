@@ -949,11 +949,6 @@ class Engine(object):
     # def add_user_to_lac_admin(self, user):
     #     self.ldap.update_uid_attribute(user, pre_modlist)
 
-    def get_account_branch_from_group_branch(self, group_branch):
-        for branch in self.app.config['BRANCHZ']:
-            if branch['group'] == group_branch:
-                print( branch['account'])
-                return branch['account']
 
     def get_dict_from_raw_log_valuez(self, raw_valuez):
         valuez = {}

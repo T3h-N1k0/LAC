@@ -363,13 +363,12 @@ def hello(name=None):
 @login_required
 def add_user(page_label):
     page = Page.query.filter_by(label = page_label).first()
-    print(page)
     fieldz = Field.query.filter_by(page_id = page.id,edit = True).order_by(
         Field.priority
     ).all()
     edit_form = fm.generate_add_user_form(page)
     edit_blockz =sorted(set([field.block for field in fieldz]))
-    if request.method == 'POST':
+    if request.method == 'POST' and edit_form.validate():
         lac.create_ldap_object_from_add_user_form(
             edit_form,
             fieldz,

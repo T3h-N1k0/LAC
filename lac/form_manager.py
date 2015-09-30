@@ -296,6 +296,7 @@ class FormManager(object):
     def set_validators_to_form_field(self, form, field, validators):
         form_field_kwargs = getattr(
             getattr(form, field),'kwargs')
+        form_field_kwargs['validators'] = validators
 
 
     def get_display_mode_choices(self):
@@ -471,7 +472,6 @@ class FormManager(object):
             pass
 
         for field_id in attributez:
-            print('field_id {0}'.format(field_id))
             field = Field.query.filter_by(
                 id = field_id
             ).first()
@@ -544,6 +544,10 @@ class FormManager(object):
         setattr(EditForm,
                 "uid",
                 TextField("Login"))
+        existing_userz = [
+            user.get_attributes()['uid'][0] for user in self.ldap.get_all_users()]
+        self.set_validators_to_form_field(
+            EditForm, 'uid',[validators.NoneOf(existing_userz)])
         form = EditForm(request.form)
         return form
 
