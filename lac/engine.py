@@ -793,9 +793,10 @@ class Engine(object):
         disabled_login = "".join(['ZDEL', date, "_", uid])
         # print(disabled_login)
         otrs_user = OTRSCustomerUser.query.filter_by(login = uid).first()
-        otrs_user.login = disabled_login
-        otrs_user.valid_id = 2
-        db.session.add(otrs_user)
+        if otrs_user:
+            otrs_user.login = disabled_login
+            otrs_user.valid_id = 2
+            db.session.add(otrs_user)
         otrs_ticketz = OTRSTicket.query.filter_by(customer_user_id = uid).all()
         for ticket in otrs_ticketz:
             ticket.customer_user_id = disabled_login
