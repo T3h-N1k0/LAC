@@ -283,7 +283,7 @@ class FormManager(object):
 
     def get_c4_groupz_choices(self):
         existing_groupz = [
-            group.get_attributes()['cn'][0] for group in get_all_groups()]
+            group.get_attributes()['cn'][0] for group in self.ldap.get_all_groups()]
         c4_projectz = C4Projet.query.all()
         c4_groupz_choices = [(project.code_projet, project.code_projet)
                              for project in c4_projectz
@@ -364,6 +364,7 @@ class FormManager(object):
     def generate_add_c4_group_form(self):
         form = AddC4GroupForm(request.form)
         form.cn.choices = self.get_c4_groupz_choices()
+        form.filesystem.choices = self.get_filesystem_choices()
         return form
 
     def generate_add_group_form(self):
@@ -377,7 +378,6 @@ class FormManager(object):
         return form
 
     def generate_edit_page_admin_form(self, page):
-
         # selection des attributs hérités des object classes
         select_oc_choices = self.get_page_oc_choices(page)
         page_oc_id_list = [oc[0] for oc in select_oc_choices]
@@ -481,7 +481,7 @@ class FormManager(object):
         form = EditGroupForm(request.form)
         return form
 
-    def generate_edit_group_form(self, page):
+    def generate_edit_group_form(self, page, branch, group_cn):
         page_fieldz = Field.query.filter_by(page_id = page.id).all()
 
         class EditGroupForm(EditGroupBaseForm):
@@ -490,7 +490,34 @@ class FormManager(object):
         for field in page_fieldz:
             self.append_fieldlist_to_form(field,
                                      EditGroupForm)
-        return EditGroupForm(request.form)
+
+        form = EditGroupForm(request.form)
+        selected_memberz = [member for member in self.ldap.get_posix_group_memberz(
+            branch, group_cn
+        )]
+        if branch == 'grProjet':
+            accountz = self.ldap.get_people_group_memberz('cines')
+        else:
+            accountz = self.ldap.get_people_group_memberz(
+                self.get_account_branch_from_group_branch(branch)
+            )
+        available_memberz = [
+            account for account in accountz
+            if account not in selected_memberz
+        ]
+        form.memberz.selected_memberz.choices = [
+            (member, member) for member in selected_memberz
+        ]
+        form.memberz.available_memberz.choices =[
+            (member, member) for member in available_memberz
+        ]
+
+        return form
+
+    def get_account_branch_from_group_branch(self, group_branch):
+        for branch in self.app.config['BRANCHZ']:
+            if branch['group'] == group_branch:
+                return branch['account']
 
     def generate_search_user_form(self):
         form = SearchUserForm(request.form)

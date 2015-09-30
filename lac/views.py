@@ -502,6 +502,8 @@ def select_group_type():
 def add_group(page_label=None):
     if page_label in app.config['C4_TYPE_GROUPZ']:
         add_form = fm.generate_add_c4_group_form()
+    elif page_label == 'grProjet':
+        add_form = fm.generate_add_project_group_form()
     else:
         add_form = fm.generate_add_group_form()
     if request.method == 'POST':
@@ -522,36 +524,7 @@ def add_group(page_label=None):
 def edit_group(branch, group_cn):
     dn = ldap.get_group_full_dn(branch, group_cn)
     page = Page.query.filter_by(label=branch).first()
-    form = fm.generate_edit_group_form(page)
-    ldap_filter='(cn={0})'.format(group_cn)
-    attributes=['gidNumber']
-    base_dn='ou={0},ou=groupePosix,{1}'.format(
-        branch,
-        app.config['LDAP_SEARCH_BASE']
-    )
-    gid_number = ldap.search(
-        ldap_filter=ldap_filter,
-        attributes=attributes,
-        base_dn=base_dn)[0].get_attributes()['gidNumber'][0]
-    selected_memberz = [member for member in ldap.get_posix_group_memberz(
-        branch, group_cn
-    )]
-    if branch == 'grProjet':
-        accountz = ldap.get_people_group_memberz('cines')
-    else:
-        accountz = ldap.get_people_group_memberz(
-            lac.get_account_branch_from_group_branch(branch)
-        )
-    available_memberz = [
-        account for account in accountz
-        if account not in selected_memberz
-    ]
-    form.memberz.selected_memberz.choices = [
-        (member, member) for member in selected_memberz
-    ]
-    form.memberz.available_memberz.choices =[
-        (member, member) for member in available_memberz
-    ]
+    form = fm.generate_edit_group_form(page, branch, group_cn)
     fieldz = Field.query.filter_by(
         page_id = page.id,
         edit = True
@@ -569,7 +542,7 @@ def edit_group(branch, group_cn):
                 comite = ressource.comite.ct
             else:
                 comite = ''
-            update_group_memberz_cines_c4(branch, group_cn, comite)
+            lac.update_group_memberz_cines_c4(branch, group_cn, comite)
         lac.update_ldap_object_from_edit_group_form(form,page,group_cn)
         flash(u'Groupe {0} mis à jour'.format(group_cn))
         return redirect(url_for('show_groups', branch=page.label))

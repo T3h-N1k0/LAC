@@ -28,7 +28,9 @@ searchFromList($(this).val(), searchArea);
 <div class="well col-md-offset-3 col-md-6 text-center">
   <form method="post" action="/add_group/{{ page_label }}">
     {{ render_formfield(add_form.cn) }}
+    {% if add_form.filesystem %}
     {{ render_formfield(add_form.filesystem) }}
+    {% endif %}
     {{ render_formfield(add_form.description) }}
     <button id="update" type="submit"  class="btn btn-primary">
       <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
