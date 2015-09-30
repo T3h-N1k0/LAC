@@ -460,6 +460,12 @@ class Engine(object):
                       ('objectClass', object_classes)]
         if description:
             add_record.append(('description', [description]))
+        if 'sambaGroupMapping' in object_classes:
+            add_record.append(
+                ('sambaSID', "{0}-{1}".format(self.ldap.get_sambasid_prefix(),
+                                                     id_number))
+            )
+            add_record.append(('sambaGroupType', ['2']))
 
         if self.ldap.add(full_dn, add_record):
             ot.last_used_id= id_number
