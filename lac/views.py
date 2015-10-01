@@ -800,7 +800,7 @@ def edit_group_submission():
 @login_required
 def toggle_account(uid):
     user = ldap.get_uid_detailz(uid)
-    if is_active(user):
+    if lac.is_active(user):
         lac.disable_account(user)
     else:
         lac.enable_account(user)
