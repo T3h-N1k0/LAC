@@ -466,12 +466,13 @@ class LDAP(object):
         base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
         groupz_obj = self.search(base_dn,ldap_filter,attributes)
         groupz = []
-        for group in groupz_obj:
-            group_attrz = group.get_attributes()
-            cn = group_attrz['cn'][0]
-            dn = group_attrz['entryDN'][0]
-            branch = self.get_branch_from_posix_group_dn(dn)
-            groupz.append((cn, branch))
+        if groupz_obj:
+            for group in groupz_obj:
+                group_attrz = group.get_attributes()
+                cn = group_attrz['cn'][0]
+                dn = group_attrz['entryDN'][0]
+                branch = self.get_branch_from_posix_group_dn(dn)
+                groupz.append((cn, branch))
         return groupz
 
     def get_branch_from_posix_group_gidnumber(self, id):
