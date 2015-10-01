@@ -362,6 +362,11 @@ class FormManager(object):
         return form
 
     def generate_add_c4_group_form(self):
+        existing_groupz = [
+            group.get_attributes()['cn'][0]
+            for group in self.ldap.get_all_groups()]
+        self.set_validators_to_form_field(
+            AddC4GroupForm, 'cn',[validators.NoneOf(existing_groupz)])
         form = AddC4GroupForm(request.form)
         form.cn.choices = self.get_c4_groupz_choices()
         form.filesystem.choices = self.get_filesystem_choices()
@@ -375,6 +380,15 @@ class FormManager(object):
             AddGenericGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
         form = AddGenericGroupForm(request.form)
         form.filesystem.choices = self.get_filesystem_choices()
+        return form
+
+    def generate_add_project_group_form(self):
+        existing_groupz = [
+            group.get_attributes()['cn'][0]
+            for group in self.ldap.get_all_groups()]
+        self.set_validators_to_form_field(
+            AddProjectGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
+        form = AddProjectGroupForm(request.form)
         return form
 
     def generate_edit_page_admin_form(self, page):

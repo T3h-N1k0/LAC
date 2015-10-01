@@ -508,8 +508,13 @@ class LDAP(object):
         ldap_filter='(&(objectClass=posixGroup)(cn={0}))'.format(cn)
         attributes = ['entryDN']
         base_dn='ou=groupePosix,{0}'.format(self.ldap_search_base)
-        group_obj = self.search(base_dn,ldap_filter,attributes)[0]
-        dn = group_obj.get_attributes()['entryDN'][0]
+        result = self.search(base_dn,ldap_filter,attributes)
+        if result:
+            group_obj = result[0]
+            dn = group_obj.get_attributes()['entryDN'][0]
+        else:
+            dn = None
+            flash(u'Groupe non touvé')
         return dn
 
     def get_people_dn_from_ou(self, ou):

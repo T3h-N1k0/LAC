@@ -545,9 +545,11 @@ def edit_group(branch, group_cn):
             lac.update_group_memberz_cines_c4(branch, group_cn, comite)
         lac.update_ldap_object_from_edit_group_form(form,page,group_cn)
         flash(u'Groupe {0} mis à jour'.format(group_cn))
-        return redirect(url_for('show_groups', branch=page.label))
-    else:
-        fm.set_edit_group_form_values(form, fieldz, branch, group_cn)
+        return redirect(url_for("show_group",
+                                branch=branch,
+                                cn=group_cn))
+    fm.set_edit_group_form_values(form, fieldz, branch, group_cn)
+    #print(form.filesystem.type)
     return render_template('edit_group.html',
                            form=form,
                            page=page,

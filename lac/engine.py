@@ -441,7 +441,6 @@ class Engine(object):
         ot = LDAPObjectType.query.filter_by(label = page_label).first()
         cn = form.cn.data.encode('utf-8')
         description = form.description.data.encode('utf-8')
-        filesystem = form.filesystem.data.encode('utf-8')
         id_number = str(self.get_next_id_from_ldap_ot(ot))
         object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8') for oc_ot in
                           LDAPObjectTypeObjectClass.query.filter_by(
@@ -456,16 +455,17 @@ class Engine(object):
             self.ldap_search_base)
         add_record = [('cn', [cn]),
                       ('gidNumber', [id_number]),
-                      ('fileSystem', [filesystem]),
                       ('objectClass', object_classes)]
-        if description:
+        if page_label != 'grProjet':
+            add_record.append(('fileSystem', [form.filesystem.data.encode('utf-8')]))
+        if description and description != '':
             add_record.append(('description', [description]))
         if 'sambaGroupMapping' in object_classes:
-            add_record.append(
+            add_record.extend([
                 ('sambaSID', "{0}-{1}".format(self.ldap.get_sambasid_prefix(),
-                                                     id_number))
-            )
-            add_record.append(('sambaGroupType', ['2']))
+                                                     id_number)),
+                ('sambaGroupType', ['2'])
+            ])
 
         if self.ldap.add(full_dn, add_record):
             ot.last_used_id= id_number
@@ -881,8 +881,11 @@ class Engine(object):
             form_field_values = [entry.data.encode('utf-8')
                                  for entry in getattr(form, field.label).entries]
             print('form_field_values : {0}'.format(form_field_values))
+            if form_field_values == ['']:
+                form_field_values = None
             if ((field.label not in group_attributez)
-                or (group_attributez[field.label] != form_field_values)):
+                or (field.label in group_attributez
+                    and group_attributez[field.label] != form_field_values)):
                 pre_modlist.append((field.label, form_field_values))
         print(form.memberz.selected_memberz.data)
         pre_modlist.append(

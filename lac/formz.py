@@ -153,6 +153,11 @@ class AddPolicyForm(Form):
 class SelectGroupTypeForm(Form):
     group_type = SelectField(u'Type de groupe')
 
+
+class AddProjectGroupForm(Form):
+    cn = TextField(u'Nom (cn)')
+    description = TextField(u'Description')
+
 class AddGenericGroupForm(Form):
     cn = TextField(u'Nom (cn)')
     filesystem = SelectField(u'Système de fichier',default='DEFAUT')
