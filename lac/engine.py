@@ -774,7 +774,7 @@ class Engine(object):
         else:
             telephone_number = ''
         user_type = LDAPObjectType.query.filter_by(
-            label = cache.get_group_from_member_uid(uid)
+            label = self.cache.get_group_from_member_uid(uid)
         ).first().description
         first_gr_name = self.cache.get_posix_group_cn_by_gid(user_attrz['gidNumber'][0])
         otrs_user.email = user_attrz['mail'][0]
