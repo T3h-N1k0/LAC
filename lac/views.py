@@ -22,6 +22,7 @@ from lac.form_manager import FormManager
 from lac.converter import Converter
 from lac.engine import Engine
 from lac.helperz import *
+from jinja2 import evalcontextfilter, Markup, escape
 
 ### Routez
 ldap = LDAP(app)
@@ -1207,3 +1208,16 @@ app.jinja_env.globals.update(
 app.jinja_env.globals.update(
     convert_to_display_mode = converter.to_display_mode
 )
+
+
+
+_paragraph_re = re.compile(r'(?:\r\n|\r|\n){2,}')
+
+@app.template_filter()
+@evalcontextfilter
+def nl2br(eval_ctx, value):
+    result = u'\n\n'.join(u'<p>%s</p>' % p
+                          for p in _paragraph_re.split(escape(value)))
+    if eval_ctx.autoescape:
+        result = Markup(result)
+    return result
