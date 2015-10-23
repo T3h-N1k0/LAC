@@ -405,6 +405,7 @@ class FormManager(object):
         self.set_validators_to_form_field(
             AddProjectGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
         form = AddProjectGroupForm(request.form)
+        form.responsable.choices = self.get_posix_userz_choices('cines')
         return form
 
     def generate_edit_page_admin_form(self, page):

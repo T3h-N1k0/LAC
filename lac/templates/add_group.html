@@ -31,6 +31,9 @@ searchFromList($(this).val(), searchArea);
     {% if add_form.filesystem %}
     {{ render_formfield(add_form.filesystem) }}
     {% endif %}
+    {% if add_form.responsable %}
+    {{ render_formfield(add_form.responsable) }}
+    {% endif %}
     {{ render_formfield(add_form.description) }}
     <button id="update" type="submit"  class="btn btn-primary">
       <span class="glyphicon glyphicon-arrow-right"> Suivant</span>

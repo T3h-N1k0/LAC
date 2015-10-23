@@ -157,6 +157,7 @@ class SelectGroupTypeForm(Form):
 class AddProjectGroupForm(Form):
     cn = TextField(u'Nom (cn)')
     description = TextField(u'Description')
+    responsable = SelectField(u'Responsable du projet',default='DEFAUT')
 
 class AddGenericGroupForm(Form):
     cn = TextField(u'Nom (cn)')
