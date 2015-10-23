@@ -220,7 +220,6 @@ class LDAP(object):
         attributes=['member']
         resultz = self.search(ldap_filter=ldap_filter,attributes=attributes)
         memberz = resultz[0].get_attributes()['member']
-        print("memberz {0}".format(memberz))
         return memberz
 
     def get_lac_admin_memberz(self):
@@ -282,7 +281,6 @@ class LDAP(object):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-#            print('modify_s({0}, {1})'.format(dn,mod_attrs))
             self.conn.modify_s(dn, mod_attrs)
             self.conn.unbind_s()
 
@@ -297,7 +295,6 @@ class LDAP(object):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-#            print('add_s({0}, {1})'.format(dn,add_record))
             self.conn.add_s(dn, add_record)
             self.conn.unbind_s()
             return True
@@ -312,7 +309,6 @@ class LDAP(object):
         try:
             self.connect()
             self.conn.simple_bind_s(session['user_dn'], session['password'])
-#            print('delete_s({0})'.format(dn))
             self.conn.delete_s(dn)
             self.conn.unbind_s()
             return True
@@ -488,7 +484,6 @@ class LDAP(object):
         dn = self.get_full_dn_from_uid(uid)
         ldap_filter='(&(objectClass=cinesGrWork)(uniqueMember={0}))'.format(dn)
         attributes=['cn']
-        print(dn)
         base_dn='ou=grTravail,{0}'.format(self.ldap_search_base)
         groupz_obj = self.search(base_dn,ldap_filter,attributes)
         groupz = []
