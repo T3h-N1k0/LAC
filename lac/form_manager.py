@@ -38,6 +38,10 @@ class FormManager(object):
         sorted_by_second = sorted(ldap_groupz_list, key=lambda tup: tup[1])
         return sorted_by_second
 
+    def get_posix_userz_choices(self, branch):
+        return [(member, member)
+                for member in self.ldap.get_people_group_memberz(branch) ]
+
     def get_filesystem_choices(self):
         filesystems = Filesystem.query.all()
         fs_choices = [ (fs.label, fs.description) for fs in filesystems]
@@ -58,6 +62,11 @@ class FormManager(object):
                     field.label,
                     SelectField(field.description,
                                 choices=self.get_posix_groupz_choices()))
+        elif  field.fieldtype.type == 'CINESUser':
+            setattr(form,
+                    field.label,
+                    SelectField(field.description,
+                                choices=self.get_posix_userz_choices('cines')))
         elif field.fieldtype.type == 'Submission':
             setattr(form,
                     field.label,
@@ -98,6 +107,13 @@ class FormManager(object):
                         field.description,
                         choices=self.get_posix_groupz_choices(
                             self.ldap.get_group_branch(branch))
+                    )))
+        elif  field.fieldtype.type == 'CINESUser':
+            setattr(form,
+                    field.label,
+                    FieldList(SelectField(
+                        field.description,
+                        choices=self.get_posix_userz_choices('cines')
                     )))
         elif  field.fieldtype.type == 'Shell':
             setattr(form,
