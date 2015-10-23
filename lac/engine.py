@@ -442,8 +442,8 @@ class Engine(object):
         cn = form.cn.data.encode('utf-8')
         description = form.description.data.encode('utf-8')
         id_number = str(self.get_next_id_from_ldap_ot(ot))
-        object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8') for oc_ot in
-                          LDAPObjectTypeObjectClass.query.filter_by(
+        object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8')
+                          for oc_ot in LDAPObjectTypeObjectClass.query.filter_by(
                               ldapobjecttype_id = ot.id).all()]
         if not object_classes:
             flash(u'ObjectClasss manquants pour ce type d\'objet')
@@ -460,6 +460,8 @@ class Engine(object):
             add_record.append(('fileSystem', [form.filesystem.data.encode('utf-8')]))
         if description and description != '':
             add_record.append(('description', [description]))
+        if form.responsable:
+            add_record.append(('cinesProjResp', [form.responsable.data.encode('utf-8')]))
         if 'sambaGroupMapping' in object_classes:
             add_record.extend([
                 ('sambaSID', "{0}-{1}".format(self.ldap.get_sambasid_prefix(),
