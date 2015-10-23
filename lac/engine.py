@@ -600,7 +600,7 @@ class Engine(object):
                     ).delete()
         db.session.commit()
         if form.set_ppolicy.data :
-            ldap.set_group_ppolicy(ldap_object_type.label,
+            self.ldap.set_group_ppolicy(ldap_object_type.label,
                                    ldap_object_type.ppolicy)
         flash(u'{0} mis à jour'.format(ldap_object_type.description))
 
@@ -1024,5 +1024,5 @@ class Engine(object):
         add_record=[('cn',[cn]),
                     ('pwdAttribute', ['userPassword']),
                     ('objectClass', ['device', 'pwdPolicy'])]
-        if ldap.add(dn, add_record):
+        if self.ldap.add(dn, add_record):
             flash(u'PPolicy {0} ajoutée'.format(cn))
