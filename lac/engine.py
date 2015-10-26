@@ -460,7 +460,7 @@ class Engine(object):
             add_record.append(('fileSystem', [form.filesystem.data.encode('utf-8')]))
         if description and description != '':
             add_record.append(('description', [description]))
-        if form.responsable:
+        if hasattr(form, 'responsable'):
             add_record.append(('cinesProjResp', [form.responsable.data.encode('utf-8')]))
         if 'sambaGroupMapping' in object_classes:
             add_record.extend([
