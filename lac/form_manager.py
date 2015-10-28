@@ -1,7 +1,7 @@
 # coding: utf-8
 
 from flask import current_app, request, flash, render_template
-from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField, TextAreaField
+from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateTimeField, TextAreaField
 from lac.formz import *
 import lac.helperz as helperz
 from data_modelz import *
@@ -55,8 +55,9 @@ class FormManager(object):
         elif field.fieldtype.type in self.app.config['DATE_FIELDTYPEZ']:
             setattr(form,
                     field.label,
-                    DateField(field.description,
-                              format=self.app.config['DATE_FORMAT']))
+                    DateTimeField(field.description,
+                                  format=self.app.config['DATE_FORMAT'],
+                                  validators=(validators.Optional(),)))
         elif  field.fieldtype.type == 'GIDNumber':
             setattr(form,
                     field.label,
@@ -98,8 +99,9 @@ class FormManager(object):
         elif field.fieldtype.type in self.app.config['DATE_FIELDTYPEZ']:
             setattr(form,
                     field.label,
-                    FieldList(DateField(field.description,
-                                        format=self.app.config['DATE_FORMAT'])))
+                    FieldList(DateTimeField(field.description,
+                                            format=self.app.config['DATE_FORMAT'],
+                                            validators=(validators.Optional(),))))
         elif  field.fieldtype.type == 'GIDNumber':
             setattr(form,
                     field.label,
@@ -514,7 +516,6 @@ class FormManager(object):
 
     def generate_edit_group_form(self, page, branch, group_cn):
         page_fieldz = Field.query.filter_by(page_id = page.id).all()
-
         class EditGroupForm(EditGroupBaseForm):
             pass
 

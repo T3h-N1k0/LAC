@@ -15,6 +15,9 @@
 <script type="text/javascript" src="{{
          url_for('static', filename='fieldset.js')
          }}"></script>
+<script type="text/javascript"
+        src="{{url_for('static', filename='js/bootstrap-datepicker.js')}}">
+</script>
 
 <script type="text/javascript" id="js">
 $(document).ready(function(){
@@ -24,7 +27,9 @@ $(document).ready(function(){
      searchFromList($(this).val(), searchArea);
      //alert(searchArea);
    });
-})
+  var dateNow = new Date()
+  $('.datepicker').datepicker({format:"{{ config['DATE_FORMAT_DATEPICKER']}}"})
+ })
 </script>
 {% endblock head_js %}
 

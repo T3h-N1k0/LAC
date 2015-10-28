@@ -497,7 +497,11 @@ class Engine(object):
                     field.fieldtype.type
                 )
                 for entry in getattr(form, field.label).entries
-    ]
+            ]
+            if field.label == 'cinesdaterenew' :
+                now_days_number = self.converter.datetime_to_days_number(datetime.now())
+                if form_field_values[0] == now_days_number :
+                    form_field_values = []
             if (field.label not in ['cinesUserToPurge', 'cn', 'cinesIpClient']
                 and form_field_values != [''] ):
                 form_attributez.append((field.label, form_field_values))
