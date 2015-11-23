@@ -617,6 +617,18 @@ class LDAP(object):
                              base_dn=base_dn)
         return userz
 
+    def get_all_users_uid(self):
+        base_dn = "ou=people,{0}".format(self.ldap_search_base)
+        ldap_filter='(objectclass=inetOrgPerson)'
+        attributes=['uid']
+        userz = self.search(ldap_filter=ldap_filter,
+                             attributes=attributes,
+                             base_dn=base_dn)
+        return sorted(
+            [user.get_attributes()['uid'][0]
+             for user in userz]
+        )
+
     def get_all_groups(self):
         base_dn = "{0}".format(self.ldap_search_base)
         ldap_filter='(objectclass=posixGroup)'

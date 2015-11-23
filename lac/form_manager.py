@@ -530,9 +530,7 @@ class FormManager(object):
         if branch == 'grProjet':
             accountz = self.ldap.get_people_group_memberz('cines')
         else:
-            accountz = self.ldap.get_people_group_memberz(
-                self.get_account_branch_from_group_branch(branch)
-            )
+            accountz = self.ldap.get_all_users_uid()
         available_memberz = [
             account for account in accountz
             if account not in selected_memberz
