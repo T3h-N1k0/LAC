@@ -83,8 +83,6 @@ class Cache(object):
     def populate_people_group(self):
         for branch in self.app.config['BRANCHZ']:
             people_group = branch['account']
-            # print(people_group)
-            print('people_group : {0}'.format(people_group))
             self.r.delete('people_groupz:{0}'.format(people_group))
             memberz = self.ldap.get_people_group_memberz(people_group)
             if memberz:
@@ -94,7 +92,6 @@ class Cache(object):
 
     def get_group_from_member_uid(self, uid):
         for branch in self.app.config['BRANCHZ']:
-            print(branch)
             people_group = branch['account']
             if uid in self.r.smembers("people_groupz:{0}".format(people_group)):
                 return people_group
