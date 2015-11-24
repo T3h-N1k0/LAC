@@ -53,7 +53,7 @@
 
     <aside class="row">
       {% if "pwdAccountLockedTime" in uid_attributez.keys() %}
-      <div class="text-center alert alert-danger" role="alert">Compte désactivé {% if uid_attributez['pwdAccountLockedTime'][0] == '000001010000Z' %} par un admin {% else %} le {{ convert_to_display_mode(uid_attributez['pwdAccountLockedTime'][0], 'Generalizedtime') }} {% endif %}</div>
+      <div class="text-center alert alert-danger" role="alert">Compte verrouillé {% if uid_attributez['pwdAccountLockedTime'][0] == '000001010000Z' %} par un admin {% else %} le {{ convert_to_display_mode(uid_attributez['pwdAccountLockedTime'][0], 'Generalizedtime') }} {% endif %}</div>
       {% endif %}
       <div id='dn'> Nom LDAP : {{ dn }}</div>
       <h4>Actions</h4>
