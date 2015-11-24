@@ -810,7 +810,7 @@ class Engine(object):
         for ticket in otrs_ticketz:
             ticket.customer_user_id = disabled_login
             db.session.add(ticket)
-        if is_cines_group(uid):
+        if self.is_cines_group(uid):
             OTRSUser.query.filter_by(login=uid).update(
                 {
                     'valid_id': 2,
