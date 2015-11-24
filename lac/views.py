@@ -455,7 +455,7 @@ def delete_user(uid):
     if request.method == 'POST':
         lac.remove_user_from_all_groupz(uid, posix_groupz, work_groupz)
         if app.config['PROD_FLAG']:
-            delete_otrs_user(uid)
+            lac.delete_otrs_user(uid)
         ldap.delete(user_dn)
         cache.populate_grouplist()
         cache.populate_people_group()
