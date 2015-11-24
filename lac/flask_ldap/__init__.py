@@ -327,6 +327,14 @@ class LDAP(object):
             base_dn=base_dn)
         return False if not raw_result else True
 
+    def is_cinesadmin_account(self, username):
+        ldap_filter = '(uid={0})'.format(username)
+        base_dn='ou=cinesADM,ou=people,{0}'.format(self.ldap_search_base)
+        raw_result = self.anonymous_search(
+            ldap_filter=ldap_filter,
+            base_dn=base_dn)
+        return False if not raw_result else True
+
     def login(self):
         """
         View function for rendering and logic for auth form
@@ -335,7 +343,8 @@ class LDAP(object):
         """
         if request.method == 'POST':
             if "username" in request.form and "password" in request.form:
-                if not self.is_cines_account(request.form['username']):
+                if not (self.is_cines_account(request.form['username'])
+                        or self.is_cinesadmin_account(request.form['username'])):
                     flash(u'Seuls les comptes CINES sont autorisés à se connecter à LAC')
                     return render_template(self.app.config['LDAP_LOGIN_TEMPLATE'])
                 elif self.ldap_login(request.form['username'], request.form['password']):
