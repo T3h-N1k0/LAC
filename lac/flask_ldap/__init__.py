@@ -329,7 +329,7 @@ class LDAP(object):
 
     def is_cinesadmin_account(self, username):
         ldap_filter = '(uid={0})'.format(username)
-        base_dn='ou=cinesADM,ou=people,{0}'.format(self.ldap_search_base)
+        base_dn='ou=Admcines,ou=people,{0}'.format(self.ldap_search_base)
         raw_result = self.anonymous_search(
             ldap_filter=ldap_filter,
             base_dn=base_dn)
