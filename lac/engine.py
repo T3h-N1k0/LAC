@@ -53,7 +53,8 @@ class Engine(object):
             self.converter.datetime_to_days_number(
                 new_shadow_expire_datetime))
         self.ldap.update_uid_attribute(user_attr['uid'][0],
-                                  [('shadowExpire', new_shadow_expire)]
+                                  [('shadowExpire', new_shadow_expire),
+                                   ('pwdAccountLockedTime', "000001010000Z")]
                               )
         flash(u'Compte {0} désactivé'.format(user_attr['uid'][0]))
 
@@ -73,6 +74,8 @@ class Engine(object):
         else:
             self.ldap.remove_uid_attribute(user_uid,
                                       [('shadowExpire', None)])
+        self.ldap.remove_uid_attribute(user_uid,
+                                       [('pwdAccountLockedTime', None)])
 
     def get_search_user_fieldz(self):
         page = Page.query.filter_by(label = "search_user").first()
@@ -348,9 +351,9 @@ class Engine(object):
 
     def is_active(self, user):
         user_attrz = user.get_attributes()
-        if 'shadowExpire' in user_attrz and datetime.now()> self.converter.days_number_to_datetime(
+        if ('shadowExpire' in user_attrz and datetime.now()> self.converter.days_number_to_datetime(
                 user_attrz['shadowExpire'][0]
-        ):
+        )) or ('pwdAccountLockedTime' in user_attrz):
             return False
         else:
             return True
