@@ -90,6 +90,12 @@ class FormManager(object):
             setattr(form,
                     field.label,
                     TextAreaField(field.description))
+        elif  field.fieldtype.type == 'Oui/Non':
+            setattr(form,
+                    field.label,
+                    SelectField(field.description,
+                                          choices=[('1', 'Oui'),
+                                                   ('-1', 'Non')]))
 
     def append_fieldlist_to_form(self, field, form, branch=None):
         if field.fieldtype.type == 'Text':
@@ -136,6 +142,12 @@ class FormManager(object):
             setattr(form,
                     field.label,
                     FieldList(TextAreaField(field.description)))
+        elif  field.fieldtype.type == 'Oui/Non':
+            setattr(form,
+                    field.label,
+                    FieldList(SelectField(field.description,
+                                          choices=[('1', 'Oui'),
+                                                   ('-1', 'Non')])))
 
 
     def set_default_quota_form_values(self, form, storage):
