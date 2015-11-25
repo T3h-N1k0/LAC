@@ -556,6 +556,34 @@ class FormManager(object):
 
         return form
 
+    def generate_edit_workgroup_form(self, page, group_cn):
+        page_fieldz = Field.query.filter_by(page_id = page.id).all()
+        class EditGroupForm(EditGroupBaseForm):
+            pass
+
+        for field in page_fieldz:
+            self.append_fieldlist_to_form(field,
+                                     EditGroupForm)
+
+        form = EditGroupForm(request.form)
+        selected_memberz = [helperz.get_uid_from_dn(member)
+                            for member in self.ldap.get_workgroup_memberz(
+                                    group_cn
+                            )]
+        accountz = self.ldap.get_all_users_uid()
+        available_memberz = [
+            account for account in accountz
+            if account not in selected_memberz
+        ]
+        form.memberz.selected_memberz.choices = [
+            (member, member) for member in selected_memberz
+        ]
+        form.memberz.available_memberz.choices =[
+            (member, member) for member in available_memberz
+        ]
+
+        return form
+
     def get_account_branch_from_group_branch(self, group_branch):
         for branch in self.app.config['BRANCHZ']:
             if branch['group'] == group_branch:
@@ -699,6 +727,31 @@ class FormManager(object):
             else:
                 form_field.append_entry()
 
+    def set_edit_workgroup_form_values(self, form, fieldz, cn=None):
+        if cn:
+            ldap_filter='(cn={0})'.format(cn)
+            attributes=['*','+']
+            base_dn='ou=grTravail,{0}'.format(
+                self.app.config['LDAP_SEARCH_BASE']
+            )
+            group_attributez = self.ldap.search(
+                ldap_filter=ldap_filter,
+                attributes=attributes,
+                base_dn=base_dn)[0].get_attributes()
+        else:
+            group_attributez = {}
+        for field in fieldz:
+            form_field = getattr(form, field.label)
+            while(len(form_field.entries)>0):
+                form_field.pop_entry()
+            if field.label in group_attributez and len(
+                    group_attributez[field.label]):
+                for field_value in group_attributez[field.label]:
+                    form_field.append_entry(
+                        self.converter.to_display_mode(field_value,
+                                                field.fieldtype.type))
+            else:
+                form_field.append_entry()
 
     def set_edit_user_form_values(self, form, fieldz, uid=None):
         if uid:

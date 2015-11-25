@@ -906,6 +906,36 @@ class Engine(object):
         )
         self.ldap.update_cn_attribute(group_cn, pre_modlist)
 
+    def update_ldap_object_from_edit_workgroup_form(self, form, page, group_cn):
+        ldap_filter='(&(cn={0})(objectClass=cinesGrWork))'.format(group_cn)
+        attributes=['*','+']
+        group_attributez = self.ldap.search(
+            ldap_filter=ldap_filter,
+            attributes=attributes)[0].get_attributes()
+        pagefieldz = Field.query.filter_by(page_id = page.id,
+                                           edit = True).all()
+        pre_modlist = []
+        for field in pagefieldz:
+            form_field_values = [entry.data.encode('utf-8')
+                                 for entry in
+                                 getattr(form, field.label).entries]
+            print('form_field_values : {0}'.format(form_field_values))
+            if form_field_values == ['']:
+                form_field_values = None
+            if ((field.label not in group_attributez)
+                or (field.label in group_attributez
+                    and group_attributez[field.label] != form_field_values)):
+                pre_modlist.append((field.label, form_field_values))
+        print(form.memberz.selected_memberz.data)
+        pre_modlist.append(
+            ('uniqueMember',
+             [
+                 self.ldap.get_full_dn_from_uid(member).encode('utf-8')
+                 for member in form.memberz.selected_memberz.data
+             ])
+        )
+        self.ldap.update_cn_attribute(group_cn, pre_modlist)
+
     def update_fields_from_edit_page_admin_form(self, form, attributes, page):
         Field.query.filter(Field.page_id == page.id,
                            ~Field.label.in_(attributes)

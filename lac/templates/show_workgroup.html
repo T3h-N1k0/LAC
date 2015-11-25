@@ -1,0 +1,76 @@
+{% from "_formhelpers.html" import render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Détails pour le groupe {{ cn }} {% endblock title %}
+
+{% block head_js %}
+{% endblock head_js %}
+
+{% block body %}
+<header class="row text-center">
+  <h2>Détails pour le groupe {{ cn }}</h2>
+</header>
+
+<section class="row">
+  <div class="col-sm-6">
+
+    {% for block in blockz %}
+    <div class="attrz-block">
+      {% for field in page_fieldz %}
+      {% if field.label in cn_attributez.keys() and field.block == block %}
+
+    {% if field.label == 'uniqueMember' %}
+    <strong>Membres à titre secondaires ( {{ field.label }} ) :</strong>
+    <ul class="list-group">
+
+      {% for value in cn_attributez['uniqueMember'] %}
+      {% if get_group_from_member_uid(value) %}
+      <a class="list-group-item" href="{{ url_for('show_user',
+         page=get_group_from_member_uid(value),
+         uid=value)}}">{{ render_field(value, field.fieldtype.type) }}</a>
+      {% else %}
+      <a class="list-group-item" href="#">{{ value }} (Introuvable)</a>
+      {% endif %}
+      {% endfor %}
+    </ul>
+    {% else %}
+
+
+    <strong>{{ field.description }} ( {{field.label}} ) :</strong>
+    <ul class="list-group">
+      {% for value in cn_attributez[field.label] %}
+      <li class="list-group-item">{{ render_field(value, field.fieldtype.type)|nl2br }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% endif %}
+
+    {% endfor %}
+    </div>
+    {% endfor %}
+
+
+  </div>
+
+  <div class="col-sm-offset-2 col-sm-4" >
+    <aside class="row">
+      <div id='dn'>Nom LDAP : {{ dn }}</div>
+      {% if session['admin'] %}
+      <h4>Actions</h4>
+      <a href="{{ url_for(
+         'edit_workgroup',
+         group_cn=cn)}}">Editer</a>
+      <br>
+      <a href="{{ url_for(
+         'delete_workgroup',
+         cn=cn
+         )}}">Supprimer</a>
+      <br/>
+      {% endif %}
+    </aside>
+
+  </div>
+</section>
+
+{% endblock body %}
