@@ -547,7 +547,7 @@ class LDAP(object):
         else:
             return None
 
-    def get_work_group_memberz(self, group):
+    def get_workgroup_memberz(self, group):
         """
         List memberz of a group inherited from grTravail ou
         """

@@ -47,7 +47,7 @@ class Cache(object):
             self.ldap.add_dn_attribute(group_dn, pre_modlist)
             self.populate_people_group()
 
-    def rem_from_group_if_member(self, group, memberz_uid):
+    def rem_from_workgroup_if_member(self, group, memberz_uid):
         memberz_dn = [self.ldap.get_full_dn_from_uid(uid)
                       for uid in memberz_uid]
         memberz_dn_filtered = [dn
@@ -76,7 +76,7 @@ class Cache(object):
     def populate_work_group(self):
         for group in self.ldap.get_work_groupz():
             self.r.delete('wrk_groupz:{0}'.format(group))
-            memberz = self.ldap.get_work_group_memberz(group)
+            memberz = self.ldap.get_workgroup_memberz(group)
             for member in memberz:
                 self.r.sadd("wrk_groupz:{0}".format(group), member)
 
@@ -101,4 +101,4 @@ class Cache(object):
             self.add_to_work_group_if_not_member(group, [uid])
         for group in actual_groupz:
             if group not in selected_groupz:
-                self.rem_from_group_if_member(group, [uid])
+                self.rem_from_workgroup_if_member(group, [uid])

@@ -477,7 +477,7 @@ def select_work_groups(uid):
             cache.add_to_work_group_if_not_member(group, [uid])
         for group in actual_work_groupz:
             if group not in form.selected_groupz.data:
-                cache.rem_from_group_if_member(group, [uid])
+                cache.rem_from_workgroup_if_member(group, [uid])
         flash(u'Groupes de travail mis à jour')
         return redirect(url_for('show_user',
                                 page=cache.get_group_from_member_uid(uid),

@@ -846,7 +846,7 @@ class Engine(object):
             self.cache.add_to_work_group_if_not_member(wrk_group, [uid])
             self.ldap.set_submission(uid, wrk_group, '0')
         elif not is_member:
-            self.cache.rem_from_group_if_member(wrk_group, [uid])
+            self.cache.rem_from_workgroup_if_member(wrk_group, [uid])
             self.ldap.set_submission(uid, wrk_group, '0')
 
     def update_group_submission(self, form):
@@ -873,7 +873,7 @@ class Engine(object):
             for uid in groupz_memberz_uid:
                 self.ldap.set_submission(uid, wrk_group, '0')
         elif not is_member:
-            self.cache.rem_from_group_if_member(wrk_group, groupz_memberz_uid)
+            self.cache.rem_from_workgroup_if_member(wrk_group, groupz_memberz_uid)
             for uid in groupz_memberz_uid:
                 self.ldap.set_submission(uid, wrk_group, '0')
 
