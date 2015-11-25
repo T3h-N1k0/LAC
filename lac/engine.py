@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 from flask import current_app, request, flash, render_template, session, redirect, url_for
 
 from lac.data_modelz import *
-
+from lac.helperz import *
 
 __author__ = "Nicolas CHATELAIN"
 __copyright__ = "Copyright 2014, Nicolas CHATELAIN @ CINES"
@@ -926,14 +926,20 @@ class Engine(object):
                 or (field.label in group_attributez
                     and group_attributez[field.label] != form_field_values)):
                 pre_modlist.append((field.label, form_field_values))
-        print(form.memberz.selected_memberz.data)
+        old_memberz = group_attributez['uniqueMember']
+        new_memberz = [
+            self.ldap.get_full_dn_from_uid(member).encode('utf-8')
+            for member in form.memberz.selected_memberz.data
+        ]
+        for member in old_memberz:
+            if member not in new_memberz:
+                self.ldap.set_submission( get_uid_from_dn(member), group_cn, '0')
         pre_modlist.append(
             ('uniqueMember',
-             [
-                 self.ldap.get_full_dn_from_uid(member).encode('utf-8')
-                 for member in form.memberz.selected_memberz.data
-             ])
+             new_memberz
+             )
         )
+        self.cache.populate_work_group()
         self.ldap.update_cn_attribute(group_cn, pre_modlist)
 
     def update_fields_from_edit_page_admin_form(self, form, attributes, page):
