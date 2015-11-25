@@ -40,11 +40,6 @@ class Converter(object):
             return self.cache.get_posix_group_cn_by_gid(value)
         elif display_mode == 'DaysNumber' :
             return self.days_number_to_datetime(value)
-        elif display_mode == 'Checkbox' :
-            if value == True:
-                return "Oui"
-            else:
-                return "Non"
 
     def from_display_mode(self, value, display_mode):
         if value is None:
