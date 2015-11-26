@@ -961,7 +961,9 @@ class Engine(object):
             for member in form.memberz.selected_memberz.data
         ]
         for member in old_memberz:
-            if member not in new_memberz:
+            if (member not in new_memberz
+                and self.cache.get_group_from_member_uid(
+                    get_uid_from_dn(member)) == "cines"):
                 self.ldap.set_submission( get_uid_from_dn(member), group_cn, '0')
         pre_modlist.append(
             ('uniqueMember',
