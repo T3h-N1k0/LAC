@@ -252,7 +252,12 @@ class User(db.Model):
     __bind_key__ = 'lac'
     __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
-    uid = db.Column(db.String(200), unique=True)
+    uid = db.Column(db.String(200))
+    uid_number = db.Column(db.Integer, unique=True)
+    firstname = db.Column(db.String(200))
+    lastname = db.Column(db.String(200))
+    email = db.Column(db.String(200))
+    phone_number = db.Column(db.String(20))
     binds = db.relationship('UserBind',
                             backref="user",
                             lazy='dynamic',
@@ -314,7 +319,9 @@ class C4Ressource(db.Model):
     code_dossier_ressource = db.Column(db.String(15), primary_key=True)
     code_comite = db.Column(db.Integer, db.ForeignKey('COMITE.code_comite'))
     code_projet = db.Column(db.String(8),
-                            db.ForeignKey('PROJET.code_projet'))
+                            db.ForeignKey(
+                                'PROJET{0}.code_projet'.format(
+                                    datetime.now().strftime('%Y'))))
     demande_uc_ibm = db.Column(db.Integer)
     demande_uc_occigen = db.Column(db.Integer)
     accorde_uc_ibm = db.Column(db.Integer)
