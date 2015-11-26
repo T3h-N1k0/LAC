@@ -29,6 +29,7 @@ $(document).ready(function(){
    });
   var dateNow = new Date()
   $('.datepicker').datepicker({format:"{{ config['DATE_FORMAT_DATEPICKER']}}"})
+  $('#cinesdaterenew-0').val(dateNow.getDate()+"/"+(dateNow.getMonth()+1)+"/"+dateNow.getFullYear())
  })
 </script>
 {% endblock head_js %}
