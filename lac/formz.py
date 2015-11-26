@@ -164,6 +164,10 @@ class AddGenericGroupForm(Form):
     filesystem = SelectField(u'Système de fichier',default='DEFAUT')
     description = TextField(u'Description')
 
+class AddWorkgroupForm(Form):
+    cn = TextField(u'Nom (cn)')
+    description = TextField(u'Description')
+
 
 class AddC4GroupForm(Form):
     cn = SelectField(u'Nom (cn)')

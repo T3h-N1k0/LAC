@@ -576,6 +576,28 @@ def delete_group(branch, cn):
                             branch=branch,
                             cn=cn))
 
+@app.route('/add_workgroup/', methods=('GET', 'POST'))
+@login_required
+def add_workgroup():
+    page = Page.query.filter_by(label = 'grTravail').first()
+    fieldz = Field.query.filter_by(page_id = page.id,edit = True).order_by(
+        Field.priority
+    ).all()
+    blockz =sorted(set([field.block for field in fieldz]))
+    add_form = fm.generate_add_workgroup_form(fieldz)
+    if request.method == 'POST':
+        if add_form.validate():
+            if lac.create_ldap_object_from_add_workgroup_form(
+                    add_form):
+                return redirect(url_for("show_workgroup",
+                                        cn=add_form.cn.data))
+            else :
+                return redirect(url_for("add_workgroup"))
+    return render_template('add_workgroup.html',
+                           fieldz=fieldz,
+                           blockz=blockz,
+                           add_form=add_form)
+
 @app.route('/show_workgroup/<cn>')
 @login_required
 def show_workgroup(cn):

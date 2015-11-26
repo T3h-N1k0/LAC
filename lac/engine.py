@@ -34,6 +34,7 @@ class Engine(object):
         self.converter = app.extensions['converter']
         self.fm = app.extensions['form_manager']
         self.ldap_search_base = app.config['LDAP_SEARCH_BASE']
+        self.ldap_admin = app.config['LDAP_DEFAULT_ADMIN']
 
 
 
@@ -481,6 +482,34 @@ class Engine(object):
             flash(u'Groupe créé')
             return 1
 
+    def create_ldap_object_from_add_workgroup_form(self, form):
+        ot = LDAPObjectType.query.filter_by(label = 'grTravail').first()
+        cn = form.cn.data.encode('utf-8')
+        description = form.description.data.encode('utf-8')
+        object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8')
+                          for oc_ot in LDAPObjectTypeObjectClass.query.filter_by(
+                              ldapobjecttype_id = ot.id).all()]
+        if not object_classes:
+            flash(u'ObjectClasss manquants pour ce type d\'objet')
+            return 0
+
+        full_dn = "cn={0},ou=grTravail,{1}".format(
+            cn,
+            self.ldap_search_base)
+        add_record = [('cn', [cn]),
+                      ('cinesGrWorkType', [
+                          getattr(form, 'cinesGrWorkType').data.encode('utf-8')
+                      ]),
+                      ('uniqueMember', [self.ldap_admin]),
+                      ('objectClass', object_classes)]
+        if description and description != '':
+            add_record.append(('description', [description]))
+        if self.ldap.add(full_dn, add_record):
+            db.session.add(ot)
+            db.session.commit()
+            self.cache.populate_work_group()
+            flash(u'Groupe créé')
+            return 1
 
     def create_ldap_object_from_add_user_form(self, form, fieldz, page):
         ldap_ot = LDAPObjectType.query.filter_by(
