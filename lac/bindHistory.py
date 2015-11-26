@@ -29,14 +29,21 @@ engine = create_engine(
 Session = sessionmaker(bind=engine)
 session = Session()
 
+
 class User(Base):
     __bind_key__ = 'lac'
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
-    uid = Column(String(200), unique=True)
+    uid =Column(String(200))
+    uid_number = Column(Integer, unique=True)
+    firstname = Column(String(200))
+    lastname = Column(String(200))
+    email = Column(String(200))
+    phone_number = Column(String(20))
     binds = relationship('UserBind',
                             backref="user",
-                            lazy='dynamic')
+                            lazy='dynamic',
+                            order_by='desc(UserBind.time)')
 
 class UserBind(Base):
     __bind_key__ = 'lac'
@@ -64,7 +71,7 @@ def get_account():
 
         conn.simple_bind_s("","")
 
-        retrieveAttributes = ['uid', 'authTimestamp']
+        retrieveAttributes = ['uid', 'authTimestamp', 'uidNumber']
         result = conn.search_st(
             LDAP_SEARCH_BASE, ldap.SCOPE_SUBTREE, 'uid=*', retrieveAttributes)
         conn.unbind_s()
@@ -89,14 +96,13 @@ def generalized_time_to_datetime(generalized_time):
 
 
 # Add new bind if not already in database
-def update_user_last_bind(uid, bind_datetime):
-    user = session.query(User).filter_by(uid=uid).first()
+def update_user_last_bind(uid_number, uid, bind_datetime):
+    user = session.query(User).filter_by(uid_number=uid_number).first()
     # Create user if doesn't already exists
     if not user:
-        user = User(uid=uid)
+        user = User(uid_number=uid_number,
+                    uid=uid)
         session.add(user)
-        if __debug__:
-            print(u"Utilisateur {0} créé.".format(user.uid))
     # Add bind if not already in database
     if bind_datetime not in [bind.time for bind in user.binds.all()]:
         new_bind = UserBind(
@@ -120,10 +126,12 @@ def update_all_user_last_bind():
 
         #  If user has a last bind we update it
         if 'authTimestamp' in account_attrz:
+            print(account_attrz)
             bind_datetime = generalized_time_to_datetime(
                 account_attrz['authTimestamp'][0])
+            uid_number = account_attrz['uidNumber'][0]
             uid = account_attrz['uid'][0]
-            update_user_last_bind(uid, bind_datetime)
+            update_user_last_bind(uid_number, uid, bind_datetime)
 
 
 if __name__ == '__main__':
