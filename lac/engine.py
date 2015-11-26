@@ -849,6 +849,23 @@ class Engine(object):
             )
         db.session.commit()
 
+    def update_user_table_on_deletion(self, uid):
+        ldap_user = self.ldap.get_uid_detailz(uid).get_attributes()
+        db_user = db.session.query(User).filter_by(uid=uid).first()
+        # Create user if doesn't already exists
+        if not db_user:
+            db_user = User(uid=uid)
+            db.session.add(db_user)
+        db_user.uid_number = ldap_user['uidNumber'][0].decode('utf-8')
+        db_user.firstname = ldap_user['givenName'][0].decode('utf-8')
+        db_user.lastname = ldap_user['sn'][0].decode('utf-8')
+        if 'mail' in ldap_user:
+            db_user.email = ldap_user['mail'][0].decode('utf-8')
+        if 'telephoneNumber' in ldap_user:
+            db_user.phone_number = ldap_user['telephoneNumber'][0].decode('utf-8')
+        db.session.commit()
+
+
     def remove_user_from_all_groupz(self, uid, posix_groupz, work_groupz):
         user_dn = self.ldap.get_full_dn_from_uid(uid)
         for group_cn in work_groupz:
