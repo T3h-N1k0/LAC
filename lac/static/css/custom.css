@@ -46,3 +46,8 @@
 ul li p {
   margin: 0px;
 }
+
+textarea {
+  height: 150px;
+  width: 250px;
+}
