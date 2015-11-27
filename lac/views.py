@@ -782,7 +782,7 @@ def edit_workgroup(group_cn):
 @app.route('/show_deleted_userz', methods=('GET', 'POST'))
 @login_required
 def show_deleted_userz():
-    userz = User.query.all()
+    userz = User.query.filter(User.deletion_timestamp != None).all()
     search_form = SearchDeletedUserForm(request.form)
     if request.method == 'POST':
         uid_number_filter = search_form.uid_number.data
@@ -791,7 +791,7 @@ def show_deleted_userz():
         lastname_filter = search_form.lastname.data
         phone_filter = search_form.phone_number.data
         email_filter = search_form.email.data
-        u = User.query
+        u = User.query.filter(User.deletion_timestamp != None)
         if uid_number_filter and uid_number_filter != '':
             u = u.filter(User.uid_number.like("%{0}%".format(uid_number_filter)))
         if uid_filter and uid_filter != '':

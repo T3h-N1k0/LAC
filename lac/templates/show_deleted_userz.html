@@ -81,6 +81,7 @@
         <th> Nom </th>
         <th> Email </th>
         <th> Téléphone </th>
+        <th> Date de la suppression </th>
       </tr>
     </thead>
     <tbody>
@@ -103,6 +104,9 @@
         </td>
         <td>
           {{ user.phone_number }}
+        </td>
+        <td>
+          {{ user.deletion_timestamp }}
         </td>
       </tr>
       {% endfor %}
