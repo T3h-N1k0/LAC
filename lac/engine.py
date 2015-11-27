@@ -859,6 +859,7 @@ class Engine(object):
         db_user.uid_number = ldap_user['uidNumber'][0].decode('utf-8')
         db_user.firstname = ldap_user['givenName'][0].decode('utf-8')
         db_user.lastname = ldap_user['sn'][0].decode('utf-8')
+        db_user.deletion_timestamp = datetime.now()
         if 'mail' in ldap_user:
             db_user.email = ldap_user['mail'][0].decode('utf-8')
         if 'telephoneNumber' in ldap_user:
