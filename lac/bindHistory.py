@@ -8,15 +8,27 @@ from sqlalchemy.orm import sessionmaker, relationship, backref
 from datetime import datetime, timedelta
 from pytz import timezone
 import pytz
+import ConfigParser
+
+
+
+
 
 # Config
-LDAP_HOST = "ldapone.cines.fr"
-LDAP_PORT = 389
-LDAP_SCHEMA = "ldap"
-LDAP_SEARCH_BASE = 'dc=cines,dc=fr'
-LAC_DB_HOST = 'localhost'
-LAC_DB_USER = 'lac'
-LAC_DB_PASS = 'omgwtfbbq'
+configParser = ConfigParser.RawConfigParser()
+configFilePath = './script_config.ini'
+configParser.read(configFilePath)
+
+
+LDAP_HOST = configParser.get('Bind', 'host')
+LDAP_PORT = configParser.get('Bind', 'ldap_port')
+LDAP_SCHEMA = configParser.get('Bind', 'ldap_schema')
+LDAP_SEARCH_BASE = configParser.get('Bind', 'ldap_search_base')
+LAC_DB_HOST = configParser.get('Bind', 'lac_db_host')
+LAC_DB_USER = configParser.get('Bind', 'lac_db_user')
+LAC_DB_PASS = configParser.get('Bind', 'lac_db_pass')
+
+
 
 utc = pytz.utc # Used for generalizedtime to datetime conversion
 
@@ -59,8 +71,6 @@ class UserBind(Base):
 def get_account():
     """ Renvoi la liste des comptes avec leur dernier bind"""
     try:
-
-
         conn = ldap.initialize('{0}://{1}:{2}'.format(
             LDAP_SCHEMA,
             LDAP_HOST,
@@ -78,7 +88,6 @@ def get_account():
         return result
 
     except ldap.LDAPError, e:
-        server.unbind()
         print e
 
 
@@ -119,14 +128,12 @@ def update_all_user_last_bind():
     accountz = ldaphelper.get_search_results(
         get_account()
     )
-
     # Parsing all accountz retrieved
     for account in accountz:
         account_attrz = account.get_attributes()
 
         #  If user has a last bind we update it
         if 'authTimestamp' in account_attrz:
-            print(account_attrz)
             bind_datetime = generalized_time_to_datetime(
                 account_attrz['authTimestamp'][0])
             uid_number = account_attrz['uidNumber'][0]
