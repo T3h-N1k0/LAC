@@ -258,6 +258,7 @@ class User(db.Model):
     lastname = db.Column(db.String(200))
     email = db.Column(db.String(200))
     phone_number = db.Column(db.String(20))
+    deletion_timestamp = db.Column(db.Date())
     binds = db.relationship('UserBind',
                             backref="user",
                             lazy='dynamic',
