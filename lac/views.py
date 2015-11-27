@@ -779,6 +779,36 @@ def edit_workgroup(group_cn):
                            fieldz=fieldz,
                            blockz=blockz)
 
+@app.route('/show_deleted_userz', methods=('GET', 'POST'))
+@login_required
+def show_deleted_userz():
+    userz = User.query.all()
+    search_form = SearchDeletedUserForm(request.form)
+    if request.method == 'POST':
+        uid_number_filter = search_form.uid_number.data
+        uid_filter = search_form.uid.data
+        firstname_filter = search_form.firstname.data
+        lastname_filter = search_form.lastname.data
+        phone_filter = search_form.phone_number.data
+        email_filter = search_form.email.data
+        u = User.query
+        if uid_number_filter and uid_number_filter != '':
+            u = u.filter(User.uid_number.like("%{0}%".format(uid_number_filter)))
+        if uid_filter and uid_filter != '':
+            u = u.filter(User.uid.like("%{0}%".format(uid_filter)))
+        if firstname_filter and firstname_filter != '':
+            u = u.filter(User.firstname.like("%{0}%".format(firstname_filter)))
+        if email_filter and email_filter != '':
+            u = u.filter(User.email.like("%{0}%".format(email_filter)))
+        if lastname_filter and lastname_filter != '':
+            u = u.filter(User.lastname.like("%{0}%".format(lastname_filter)))
+        if phone_filter and phone_filter != '':
+            u = u.filter(User.phone_number.like("%{0}%".format(phone_filter)))
+        userz = u.all()
+    return render_template('show_deleted_userz.html',
+                           form=search_form,
+                           userz=userz)
+
 @app.route('/delete_workgroup/<cn>')
 @login_required
 def delete_workgroup(cn):

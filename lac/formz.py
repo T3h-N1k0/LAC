@@ -12,6 +12,14 @@ class SearchUserForm(Form):
     nationality = TextField(u'Nationalité (cinesNationality)')
     user_disabled = BooleanField('Uniquement les comptes inactifs : ')
 
+class SearchDeletedUserForm(Form):
+    uid_number = TextField(u'Numéro du compte (uidNumber)')
+    lastname = TextField(u'Nom de l\'utilisateur (sn)')
+    firstname = TextField(u'Prénome de l\'utilisateur (givenName)')
+    uid = TextField(u'Login (uid)')
+    email = TextField(u'Courriel (mail)')
+    phone_number = TextField(u'Téléphone (telephoneNumber)')
+
 class SearchGroupForm(Form):
     gid_number = TextField(u'Numéro du groupe (gidNumber)')
     cn = TextField(u'Nom du groupe (cn)')
