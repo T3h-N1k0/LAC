@@ -17,7 +17,7 @@
 {% macro render_fieldlist(form, pagefield) %}
   <div data-toggle="fieldset" id="{{ pagefield.label }}-fieldset" >
     <dl class="dl-horizontal">
-    <dt>{{ get_attr(form, pagefield.label)[0].label }}
+    <dt>{{ get_attr(form, pagefield.label)[0].label }} {% if get_attr(form, pagefield.label)[0].flags.required %}*{% endif %}
     {% if pagefield.multivalue %}
       <button type="button" data-toggle="fieldset-add-row" data-target="#{{ pagefield.label }}-fieldset" class="btn"><span class="glyphicon glyphicon-plus"></button>
     {% endif %}
