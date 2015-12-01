@@ -1028,6 +1028,7 @@ class Engine(object):
             existing_field.fieldtype = field_type
             existing_field.description = form_field.desc.data
             existing_field.multivalue = form_field.multivalue.data
+            existing_field.mandatory = form_field.mandatory.data
             existing_field.priority = form_field.priority.data
             existing_field.block = form_field.block.data
         else:
@@ -1040,6 +1041,7 @@ class Engine(object):
                               fieldtype=field_type,
                               description=form_field.desc.data,
                               multivalue=form_field.multivalue.data,
+                              mandatory=form_field.mandatory.data,
                               priority=form_field.priority.data,
                               block=form_field.block.data)
             db.session.add(new_field)

@@ -27,11 +27,12 @@
       <li  data-toggle="fieldset-entry">  {% if pagefield.fieldtype.type in config['DATE_FIELDTYPEZ']  %} {{ field(class_='datepicker')|safe }} {% else %} {{ field(**kwargs)|safe }} {% endif %}
       {% if pagefield.multivalue %}
         <button type="button" data-toggle="fieldset-remove-row" id="{{ pagefield.label }}-{{loop.index0}}-remove" class="btn"><span class="glyphicon glyphicon-remove"></button></li>
-      {% endif %}
-      {% if field.errors %}
+          {% endif %}
+
+      {% if get_attr(form, pagefield.label).errors %}
         <ul class=errors>
-          {% for error in field.errors %}
-          <li>{{ error }}</li>
+          {% for error in get_attr(form, pagefield.label).errors %}
+          <li>{{ error[0] }}</li>
           {% endfor %}
         </ul>
       {% endif %}

@@ -140,6 +140,7 @@ class Field(db.Model):
     display = db.Column(db.Boolean())
     edit = db.Column(db.Boolean())
     multivalue = db.Column(db.Boolean())
+    mandatory = db.Column(db.Boolean())
     restrict = db.Column(db.Boolean())
     display_mode = db.Column(db.String(50), unique=True)
     priority = db.Column(db.Integer)

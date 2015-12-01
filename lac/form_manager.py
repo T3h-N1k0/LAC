@@ -51,37 +51,71 @@ class FormManager(object):
         if field.fieldtype.type == 'Text':
             setattr(form,
                     field.label,
-                    TextField(field.description))
+                    TextField(field.description,
+                              validators=[
+                                  validators.Required(
+                                      message=u'Champ obligatoire'
+                                  )] if field.mandatory
+                                  else None ))
         elif field.fieldtype.type in self.app.config['DATE_FIELDTYPEZ']:
             setattr(form,
                     field.label,
                     DateTimeField(field.description,
                                   format=self.app.config['DATE_FORMAT'],
-                                  validators=(validators.Optional(),)))
+                                  validators=[
+                                      validators.Required(
+                                          message=u'Champ obligatoire'
+                                      )] if field.mandatory
+                                  else None))
         elif  field.fieldtype.type == 'GIDNumber':
             setattr(form,
                     field.label,
                     SelectField(field.description,
-                                choices=self.get_posix_groupz_choices()))
+                                choices=self.get_posix_groupz_choices(),
+                                validators=[
+                                    validators.Required(
+                                        message=u'Champ obligatoire'
+                                    )] if field.mandatory
+                                else None))
         elif  field.fieldtype.type == 'CINESUser':
             setattr(form,
                     field.label,
                     SelectField(field.description,
-                                choices=self.get_posix_userz_choices('cines')))
+                                choices=self.get_posix_userz_choices('cines'),
+                                validators=[
+                                    validators.Required(
+                                        message=u'Champ obligatoire'
+                                    )] if field.mandatory
+                                else None))
         elif field.fieldtype.type == 'Submission':
             setattr(form,
                     field.label,
-                    FormField(EditSubmissionForm))
+                    FormField(EditSubmissionForm,
+                              validators=[
+                                  validators.Required(
+                                      message=u'Champ obligatoire'
+                                  )] if field.mandatory
+                                  else None))
         elif  field.fieldtype.type == 'Shell':
             setattr(form,
                     field.label,
                     SelectField(field.description,
-                                choices=self.get_shellz_choices()))
+                                choices=self.get_shellz_choices(),
+                                validators=[
+                                    validators.Required(
+                                        message=u'Champ obligatoire'
+                                    )] if field.mandatory
+                                else None))
         elif  field.fieldtype.type == 'Filesystem':
             setattr(form,
                     field.label,
                     SelectField(field.description,
-                                choices=self.get_filesystem_choices()))
+                                choices=self.get_filesystem_choices(),
+                                validators=[
+                                    validators.Required(
+                                        message=u'Champ obligatoire'
+                                    )] if field.mandatory
+                                else None))
         elif  field.fieldtype.type == 'Checkbox':
             setattr(form,
                     field.label,
@@ -89,7 +123,12 @@ class FormManager(object):
         elif  field.fieldtype.type == 'TextArea':
             setattr(form,
                     field.label,
-                    TextAreaField(field.description))
+                    TextAreaField(field.description,
+                                  validators=[
+                                      validators.Required(
+                                          message=u'Champ obligatoire'
+                                      )] if field.mandatory
+                                  else None))
         elif  field.fieldtype.type == 'Oui/Non':
             setattr(form,
                     field.label,
@@ -101,18 +140,30 @@ class FormManager(object):
         if field.fieldtype.type == 'Text':
             setattr(form,
                     field.label,
-                    FieldList(TextField(field.description)))
+                    FieldList(TextField(field.description, validators=[
+                                  validators.Required(message=u'Champ obligatoire'
+                                  ) ] if field.mandatory
+                                  else None)
+                               ))
         elif field.fieldtype.type in self.app.config['DATE_FIELDTYPEZ']:
             setattr(form,
                     field.label,
-                    FieldList(DateTimeField(field.description,
-                                            format=self.app.config['DATE_FORMAT'],
-                                            validators=(validators.Optional(),))))
+                    FieldList(DateTimeField(
+                        field.description,
+                        format=self.app.config['DATE_FORMAT'],
+                        validators=[
+                            validators.Required(message=u'Champ obligatoire'
+                                            ) ] if field.mandatory
+                        else None)))
         elif  field.fieldtype.type == 'GIDNumber':
             setattr(form,
                     field.label,
                     FieldList(SelectField(
                         field.description,
+                        validators=[
+                                  validators.Required(message=u'Champ obligatoire'
+                                  ) ] if field.mandatory
+                                  else None,
                         choices=self.get_posix_groupz_choices(
                             self.ldap.get_group_branch(branch))
                     )))
@@ -121,18 +172,32 @@ class FormManager(object):
                     field.label,
                     FieldList(SelectField(
                         field.description,
-                        choices=self.get_posix_userz_choices('cines')
+                        choices=self.get_posix_userz_choices('cines'),
+                        validators=[
+                            validators.Required(message=u'Champ obligatoire'
+                                            ) ] if field.mandatory
+                        else None
                     )))
         elif  field.fieldtype.type == 'Shell':
             setattr(form,
                     field.label,
-                    FieldList(SelectField(field.description,
-                                          choices=self.get_shellz_choices())))
+                    FieldList(SelectField(
+                        field.description,
+                        choices=self.get_shellz_choices()),
+                              validators=[
+                                  validators.Required(message=u'Champ obligatoire'
+                                                  ) ] if field.mandatory
+                              else None))
         elif  field.fieldtype.type == 'Filesystem':
             setattr(form,
                     field.label,
-                    FieldList(SelectField(field.description,
-                                          choices=self.get_filesystem_choices())
+                    FieldList(SelectField(
+                        field.description,
+                        choices=self.get_filesystem_choices(),
+                        validators=[
+                            validators.Required(message=u'Champ obligatoire'
+                                            ) ] if field.mandatory
+                        else None)
                           ))
         elif  field.fieldtype.type == 'Checkbox':
             setattr(form,
@@ -141,13 +206,23 @@ class FormManager(object):
         elif  field.fieldtype.type == 'TextArea':
             setattr(form,
                     field.label,
-                    FieldList(TextAreaField(field.description)))
+                    FieldList(TextAreaField(
+                        field.description,
+                        validators=[
+                            validators.Required(message=u'Champ obligatoire'
+                                            ) ] if field.mandatory
+                        else None)))
         elif  field.fieldtype.type == 'Oui/Non':
             setattr(form,
                     field.label,
-                    FieldList(SelectField(field.description,
-                                          choices=[('1', 'Oui'),
-                                                   ('-1', 'Non')])))
+                    FieldList(SelectField(
+                        field.description,
+                        choices=[('1', 'Oui'),
+                                 ('-1', 'Non')],
+                        validators=[
+                            validators.Required(message=u'Champ obligatoire'
+                                            ) ] if field.mandatory
+                        else None     )))
 
 
     def set_default_quota_form_values(self, form, storage):
@@ -475,7 +550,9 @@ class FormManager(object):
                 multivalue = BooleanField(u'Champ multi-valeur',
                                         default=existing_field.multivalue
                                        if existing_field is not None else None)
-
+                mandatory = BooleanField(u'Champ obligatoire',
+                                        default=existing_field.mandatory
+                                       if existing_field is not None else None)
                 display_mode = SelectField('Mode d\'affichage',
                                            default=existing_field.fieldtype_id
                                            if existing_field is not None else None,
@@ -650,13 +727,15 @@ class FormManager(object):
             wrk_groupz = FormField(SelectGroupzForm, label=u"Groupes de travail")
         for field in page_fieldz:
             self.append_fieldlist_to_form(field, EditForm, page.label)
-        setattr(EditForm,
-                "uid",
-                TextField("Login"))
         existing_userz = [
             user.get_attributes()['uid'][0] for user in self.ldap.get_all_users()]
-        self.set_validators_to_form_field(
-            EditForm, 'uid',[validators.NoneOf(existing_userz)])
+        setattr(EditForm,
+                "uid",
+                TextField("Login", validators=[
+                    validators.NoneOf(
+                        existing_userz,
+                        message=u"L'utilisateur existe déjà"),
+                    validators.Required("Champ obligatoire")]))
         form = EditForm(request.form)
         return form
 
