@@ -1,6 +1,6 @@
 {% macro render_formfield(field, class) %}
 <dl class="dl-horizontal">
-  <dt>{{ field.label }}</dt>
+  <dt>{{ field.label }}  {% if field.flags.required %}*{% endif %} </dt>
   <dd>{{ field(class_=class)|safe }}</dd>
 </dl>
 {% if field.errors %}
