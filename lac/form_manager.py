@@ -30,6 +30,8 @@ class FormManager(object):
 
     def get_posix_groupz_choices(self, branch=None):
         ldap_groupz = self.ldap.get_posix_groupz(branch)
+        if branch == "grCines":
+            ldap_groupz.extend(self.ldap.get_posix_groupz('grProjet'))
         ldap_groupz_list = [('', '---')]
         for group in ldap_groupz:
             group_attrz = group.get_attributes()
