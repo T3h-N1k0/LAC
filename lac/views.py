@@ -995,7 +995,7 @@ def edit_quota(storage_cn=None):
         storage = ldap.get_storage(storage_cn).get_attributes()
         form = EditQuotaForm(request.form)
         if request.method == 'POST' and form.validate():
-            update_quota(storage, form)
+            self.lac.update_quota(storage, form)
             return redirect(url_for('home'))
         default_fieldz = fm.set_quota_form_values(form, storage)
         return render_template('edit_quota.html',

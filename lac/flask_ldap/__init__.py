@@ -242,11 +242,11 @@ class LDAP(object):
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
 
-    def add_cn_attribute(self, cn, pre_modlist):
-        dn = self.get_full_dn_from_cn(cn)
-        mod_attrs = [(ldap.MOD_ADD, name, values)
-                     for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+    # def add_cn_attribute(self, cn, pre_modlist):
+    #     dn = self.get_full_dn_from_cn(cn)
+    #     mod_attrs = [(ldap.MOD_ADD, name, values)
+    #                  for name, values in pre_modlist]
+    #     self.generic_modify(dn, mod_attrs)
 
     def add_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_ADD, name, values)
@@ -260,19 +260,24 @@ class LDAP(object):
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
 
-    def remove_cn_attribute(self, cn, pre_modlist):
-        dn = self.get_full_dn_from_cn(cn)
-        mod_attrs = [(ldap.MOD_DELETE, name, values)
-                     for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+    # def remove_cn_attribute(self, cn, pre_modlist):
+    #     dn = self.get_full_dn_from_cn(cn)
+    #     mod_attrs = [(ldap.MOD_DELETE, name, values)
+    #                  for name, values in pre_modlist]
+    #     self.generic_modify(dn, mod_attrs)
 
     def remove_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_DELETE, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)
 
-    def update_cn_attribute(self, cn, pre_modlist):
-        dn = self.get_full_dn_from_cn(cn)
+    # def update_cn_attribute(self, cn, pre_modlist):
+    #     dn = self.get_full_dn_from_cn(cn)
+    #     mod_attrs = [(ldap.MOD_REPLACE, name, values)
+    #                  for name, values in pre_modlist]
+    #     self.generic_modify(dn, mod_attrs)
+
+    def update_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_REPLACE, name, values)
                      for name, values in pre_modlist]
         self.generic_modify(dn, mod_attrs)

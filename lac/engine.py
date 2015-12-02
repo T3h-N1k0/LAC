@@ -275,6 +275,7 @@ class Engine(object):
         db.session.commit()
 
     def update_lac_admin_from_form(self, form):
+        dn = "cn=lacadmin,ou=system,{0}".format(self.ldap_search_base)
         memberz = [ get_uid_from_dn(dn)
                     for dn in self.ldap.get_lac_admin_memberz() ]
         if form.selected_memberz.data is not None:
@@ -284,7 +285,7 @@ class Engine(object):
                     print('ajout de {0}'.format(member))
                     memberz_to_add.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_add:
-                self.ldap.add_cn_attribute('lacadmin',
+                self.ldap.add_dn_attribute(dn,
                                            [('member', member.encode('utf8'))
                                             for member in memberz_to_add]
                                        )
@@ -295,12 +296,13 @@ class Engine(object):
                     print('suppression de {0}'.format(member))
                     memberz_to_del.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_del:
-                self.ldap.remove_cn_attribute('lacadmin',
+                self.ldap.remove_dn_attribute(dn,
                                               [('member', member.encode('utf8'))
                                                for member in memberz_to_del]
                                    )
 
     def update_ldap_admin_from_form(self, form):
+        dn = "cn=ldapadmin,ou=system,{0}".format(self.ldap_search_base)
         memberz = [ get_uid_from_dn(dn)
                     for dn in self.ldap.get_ldap_admin_memberz() ]
         if form.selected_memberz.data is not None:
@@ -310,7 +312,7 @@ class Engine(object):
                     print('ajout de {0}'.format(member))
                     memberz_to_add.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_add:
-                ldap.add_cn_attribute('ldapadmin',
+                ldap.add_dn_attribute(dn,
                                       [('member', member.encode('utf8'))
                                         for member in memberz_to_add]
                                    )
@@ -321,7 +323,7 @@ class Engine(object):
                     print('suppression de {0}'.format(member))
                     memberz_to_del.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_del:
-                self.ldap.remove_cn_attribute('ldapadmin',
+                self.ldap.remove_dn_attribute(dn,
                                           [('member', member.encode('utf8'))
                                            for member in memberz_to_del]
                                    )
@@ -377,7 +379,7 @@ class Engine(object):
                        ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
                        ('cinesQuotaInodeHard', cinesQuotaInodeHard),
                        ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
-        self.ldap.update_cn_attribute(storage_cn, pre_modlist)
+#        self.ldap.update_cn_attribute(storage_cn, pre_modlist)
 
     def update_quota(self, storage, form):
         default_storage_cn = storage['cn'][0].split('.')[0]
@@ -413,7 +415,7 @@ class Engine(object):
         if cinesQuotaInodeTempExpire != storage['cinesQuotaInodeTempExpire']:
             pre_modlist.append(('cinesQuotaInodeTempExpire',
                                 cinesQuotaInodeTempExpire))
-        self.ldap.update_cn_attribute(storage['cn'][0], pre_modlist)
+#        self.ldap.update_cn_attribute(storage['cn'][0], pre_modlist)
 
 
 
@@ -749,6 +751,7 @@ class Engine(object):
 
 
     def update_ldap_object_from_edit_ppolicy_form(self, form, attributes, cn):
+        dn = "cn={0},ou=policies,ou=system,{1}".format(self.ldap_search_base)
         ppolicy_attrz = self.ldap.get_ppolicy(cn).get_attributes()
         pre_modlist = []
         for attr in attributes:
@@ -759,7 +762,7 @@ class Engine(object):
                 #     pre_modlist.append((attr, [True if field_value else False]))
                 # else:
                 pre_modlist.append((attr, [field_value]))
-        self.ldap.update_cn_attribute(cn, pre_modlist)
+        self.ldap.update_dn_attribute(dn, pre_modlist)
 
     def update_ldap_object_from_edit_user_form(self, form, fieldz, uid, page):
         uid_attributez = self.ldap.get_uid_detailz(uid).get_attributes()
@@ -936,14 +939,12 @@ class Engine(object):
         for field in pagefieldz:
             form_field_values = [entry.data.encode('utf-8')
                                  for entry in getattr(form, field.label).entries]
-            print('form_field_values : {0}'.format(form_field_values))
             if form_field_values == ['']:
                 form_field_values = None
             if ((field.label not in group_attributez)
                 or (field.label in group_attributez
                     and group_attributez[field.label] != form_field_values)):
                 pre_modlist.append((field.label, form_field_values))
-        print(form.memberz.selected_memberz.data)
         pre_modlist.append(
             ('memberuid',
              [
@@ -951,9 +952,15 @@ class Engine(object):
                  form.memberz.selected_memberz.data
              ])
         )
-        self.ldap.update_cn_attribute(group_cn, pre_modlist)
+        group_dn="cn={0},ou={1},ou=groupePosix,{2}".format(
+            group_cn,
+            page.label,
+            self.ldap_search_base)
+        print(group_dn)
+        self.ldap.update_dn_attribute(group_dn, pre_modlist)
 
     def update_ldap_object_from_edit_workgroup_form(self, form, page, group_cn):
+        dn="cn={0},ou=grTravail,{1}".format(self.ldap_search_base)
         ldap_filter='(&(cn={0})(objectClass=cinesGrWork))'.format(group_cn)
         attributes=['*','+']
         group_attributez = self.ldap.search(
@@ -989,7 +996,7 @@ class Engine(object):
              )
         )
         self.cache.populate_work_group()
-        self.ldap.update_cn_attribute(group_cn, pre_modlist)
+        self.ldap.update_dn_attribute(dn, pre_modlist)
 
     def update_fields_from_edit_page_admin_form(self, form, attributes, page):
         Field.query.filter(Field.page_id == page.id,
