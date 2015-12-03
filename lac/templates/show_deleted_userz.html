@@ -1,0 +1,119 @@
+{% from "_formhelpers.html" import render_formfield, render_field %}
+{% extends "layout.html" %}
+
+{% block title %} Recherche de compte {% endblock title %}
+
+{% block head_js %}
+
+<link rel="stylesheet" href="{{
+      url_for('static', filename='themes/blue/style.css')
+      }}" type="text/css" id="" media="print, projection, screen" />
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery.tablesorter.min.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+        url_for('static', filename='excellentexport.min.js')
+        }}"></script>
+
+
+<script type="text/javascript" id="js">
+ $(document).ready(function() {
+   $("#userz").tablesorter({widthFixed: true, widgets: ['zebra']});
+ }
+ );
+
+</script>
+
+
+{% endblock head_js %}
+
+{% block body %}
+<section class="row large-label">
+  <div class="col-md-offset-3 col-md-5">
+    <div class="text-center"><h2>Recherche de compte</h2></div>
+    <form method=post action="/show_deleted_userz" class="well">
+      <section class="row">
+        <dl>
+          {{ render_formfield(form.uid_number) }}
+          {{ render_formfield(form.firstname) }}
+          {{ render_formfield(form.lastname) }}
+          {{ render_formfield(form.uid) }}
+          {{ render_formfield(form.email) }}
+          {{ render_formfield(form.phone_number) }}
+        </dl>
+      </section>
+      <section class="row text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-search"> Chercher</button>
+      </section>
+
+
+
+
+
+    </form>
+  </div>
+</section>
+
+<div class="row">
+
+  {% if userz %}
+  <div class="row">
+    <section class="col-md-4">
+      <h4>Liste des utilisateurs : </h4>
+    </section>
+
+    <section class="col-md-offset-4 col-md-4 text-right">
+    </section>
+  </div>
+  <table  class="tablesorter" id="userz"  >
+    <thead>
+      <tr>
+        <th> UID </th>
+        <th> UID Number </th>
+        <th> Prénom </th>
+        <th> Nom </th>
+        <th> Email </th>
+        <th> Téléphone </th>
+        <th> Date de la suppression </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in userz|sort %}
+      <tr>
+        <td>
+          {{ user.uid }}
+        </td>
+        <td>
+          {{ user.uid_number }}
+        </td>
+        <td>
+          {{ user.firstname }}
+        </td>
+        <td>
+          {{ user.lastname }}
+        </td>
+        <td>
+          {{ user.email }}
+        </td>
+        <td>
+          {{ user.phone_number }}
+        </td>
+        <td>
+          {{ user.deletion_timestamp }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <h4>Aucun résultat</h4>
+  {% endif %}
+</div>
+{{ search_resultz  }}
+{% endblock %}

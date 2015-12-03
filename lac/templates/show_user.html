@@ -6,7 +6,7 @@
 
 {% block body %}
 <header class="row text-center">
-  <h2>Détails pour le compte {{ uid }}</h2>
+  <h2>Détails pour le login {{ uid }}</h2>
 </header>
 <br>
 <section class="row">
@@ -52,8 +52,8 @@
   <div class="col-sm-offset-2 col-sm-4" >
 
     <aside class="row">
-      {% if not is_active %}
-      <div class="text-center alert alert-danger" role="alert">Compte désactivé</div>
+      {% if "pwdAccountLockedTime" in uid_attributez.keys() %}
+      <div class="text-center alert alert-danger" role="alert">Compte verrouillé {% if uid_attributez['pwdAccountLockedTime'][0] == '000001010000Z' %} par un admin {% else %} le {{ convert_to_display_mode(uid_attributez['pwdAccountLockedTime'][0], 'Generalizedtime') }} {% endif %}</div>
       {% endif %}
       <div id='dn'> Nom LDAP : {{ dn }}</div>
       <h4>Actions</h4>
@@ -124,7 +124,10 @@
       <h4>Groupes de travail</h4>
       <ul class='list-group'>
         {% for group in work_groupz %}
-        <li class="list-group-item">{{ group }}</li>
+        <a class="list-group-item" href="{{ url_for(
+           'show_workgroup',
+           cn=group
+           )}}">{{ group }}</a>
         {% endfor %}
       </ul>
     </aside>

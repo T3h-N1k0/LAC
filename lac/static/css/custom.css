@@ -42,3 +42,17 @@
   border-radius: 4px;
   background-color:  rgba(251, 251, 251, 0.93);
 }
+
+ul li p {
+  margin: 0px;
+}
+
+textarea {
+  height: 150px;
+  width: 250px;
+}
+
+footer {
+  margin-top: 20px;
+  text-align: center;
+}

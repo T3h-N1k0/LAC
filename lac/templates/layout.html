@@ -22,7 +22,6 @@
 
     <script src="{{bootstrap_find_resource('jquery.js', cdn='jquery')}}"></script>
     <script src="{{bootstrap_find_resource('js/bootstrap.js', cdn='bootstrap')}}"></script>
-    <script type="text/javascript" src="{{url_for('static', filename='js/bootstrap-datepicker.js')}}"></script>
     {%- block head_js %}
 
     {%- endblock head_js %}
@@ -93,10 +92,12 @@
           <li class="dropdown">
             <a data-toggle="dropdown" href="#">Autres<b class="caret"></b></a>
             <ul class="dropdown-menu">
+              {% if session['admin'] %}
               <li class="dropdown-header">Quotas</li>
               <li><a href="{{ url_for('edit_quota')}}">Quotas spécifiques</a> </li>
               <li><a href="{{ url_for('edit_default_quota')}}">Quotas par defaut</a></li>
               <li class="divider"></li>
+              {% endif %}
               <li><a href="{{ url_for('show_filesystems')}}">Systèmes de fichier</a></li>
               <li class="divider"></li>
               <li><a href="{{ url_for('refresh_cache')}}">Rafraichir le cache</a></li>
@@ -111,19 +112,23 @@
                  'edit_page')}}">Gérer les vues</a></li>
               <li><a href="{{ url_for(
                  'add_page')}}">Ajouter une vue</a></li>
+              <li class="divider"></li>
               <li><a href="{{ url_for(
                  'show_ppolicies')}}">Gérer les ppolicies</a></li>
               <li><a href="{{ url_for(
                  'add_ppolicy')}}">Ajouter une ppolicy</a></li>
+              <li class="divider"></li>
               <li><a href="{{ url_for(
                  'show_ldap_object_types')}}">Gérer les types d'objets LDAP</a></li>
               <li><a href="{{ url_for(
                  'add_ldap_object_type')}}">Ajouter un type d'objet LDAP</a></li>
               <li><a href="{{ url_for(
+                     'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a></li>
+              <li class="divider"></li>
+              <li><a href="{{ url_for(
                  'show_shells')}}">Gérer les types de shell</a></li>
               <li><a href="{{ url_for(
-                     'update_schema')}}">Mise à jour de la copie locale du schema LDAP</a></li>
-
+                 'show_deleted_userz')}}">Afficher les utilisateurs supprimés</a></li>
               <li class="divider"></li>
               <li><a href='#'>LDAP HOST : {{ config['LDAP_HOST']}}</a></li>
               <li><a href='#'>LAC DB HOST : {{ config['LAC_DB_HOST']}}</a></li>
@@ -167,6 +172,9 @@
 
       {%- endblock scriptz %}
       {%- endblock body %}
+      <footer>
+        <img src= {{ url_for('static', filename = 'footer.jpg') }}>
+      </footer>
     </div>
   </body>
 {%- endblock html %}

@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block head_js %}
+
+
+<script type="text/javascript" src="{{                                                                                                                               url_for('static', filename='jquery-2.1.1.js')                                                                                                               }}"></script>
+
+
+<script type="text/javascript" language='javascript' src="{{
+         url_for('static', filename='TableFilter/tablefilter.js')
+         }}"></script>
+
+
+{% endblock head_js %}
+
+
+{% block body %}
+<div class="well col-sm-4 col-sm-offset-4">
+  <em>Nombre de groupes : {{ groupz_count }}</em>
+  <br>
+  <h4>Liste des groupes de travail</h4>
+
+<table id='table1' >
+  {% for group in groupz | sort %}
+  <tr>
+    <td>
+      <a href="{{ url_for(
+         'show_workgroup',
+         cn=group)}}">{{ group }}</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<script language="javascript" type="text/javascript">
+ var table_propz = { on_keyup: true,
+                     on_keyup_delay: 10
+ }
+ setFilterGrid("table1", table_propz);
+</script>
+</div>
+{% endblock body %}
