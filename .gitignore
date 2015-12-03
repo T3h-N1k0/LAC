@@ -56,3 +56,8 @@ target/
 
 # Config file
 config.py
+script_config.ini
+
+# emacs
+*~
+Command*
