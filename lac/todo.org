@@ -1,22 +1,75 @@
+* P1 avant départ
+** DONE BUG : Ajout d'un compte a un groupe--> memberlist du groupeposix non updaté
+   CLOSED: [2015-11-27 ven. 15:13]
+** DONE Edit group/user marche pas.
+   CLOSED: [2015-11-27 ven. 15:13]
+** DONE History lastbind cron marche plus
+   CLOSED: [2015-11-23 lun. 16:14]
+** DONE A la suppression d'un compte, le compte n'est pas supprimer des groupes de travail (ex: occigen,...) auquels il appartient, verifier aussi si plusieur posigroup (branche differente)
+   CLOSED: [2015-11-26 jeu. 11:22]
+** DONE LOCK Account : suppression des opération sur shadowLastChange
+   CLOSED: [2015-11-24 mar. 11:04]
+     Disable manuel set pwdAccountLockedTime = 000001010000Z --> compte vérouillé par admin
+     Enable supprimer pwdAccountLockedTime = XXXX Z --> Compte vérouillé le xxx
+** DONE Edition d'un groupe (membre) enlever le filtre sur la branche people cines, sauf groupe projet (cines)
+   CLOSED: [2015-11-23 lun. 16:26]
+** DONE History modif compte : lien visible que pour ldapadmin --> Virer le lien pour soit meme
+   CLOSED: [2015-11-23 lun. 16:28]
+** DONE Groupe projet (edition) : Responsable listbox utilisateur ou=cines...
+   CLOSED: [2015-11-26 jeu. 13:44]
+** DONE BUG Création groupe projet : {u'info': "object class 'sambaGroupMapping' requires attribute 'sambaSID'", u'desc': 'Object class violation'} --> sur le meme modele qu'un user cines
+   CLOSED: [2015-11-23 lun. 16:29]
+** DONE EDITION : Groupe de travail (occigen/jade/...) : ajout/consultation/modification/Suppression   + membre cliquable
+   CLOSED: [2015-11-26 jeu. 11:09]
+** DONE BUG Création utilisateur Date de renouvellement non renseigner -−> si attribut présent l'initialiser a la date du jour pour la creation d'un user
+   CLOSED: [2015-11-26 jeu. 11:44]
+** DONE Modifier le libellé detail pour le compte XXX en detaill pour le login XXX
+   CLOSED: [2015-11-23 lun. 16:33]
+** DONE Taille par défaut fenetre "description"
+   CLOSED: [2015-11-26 jeu. 13:23]
+** DONE Suppression d'un utilisateur : stockage dans une table de l'id/prenom/nom/mail/telephonne/...
+   CLOSED: [2015-11-27 ven. 10:05]
+** DONE Suppression d'un utilisateur :  Interface graphique somaire pour rechercher dans la table
+   CLOSED: [2015-11-27 ven. 12:46]
+** DONE Artefact pour Champ obligatoire  + rester sur la page en cas d'erreur
+   CLOSED: [2015-12-02 mer. 09:46]
+** DONE 0.5:  Cron : warning password expire (cines/soft/autre/admcines) : prendre en compte si ppolicies specigique ou non (pwdPolicySubentry)
+   CLOSED: [2015-12-03 jeu. 10:32]
+     pwdChangedTime --> derniere date de modif --> dans la ppolicy pwdmaxage (seconde)
+
+** TODO Bug affichage retour chariot dans description.--> en read (binder autres)
+** TODO Trimer les entrée (virer espace de la fin) avant validation
+** TODO Déplacer la soumission sur la page de creation (ou autre artifice visuel)
+** TODO Durée de vie du cookie expiration à 48h
+** TODO Container :
+
+* P2
+** TODO Edition membre lacadmin  (pour admin lac) cn=lacadmin,ou=system,dc=cines,dc=fr
+** TODO Edition membre ldapadmin (pour admin lac)
+** TODO 0.5:  péremption des comptes : aficher la liste de tous les comptes périmé (recherche préparamétré)
+** TODO Option dans la modification de groupes "rajouter à la valeur" ex ajouter des ips aux utilisateur en conservant les anciennes.
+
+
+* P3
+** TODO Foction suppression mot de passe (que pour admin) + visuel "pas de mot de passe" --> Check shadowexpire
+** TODO Refresh auto du cache sur timer
+** TODO Deplacer la gestion des vues dans le type d'objet
+** TODO 0.5:  Forcer ppolicy pour un user (uniquement les admins lac)
+** TODO A partir d'un utilisateur rajouter un groupe secondaire (liste de l'ensemble des groupes sauf projet)
+
+* P1000
+** TODO Suggestion uid
+** TODO Rajouter lien whois
+** TODO Groupe de travail : suppression vérifier l'intégrité cinessoumission pour tous les objets utilisateur
+** TODO Groupe arcsys : uniquement ajout/suppression membre (piocher dans la branche ou=sam,ou=people)
+** TODO 0.5:  utilisateurs fantomes : requete vérifiant pour chaque groupe ldap si il contient des membres plus présent dans ldap --> proposer un lien corriger en face de chaque groupe
+** TODO 0.5:  Cron : Scrupter les tentative de brutforce (champs password auth fail) X tentative infructueuse en T Heures, paramétrable dans la partie administration
+
+
+
 * P1 avant MEP
-** TODO Doit remplir toute les fonctions actuelles de lac
-** TODO Etre plus ergonomique
-** TODO Toolbox
-   - [ ] warning password expire
-     - [ ] les comptes cines
-     - [ ] comptes service pwdmaxage (ppolicies) et pwdChangedTime (usr))
-   - [ ] expiration des comptes
-   - [ ] utilisateurs fantomes
-   - [ ] Scruter les tentatives de bruteforce
-** TODO regrouper les attributs par classe
-** TODO Profile soumission
-** TODO PPolicy mettre en place le maxage
-** TODO email : proposer alias
-** TODO Propager la suppression d'un groupe de soumission sur les utilisateurs
-** TODO Gestion soumission depuis pages utilisateur
-** TODO Conteneur
 ** DONE Quota doit aussi  être accessible directement depuis le groupe
-   CLOSED: [2015-01-15 jeu. 14:25]
+   CLOSED: [2015-11-23 lun. 15:58]
    (affichage de la liste de quota spécifique+ajout+modifier)
 ** DONE Faire ressortir graphiquement l'etat d'un compte 'désactiver / activer'
    CLOSED: [2015-01-12 lun. 10:48]
@@ -122,32 +175,51 @@
    CLOSED: [2015-03-04 mer. 09:38]
 ** DONE Afficher aussi les champs en lecture seule
    CLOSED: [2015-03-12 jeu. 14:36]
+** DONE Gestion soumission depuis pages utilisateur
+   CLOSED: [2015-09-28 lun. 10:34]
+** DONE Quota uniquement accessible pour admin ldap
+   CLOSED: [2015-09-28 lun. 10:38]
+** DONE History lastbind
+   CLOSED: [2015-09-28 lun. 10:38]
+** DONE Création utilisateur, ne pas afficher le groupe sur la première page
+   CLOSED: [2015-09-28 lun. 10:38]
+** DONE Service
+   CLOSED: [2015-09-28 lun. 10:39]
+** DONE Use TLS
+   CLOSED: [2015-09-28 lun. 10:39]
+** TODO Toolbox
+   - [ ] warning password expire
+     - [ ] les comptes cines
+     - [ ] comptes service pwdmaxage (ppolicies) et pwdChangedTime (usr))
+   - [ ] expiration des comptes
+   - [ ] utilisateurs fantomes
+   - [ ] Scruter les tentatives de bruteforce
+** TODO PPolicy mettre en place le maxage
+** TODO email : proposer alias
+** TODO Propager la suppression d'un groupe de soumission sur les utilisateurs
+** TODO Conteneur
 ** TODO Rendre cliquable les objet ldap
     - [ ] Utilisateurs
       Sur les groupes de travail
     - [X] Groupes
 
-** TODO Mettre en place un refresh automatique du cache
-** TODO Quota uniquement accessible pour admin ldap
-** TODO Bug sur nouvelle branche
-** TODO History lastbind
+** DONE Bug sur nouvelle branche
+   CLOSED: [2015-10-02 ven. 10:20]
 ** TODO Forcer ppolicy pour un user (=> Admin)
-** TODO Création utilisateur, ne pas afficher le groupe sur la première page
 ** TODO A la suppression d'un compte le compte est supprimé de ses groupes mais pas des groupes de travail (p16500/SGI/OCCIGEN)... Ce qui est plutot embettant :)
 ** TODO Problème cache création user WTF ????§!!
-** TODO Service
 ** TODO Secu
 ** TODO Dates expiration
-** TODO Use TLS
+** TODO Bug création user vérif existance
+** TODO Doit on envoyer description pour modif/creation groupe
 
-
-* P2
+** P2
 ** Divers
 *** TODO Conteneur
 
 ** Moteur
-*** TODO Identifiant du serveur LDAP dans un fichier, tous les autres serveur sous forme d'objet ldap dans la branche system
-*** TODO Afficher les infos serveur: sybase / otrs
+*** DONE Afficher les infos serveur: sybase / otrs
+    CLOSED: [2015-10-02 ven. 10:18]
 
 ** Interface d'administration
 *** TODO Forcer ppolicy pour un user (uniquement les admins lac)
@@ -157,16 +229,20 @@
 ** Utilisateur
 *** TODO Checker l'obligation du telephone?
 *** TODO Rajouter lien whois
-*** TODO History lastbind récupéré l'existant --> afficher l'heure
-*** TODO History modif compte : bug champ gidnumber / shell --> interpretation des resultats.
-*** TODO Rappel affichage info du groupe : Membres à titre secondaire
+*** DONE History lastbind récupéré l'existant --> afficher l'heure
+    CLOSED: [2015-10-02 ven. 10:17]
+*** DONE History modif compte : bug champ gidnumber / shell --> interpretation des resultats.
+    CLOSED: [2015-10-02 ven. 10:19]
+*** DONE Rappel affichage info du groupe : Membres à titre secondaire
+    CLOSED: [2015-10-02 ven. 10:18]
 *** TODO Suggestion uid
 *** TODO Profile soumission
 
 ** Groupe
 *** TODO Groupe secondaire : exclure le groupe principal
 *** TODO Quota dois aussi  être accessible directement depuis le groupe (affichage de la liste de quota pécifique+ajout+modifier)
-*** TODO Affichage groupe par odre alphabétique
+*** DONE Affichage groupe par odre alphabétique
+    CLOSED: [2015-10-02 ven. 10:20]
 *** TODO Ajout des groupes de travail
 *** TODO Gestion de la suppression du groupe de travail (sgi/ibm...)+ intégrité cinessoumission
 *** TODO Rajouter la gestion des groupes arcsys dans LAC, (modificaiton des contenu uniquement.)
