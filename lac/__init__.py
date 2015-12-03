@@ -1,27 +1,8 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, make_response
+from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
-# from flask_debugtoolbar import DebugToolbarExtension
-from werkzeug import secure_filename
 from flask_bootstrap import Bootstrap
-from sqlalchemy import Table, Column, Integer, ForeignKey, func
-from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.declarative import declarative_base
-from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateField, TextAreaField
-from datetime import datetime, timedelta, date
-import time
-from dateutil.relativedelta import relativedelta
-from pytz import timezone
-import pytz
-import ldaphelper
-#import upsert
-from ldap_decoder import PythonLDAPDecoder
-from ldap import SCOPE_BASE,schema
-import hashlib,binascii
-import re
-import os
-# from data_modelz import *
-# Custom modulez
+# from flask_debugtoolbar import DebugToolbarExtension
 
 __author__ = "Nicolas CHATELAIN"
 __copyright__ = "Copyright 2014, Nicolas CHATELAIN @ CINES"

@@ -1,6 +1,5 @@
 # coding: utf-8
 from lac import app
-from flask_ldap import LDAP, login_required, admin_login_required
 from flask import Flask, request, session, g, redirect, url_for, abort, render_template, flash, make_response
 from flask.ext.sqlalchemy import SQLAlchemy
 # from flask_debugtoolbar import DebugToolbarExtension
@@ -16,6 +15,7 @@ import re
 import os
 import time
 from lac.data_modelz import *
+from lac.flask_ldap import LDAP, login_required, admin_login_required
 from lac.formz import *
 from lac.cache import Cache
 from lac.form_manager import FormManager

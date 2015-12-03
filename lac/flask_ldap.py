@@ -2,17 +2,16 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+from functools import wraps
+from string import capwords
+import ldap
+from flask import current_app, request, flash, render_template
+import ldaphelper
 
 __author__ = "Nicolas CHATELAIN"
 __copyright__ = "Copyright 2014, Nicolas CHATELAIN @ CINES"
 __license__ = "GPL"
 
-from functools import wraps
-from string import capwords
-
-import ldap
-from flask import current_app, request, flash, render_template
-import ldaphelper
 
 # Find the stack on which we want to store the database connection.
 # Starting with Flask 0.9, the _app_ctx_stack is the correct one,
