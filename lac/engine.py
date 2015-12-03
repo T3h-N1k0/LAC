@@ -149,12 +149,12 @@ class Engine(object):
                 strip(form.gid_number.data)
             ))
         if form.cn.data != "" :
-            filter_list.append("(cn={0})".format(
+            filter_list.append("(cn=*{0}*)".format(
                 strip(form.cn.data)
             ))
         if form.description.data :
             filter_list.append(
-                "(description={0})".format(
+                "(description=*{0}*)".format(
                     strip(form.description.data)
                 )
             )
