@@ -115,12 +115,12 @@ def send_mail(email_address, message):
     msg = MIMEMultipart()
     msg['Subject'] = "Expiration de votre mot de passe"
     msg['From'] = sender
-    msg['To'] = "chatelain@cines.fr"
+    msg['To'] = email_address
 
     msg.attach(MIMEText(message.encode('utf-8'), 'plain', 'utf-8'))
     server = smtplib.SMTP(SMTP_SERVER)
     server.ehlo_or_helo_if_needed()
-    server.sendmail(sender, "chatelain@cines.fr", msg.as_string())
+    server.sendmail(sender, email_address, msg.as_string())
     server.quit()
 
 def check_user_pwd_expiration(user):
