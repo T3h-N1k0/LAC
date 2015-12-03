@@ -4,11 +4,10 @@ import os
 import re
 import hashlib
 import time
+from string import strip
 from datetime import datetime, timedelta, date
 from dateutil.relativedelta import relativedelta
-
 from flask import current_app, request, flash, render_template, session, redirect, url_for
-
 from lac.data_modelz import *
 from lac.helperz import *
 
@@ -91,20 +90,31 @@ class Engine(object):
     def get_resultz_from_search_user_form(self, form):
         filter_list =[]
         if form.uid_number.data != "" :
-            filter_list.append("(uidNumber={0})".format(form.uid_number.data))
+            filter_list.append("(uidNumber={0})".format(
+                strip(form.uid_number.data)
+            ))
         if form.sn.data != "" :
-            filter_list.append("(sn={0})".format(form.sn.data))
+            filter_list.append("(sn=*{0}*)".format(
+                strip(form.sn.data)
+            ))
         if form.uid.data != "" :
-            filter_list.append("(uid={0})".format(form.uid.data))
+            filter_list.append("(uid=*{0}*)".format(
+                strip(form.uid.data)
+            ))
         if form.mail.data != "":
-            filter_list.append("(mail={0})".format(form.mail.data))
+            filter_list.append("(mail=*{0}*)".format(
+                strip(form.mail.data)
+            ))
         if form.user_disabled.data :
             filter_list.append("(shadowExpire=0)")
         if form.ip.data :
-            filter_list.append("(cinesIpClient={0})".format(form.ip.data))
+            filter_list.append("(cinesIpClient={0})".format(
+                strip(form.ip.data)
+            ))
         if form.nationality.data :
             filter_list.append("(cinesNationality={0})".format(
-                form.nationality.data))
+                strip(form.nationality.data)
+            ))
         if form.user_type.data == "":
             base_dn = "ou=people,{0}".format(self.ldap_search_base)
         else:
@@ -135,18 +145,25 @@ class Engine(object):
     def get_resultz_from_search_group_form(self, form):
         filter_list =[]
         if form.gid_number.data != "" :
-            filter_list.append("(gidNumber={0})".format(form.gid_number.data))
+            filter_list.append("(gidNumber={0})".format(
+                strip(form.gid_number.data)
+            ))
         if form.cn.data != "" :
-            filter_list.append("(cn={0})".format(form.cn.data))
+            filter_list.append("(cn={0})".format(
+                strip(form.cn.data)
+            ))
         if form.description.data :
             filter_list.append(
-                "(description={0})".format(form.description.data)
+                "(description={0})".format(
+                    strip(form.description.data)
+                )
             )
         if form.group_type.data == "":
             base_dn = "ou=groupePosix,{0}".format(self.ldap_search_base)
         else:
-            base_dn = "ou={0},ou=groupePosix,{1}".format(form.group_type.data,
-                                                         self.ldap_search_base)
+            base_dn = "ou={0},ou=groupePosix,{1}".format(
+            strip(form.group_type.data),
+                self.ldap_search_base)
         if filter_list != [] :
             ldap_filter = "(&(objectClass=posixGroup){0})".format("".join(
                 filter_list
@@ -201,14 +218,14 @@ class Engine(object):
         if self.cache.get_group_from_member_uid(uid) == 'cines':
             nt_hash = hashlib.new(
                 'md4',
-                form.new_pass.data.encode('utf-16le')
+                strip(form.new_pass.data).encode('utf-16le')
             ).hexdigest().upper()
             pre_modlist = [('sambaPwdLastSet', str(int(time.time()))),
                            ('sambaNTPassword', nt_hash)]
 
         if uid != session['uid']:
             pre_modlist.append(('userPassword',
-                                form.new_pass.data.encode('utf-8')))
+                                strip(form.new_pass.data).encode('utf-8')))
             if self.cache.get_group_from_member_uid(uid) not in ['autre', 'soft']:
                 pre_modlist.append(('pwdReset', 'TRUE'))
             flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
@@ -217,7 +234,11 @@ class Engine(object):
                                     page= self.cache.get_group_from_member_uid(uid),
                                     uid=uid))
         else:
-            self.ldap.change_passwd(uid, session['password'], form.new_pass.data)
+            self.ldap.change_passwd(
+                uid,
+                session['password'],
+                strip(form.new_pass.data)
+                )
             flash(
                 u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
             )
@@ -445,8 +466,8 @@ class Engine(object):
 
     def create_ldap_object_from_add_group_form(self, form, page_label):
         ot = LDAPObjectType.query.filter_by(label = page_label).first()
-        cn = form.cn.data.encode('utf-8')
-        description = form.description.data.encode('utf-8')
+        cn = strip(form.cn.data).encode('utf-8')
+        description = strip(form.description.data).encode('utf-8')
         id_number = str(self.get_next_id_from_ldap_ot(ot))
         object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8')
                           for oc_ot in LDAPObjectTypeObjectClass.query.filter_by(
@@ -486,8 +507,8 @@ class Engine(object):
 
     def create_ldap_object_from_add_workgroup_form(self, form):
         ot = LDAPObjectType.query.filter_by(label = 'grTravail').first()
-        cn = form.cn.data.encode('utf-8')
-        description = form.description.data.encode('utf-8')
+        cn = strip(form.cn.data).encode('utf-8')
+        description = strip(form.description.data).encode('utf-8')
         object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8')
                           for oc_ot in LDAPObjectTypeObjectClass.query.filter_by(
                               ldapobjecttype_id = ot.id).all()]
@@ -527,7 +548,7 @@ class Engine(object):
         for field in fieldz:
             form_field_values = [
                 self.converter.from_display_mode(
-                    entry.data,
+                    strip(entry.data),
                     field.fieldtype.type
                 )
                 for entry in getattr(form, field.label).entries
@@ -612,11 +633,10 @@ class Engine(object):
                                                      ldap_object_type ):
         selected_oc_choices = self.fm.get_ot_oc_choices(ldap_object_type)
         ot_oc_id_list = [oc[0] for oc in selected_oc_choices]
-        ldap_object_type.label = form.label.data
-        ldap_object_type.description = form.description.data
-        ldap_object_type.ranges = form.ranges.data
-        ldap_object_type.apply_to = form.apply_to.data
-        print(ldap_object_type.apply_to)
+        ldap_object_type.label = strip(form.label.data)
+        ldap_object_type.description = strip(form.description.data)
+        ldap_object_type.ranges = strip(form.ranges.data)
+        ldap_object_type.apply_to = strip(form.apply_to.data)
         ldap_object_type.ppolicy = form.ppolicy.data
         db.session.add(ldap_object_type)
         if form.object_classes.selected_oc.data is not None:
@@ -685,7 +705,7 @@ class Engine(object):
         for field in fieldz:
             pre_modlist.append(
                 (field.label,
-                 getattr(edit_form, field.label).data.encode('utf-8'))
+                 strip(getattr(edit_form, field.label).data).encode('utf-8'))
             )
         if edit_form.action.data == '0':
             for uid in userz:
@@ -696,8 +716,8 @@ class Engine(object):
         flash(u'Les utilisateurs ont été mis à jour')
 
     def generate_backup_file(self, userz, attributez):
-        userz = [user.encode('utf-8') for user in userz.split(',')]
-        attributez = [attribute.encode('utf-8')
+        userz = [strip(user).encode('utf-8') for user in userz.split(',')]
+        attributez = [strip(attribute).encode('utf-8')
                       for attribute in attributez.split(',')]
         file_name = "backup_{0}.txt".format(
             datetime.now().strftime("%d%b%HH%M_%Ss"))
@@ -755,8 +775,7 @@ class Engine(object):
         ppolicy_attrz = self.ldap.get_ppolicy(cn).get_attributes()
         pre_modlist = []
         for attr in attributes:
-            field_value = getattr(form, attr).data.encode('utf-8')
-            print('form_field_value : {0}'.format(field_value))
+            field_value = strip(getattr(form, attr).data).encode('utf-8')
             if attr not in ppolicy_attrz or ppolicy_attrz[attr][0] != field_value:
                 # if attr == 'pwdMustChange':
                 #     pre_modlist.append((attr, [True if field_value else False]))
@@ -770,7 +789,7 @@ class Engine(object):
         for field in fieldz:
             form_values = [
                 self.converter.from_display_mode(
-                    entry.data,
+                    strip(entry.data),
                     field.fieldtype.type
                 )
                 for entry in getattr(form, field.label).entries
@@ -886,7 +905,7 @@ class Engine(object):
 
 
     def update_user_submission(self, uid, form):
-        wrk_group = form.wrk_group.data
+        wrk_group = strip(form.wrk_group.data)
         is_submission = form.submission.data
         is_member = form.member.data
         if is_submission and is_member:
@@ -937,7 +956,7 @@ class Engine(object):
                                            edit = True).all()
         pre_modlist = []
         for field in pagefieldz:
-            form_field_values = [entry.data.encode('utf-8')
+            form_field_values = [strip(entry.data).encode('utf-8')
                                  for entry in getattr(form, field.label).entries]
             if form_field_values == ['']:
                 form_field_values = None
@@ -956,11 +975,12 @@ class Engine(object):
             group_cn,
             page.label,
             self.ldap_search_base)
-        print(group_dn)
         self.ldap.update_dn_attribute(group_dn, pre_modlist)
 
     def update_ldap_object_from_edit_workgroup_form(self, form, page, group_cn):
-        dn="cn={0},ou=grTravail,{1}".format(self.ldap_search_base)
+        dn="cn={0},ou=grTravail,{1}".format(
+            group_cn,
+            self.ldap_search_base)
         ldap_filter='(&(cn={0})(objectClass=cinesGrWork))'.format(group_cn)
         attributes=['*','+']
         group_attributez = self.ldap.search(
@@ -970,10 +990,9 @@ class Engine(object):
                                            edit = True).all()
         pre_modlist = []
         for field in pagefieldz:
-            form_field_values = [entry.data.encode('utf-8')
+            form_field_values = [strip(entry.data).encode('utf-8')
                                  for entry in
                                  getattr(form, field.label).entries]
-            print('form_field_values : {0}'.format(form_field_values))
             if form_field_values == ['']:
                 form_field_values = None
             if ((field.label not in group_attributez)
@@ -984,6 +1003,7 @@ class Engine(object):
         new_memberz = [
             self.ldap.get_full_dn_from_uid(member).encode('utf-8')
             for member in form.memberz.selected_memberz.data
+            if self.ldap.get_full_dn_from_uid(member) is not None
         ]
         for member in old_memberz:
             if (member not in new_memberz
@@ -1033,11 +1053,11 @@ class Engine(object):
             existing_field.edit = form_field.edit.data
             existing_field.restrict = form_field.restrict.data
             existing_field.fieldtype = field_type
-            existing_field.description = form_field.desc.data
+            existing_field.description = strip(form_field.desc.data)
             existing_field.multivalue = form_field.multivalue.data
             existing_field.mandatory = form_field.mandatory.data
             existing_field.priority = form_field.priority.data
-            existing_field.block = form_field.block.data
+            existing_field.block = strip(form_field.block.data)
         else:
             new_field = Field(label=attribute.label,
                               page=page,
