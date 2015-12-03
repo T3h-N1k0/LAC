@@ -1,28 +1,51 @@
 ### Put this in configuration file
+
 DEBUG = True
-SECRET_KEY = 'development-key_omgwtfbbq'
-LDAP_HOST = 'ldapone.cines.fr'
-LDAP_SEARCH_BASE = 'dc=cines,dc=fr'
+SECRET_KEY = 'put_here_your_secret_key'
+LDAP_HOST = 'ldap.example.com'
+LDAP_PORT = 636
+LDAP_SCHEMA = "ldaps"
+LDAP_SEARCH_BASE = 'dc=example,dc=com'
 LDAP_LOG_BASE = 'cn=log'
 LDAP_LOGIN_VIEW = 'login'
 LDAP_SUCCESS_REDIRECT = 'home'
-LDAP_DOMAIN = 'ou=cines,ou=people,dc=cines,dc=fr'
-LAC_ADMIN_USER = '<INSERT USER>'
-LAC_ADMIN_PASS = '<INSERT PASS>'
+LDAP_DOMAIN = 'ou=cines,ou=people,dc=example,dc=cpù'
+LDAP_DEFAULT_ADMIN = 'uid=adm.default,ou=Admcines,ou=people,{0}'.format(LDAP_SEARCH_BASE)
 ENCODING = 'utf-8'
 TIMEZONE = 'Europe/Paris'
 DATE_DISPLAY_FORMAT = '%Y-%m-%d %H:%M:%S %Z%z'
-LAC_DB_URI = 'mysql://<lac_user>:<lac_pass>@<lac_host>/lac'
-OTRS_DB_URI = 'mysql://<otrs_user>:<otrs_pass>@<otrs_host>/otrs'
-GESCLI_DB_URI = 'mysql://<gescli_user>:<gescli_pass>@<gescli_host>/gescli'
-GESCPT_DB_URI = 'mysql://<gescpt_user>:<gescpt_pass>@<gescpt_host>/gescpt'
+
+LAC_DB_HOST = 'localhost'
+LAC_DB_USER = 'lac'
+LAC_DB_PASS = 'dah_mysql_pass'
+
+OTRS_DB_HOST = 'otrs.example.com'
+OTRS_DB_USER = 'otrs'
+OTRS_DB_PASS = 'dah_otrs_pass'
+
+DARI_HOST = 'dari.example.com'
+DARI_USER = 'dah_user'
+DARI_PASS = 'dah_dari_pass'
+
+LAC_DB_URI = 'mysql://{0}:{1}@{2}/lac'.format(LAC_DB_USER,
+                                              LAC_DB_PASS,
+                                              LAC_DB_HOST)
+OTRS_DB_URI = 'mysql://{0}:{1}@{2}/otrs'.format(OTRS_DB_USER,
+                                                OTRS_DB_PASS,
+                                                OTRS_DB_HOST)
+GESCLI_DB_URI = 'mysql://{0}:{1}@{2}/gescli'.format(DARI_USER,
+                                                    DARI_PASS,
+                                                    DARI_HOST)
+GESCPT_DB_URI = 'mysql://{0}:{1}@{2}/gescpt'.format(DARI_USER,
+                                                    DARI_PASS,
+                                                    DARI_HOST)
 SQLALCHEMY_DATABASE_URI = LAC_DB_URI
 BRANCHZ = ({'account': 'cines',
            'group': 'grCines'},
            {'account': 'ccc',
             'group': 'grCcc'},
-           {'account': 'deci',
-            'group': 'grDeci'},
+           {'account': 'prace',
+            'group': 'grPrace'},
            {'account': 'sam',
             'group': 'grSam'},
            {'account': 'soft',
@@ -30,11 +53,15 @@ BRANCHZ = ({'account': 'cines',
            {'account': 'autre',
             'group': 'grAutre'},
            {'account': 'test',
-            'group': 'grTest'})
+            'group': 'grTest'},
+           {'account' : 'Admcines',
+            'group' : 'grAdmCines'}
+)
 SHADOW_DURATION = 12
-SAMBA_DOMAIN_NAME = 'PALLAS'
+SAMBA_DOMAIN_NAME = 'SAMBA_DOMAIN_NAME'
 PROD_FLAG = False
-DATE_FORMAT = '%d-%m-%Y'
+DATE_FORMAT = '%d/%m/%Y'
+DATE_FORMAT_DATEPICKER = 'dd/mm/yyyy'
 OTRS_ACCOUNT = ['cines', 'sam', 'ccc']
 C4_TYPE_GROUPZ = ['grCcc', 'grSam']
 QUOTA_FIELDZ = {
@@ -71,3 +98,5 @@ QUOTA_FIELDZ = {
         'default': 'cinesQuotaInodeSoft'
     }
 }
+DATE_FIELDTYPEZ = ['Datetime', 'DaysNumber', 'GeneralizedTime']
+TEXT_FIELDTYPEZ = ['Text', 'Filesystem', 'Shell', 'TextArea', 'Oui/Non', 'CINESUser']
