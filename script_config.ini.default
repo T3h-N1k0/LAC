@@ -1,0 +1,12 @@
+[Bind]
+host = ldap.example.com
+ldap_port =  389
+ldap_schema=  ldap
+ldap_search_base =  dc=example,dc=com
+lac_db_host =  localhost
+lac_db_user =  lac
+lac_db_pass =  dah_mysql_pass
+
+[Mail]
+mail_sender = ldap@example.com
+smtp_server = smtp.example.com
