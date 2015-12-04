@@ -795,7 +795,7 @@ class Engine(object):
                 for entry in getattr(form, field.label).entries
             ]
             if field.label == 'cinesIpClient':
-                form_values = ';'.join(form_values)
+                form_values = [';'.join(form_values)]
             if (field.label not in uid_attributez
                 or uid_attributez[field.label] != form_values):
                 if form_values == [''] or (field.label == 'cinesUserToPurge'
