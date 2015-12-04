@@ -71,10 +71,19 @@
           </div>
           {% endfor  %}
         </div>
-        <div class="group-select col-sm-6">
+        <div class="attrz-block col-sm-6">
           <p class="help-block">Filtrer les groupes :
             <input id="searchGroupzFilter" type="text"/><p/>
             {{ render_formfield(form.wrk_groupz)}}
+        </div>
+        <div class="col-sm-6">
+          <div class="attrz-block ">
+            <h4>Edition de la soumission</h4>
+              {% for group in submission_groupz %}
+              <hr>
+              {{ render_formfield(get_attr(submission_form, group))}}
+              {% endfor %}
+          </div>
         </div>
       </section>
       <section class="row">

@@ -425,6 +425,7 @@ def edit_user(page,uid):
         uid_attributez['cinesIpClient'] = [
             ip for ip in uid_attributez['cinesIpClient'][0].split(";")
         ]
+    submission_form = fm.generate_edit_submission_form()
     if request.method == 'POST':
         lac.update_ldap_object_from_edit_user_form(form, edit_fieldz, uid, page)
         cache.update_work_groupz_memberz(
@@ -434,9 +435,11 @@ def edit_user(page,uid):
         )
         if page.label in app.config['OTRS_ACCOUNT'] and app.config['PROD_FLAG']:
             lac.upsert_otrs_user(uid)
+        lac.set_user_submissionz(uid, submission_form)
         return redirect(url_for('show_user', page=page.label, uid=uid))
     else:
         fm.set_edit_user_form_values(form, edit_fieldz, uid)
+        fm.set_submissionz_form_values(submission_form, uid)
     return render_template('edit_user.html',
                            form=form,
                            page=page,
@@ -446,7 +449,9 @@ def edit_user(page,uid):
                            show_fieldz=show_fieldz,
                            show_blockz=show_blockz,
                            edit_blockz=edit_blockz,
-                           uid_attributez=uid_attributez)
+                           uid_attributez=uid_attributez,
+                           submission_groupz=ldap.get_submission_groupz_list(),
+                           submission_form=submission_form)
 
 @app.route('/delete_user/<uid>', methods=('GET', 'POST'))
 @login_required

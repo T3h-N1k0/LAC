@@ -599,6 +599,23 @@ class FormManager(object):
         form = EditUserSubmissionzForm(request.form)
         return form
 
+    def set_submissionz_form_values(self, formz, uid):
+        dn = self.ldap.get_full_dn_from_uid(uid)
+        uid_attributez=self.ldap.get_uid_detailz(uid).get_attributes()
+        if 'cinesSoumission' in uid_attributez:
+            submission_list = helperz.get_list_from_submission_attr(
+                uid_attributez['cinesSoumission'][0])
+        else:
+            submission_list = []
+        for group in self.ldap.get_submission_groupz_list():
+            is_member = dn in self.cache.r.smembers(
+                "wrk_groupz:{0}".format(group)
+            )
+            is_submission = (group, '1') in submission_list
+            form = getattr(formz, group)
+            form.member.data = is_member
+            form.submission.data = is_submission
+
     def generate_edit_group_submission(self):
         form = EditGroupSubmissionForm(request.form)
         form.submission_form.wrk_group.choices = [
