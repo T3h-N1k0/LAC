@@ -369,26 +369,29 @@ def add_user(page_label):
     ).all()
     edit_form = fm.generate_add_user_form(page)
     edit_blockz =sorted(set([field.block for field in fieldz]))
+    submission_form = fm.generate_edit_submission_form()
     if request.method == 'POST' and edit_form.validate():
+        uid = edit_form.uid.data
         lac.create_ldap_object_from_add_user_form(
             edit_form,
             fieldz,
             page)
         if app.config['PROD_FLAG']:
-            lac.upsert_otrs_user(edit_form.uid.data)
+            lac.upsert_otrs_user(uid)
+        lac.set_user_submissionz(uid, submission_form)
         return redirect(url_for('show_user',
                                 page=page_label,
                                 uid = edit_form.uid.data))
     else:
         fm.set_edit_user_form_values(edit_form,fieldz)
-        return render_template('add_user.html',
-                               page=page.label,
-                               fieldz=fieldz,
-                               edit_blockz=edit_blockz,
-                               edit_form=edit_form)
-    return render_template('add_user.html',
-                           add_form=add_form,
-                           page=page_label)
+        return render_template(
+            'add_user.html',
+            page=page.label,
+            fieldz=fieldz,
+            edit_blockz=edit_blockz,
+            edit_form=edit_form,
+            submission_groupz=ldap.get_submission_groupz_list(),
+            submission_form=submission_form)
 
 @app.route('/edit_user/<page>/<uid>', methods=('GET', 'POST'))
 @login_required

@@ -903,6 +903,20 @@ class Engine(object):
             pre_modlist = [('memberUid', uid.encode('utf-8'))]
             self.ldap.remove_dn_attribute(group_dn,pre_modlist)
 
+    def set_user_submissionz(self, uid, formz):
+        for group in self.ldap.get_submission_groupz_list():
+            form = getattr(formz, group)
+            is_submission = form.submission.data
+            is_member = form.member.data
+            if is_submission and is_member:
+                self.cache.add_to_work_group_if_not_member(group, [uid])
+                self.ldap.set_submission(uid, group, '1')
+            elif is_member and not is_submission:
+                self.cache.add_to_work_group_if_not_member(group, [uid])
+                self.ldap.set_submission(uid, group, '0')
+            elif not is_member:
+                self.cache.rem_from_workgroup_if_member(group, [uid])
+                self.ldap.set_submission(uid, group, '0')
 
     def update_user_submission(self, uid, form):
         wrk_group = strip(form.wrk_group.data)

@@ -588,6 +588,17 @@ class FormManager(object):
                 'page_unic_attr_id_list': page_unic_attr_id_list}
 
 
+    def generate_edit_submission_form(self):
+        groupz = self.ldap.get_submission_groupz_list()
+        class EditUserSubmissionzForm(Form):
+            pass
+        for group in groupz:
+            setattr(EditUserSubmissionzForm,
+                    group,
+                    FormField(EditUserSubmissionForm))
+        form = EditUserSubmissionzForm(request.form)
+        return form
+
     def generate_edit_group_submission(self):
         form = EditGroupSubmissionForm(request.form)
         form.submission_form.wrk_group.choices = [

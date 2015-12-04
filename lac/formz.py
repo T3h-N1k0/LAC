@@ -73,6 +73,11 @@ class EditGroupBaseForm(Form):
                          default=1)
     memberz = FormField(SelectMemberzForm)
     submited = HiddenField(default="False")
+
+class EditUserSubmissionForm(Form):
+    member = BooleanField('Membre')
+    submission = BooleanField(u'Autorisé à la soumission')
+
 class EditSubmissionForm(Form):
     wrk_group = SelectField(u'Groupe de travail')
     member = BooleanField('Membre')
