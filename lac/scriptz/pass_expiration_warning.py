@@ -74,7 +74,7 @@ def get_branch_accountz(branch):
         branch,
         LDAP_SEARCH_BASE
     )
-    retrieveAttributes = ['uid', 'pwdChangedTime', 'mail']
+    retrieveAttributes = ['uid', 'pwdChangedTime', 'mail', 'userPassword']
     accountz = anonymous_search(
         search_base,
         "uid=*",
@@ -129,7 +129,7 @@ def check_user_pwd_expiration(user):
     pwd_max_age = int(user_ppolicy['pwdMaxAge'][0])
     pwd_expire_warning = int(user_ppolicy['pwdExpireWarning'][0])
     email = user_attributez['mail'][0] if 'mail' in user_attributez else None
-    if 'pwdChangedTime' in user_attributez:
+    if 'userPassword' in user_attributez:
         pwd_changed_time = user_attributez['pwdChangedTime'][0]
         pwd_changed_datetime = generalized_time_to_datetime(
             pwd_changed_time
