@@ -48,14 +48,18 @@ class Engine(object):
 
     def disable_account(self, user):
         user_attr = user.get_attributes()
-        new_shadow_expire_datetime = datetime.now() - timedelta(days=1)
-        new_shadow_expire = str(
-            self.converter.datetime_to_days_number(
-                new_shadow_expire_datetime))
-        self.ldap.update_uid_attribute(user_attr['uid'][0],
-                                  [('shadowExpire', new_shadow_expire),
-                                   ('pwdAccountLockedTime', "000001010000Z")]
-                              )
+        mod_attr = [('pwdAccountLockedTime', "000001010000Z")]
+        if self.cache.get_group_from_member_uid(user_uid) == 'ccc':
+            new_shadow_expire_datetime = datetime.now() - timedelta(days=1)
+            new_shadow_expire = str(
+                self.converter.datetime_to_days_number(
+                    new_shadow_expire_datetime)
+            )
+            mod_attr.append(('shadowExpire', new_shadow_expire))
+        self.ldap.update_uid_attribute(
+            user_attr['uid'][0],
+            mod_attr
+        )
         flash(u'Compte {0} désactivé'.format(user_attr['uid'][0]))
 
     def enable_account(self, user):
@@ -71,9 +75,6 @@ class Engine(object):
             self.ldap.update_uid_attribute(user_uid,
                                       [('shadowExpire', new_shadow_expire)]
             )
-        else:
-            self.ldap.remove_uid_attribute(user_uid,
-                                      [('shadowExpire', None)])
         self.ldap.remove_uid_attribute(user_uid,
                                        [('pwdAccountLockedTime', None)])
 
@@ -577,18 +578,19 @@ class Engine(object):
         add_record.extend(form_attributez)
         add_record.append(
             ('homeDirectory', "/home/{0}".format(uid).encode('utf-8')))
-        new_shadow_expire_datetime = datetime.now() + relativedelta(
-            months = +self.app.config['SHADOW_DURATION']
-        )
-        new_shadow_expire = str(
-            self.converter.datetime_to_days_number(new_shadow_expire_datetime))
         add_record.append(
             ('shadowlastchange',
              [str(self.converter.datetime_to_days_number(datetime.now()))]
          )
         )
-        add_record.append(
-            ('shadowexpire', [new_shadow_expire] ))
+        if page.label == "ccc":
+            new_shadow_expire_datetime = datetime.now() + relativedelta(
+                months = +self.app.config['SHADOW_DURATION']
+            )
+            new_shadow_expire = str(
+                self.converter.datetime_to_days_number(new_shadow_expire_datetime))
+            add_record.append(
+                ('shadowexpire', [new_shadow_expire] ))
         if 'cinesusr' in ot_oc_list:
             add_record.append(
                 ('cinesSoumission', [self.ldap.get_initial_submission()])
