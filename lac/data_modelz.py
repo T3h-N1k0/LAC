@@ -164,6 +164,7 @@ class Field(db.Model):
                  description=None,
                  display=False,
                  edit=False,
+                 mandatory=False,
                  multivalue=False,
                  restrict=False,
                  priority=False,
@@ -176,6 +177,7 @@ class Field(db.Model):
         self.page = page
         self.ldapattribute = ldapattribute
         self.fieldtype = fieldtype
+        self.mandatory = mandatory
         self.multivalue = multivalue
         self.priority = priority
         self.block = block
