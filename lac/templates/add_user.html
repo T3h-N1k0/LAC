@@ -28,8 +28,10 @@ $(document).ready(function(){
      //alert(searchArea);
    });
   var dateNow = new Date()
+  var dateShadowExpire = new Date(new Date(dateNow).setMonth(dateNow.getMonth()+ {{ config['SHADOW_DURATION'] }}));
   $('.datepicker').datepicker({format:"{{ config['DATE_FORMAT_DATEPICKER']}}"})
   $('#cinesdaterenew-0').val(dateNow.getDate()+"/"+(dateNow.getMonth()+1)+"/"+dateNow.getFullYear())
+  $('#shadowExpire-0').val(dateShadowExpire.getDate()+"/"+(dateShadowExpire.getMonth()+1)+"/"+dateShadowExpire.getFullYear())
  })
 </script>
 {% endblock head_js %}

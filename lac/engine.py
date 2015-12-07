@@ -583,14 +583,6 @@ class Engine(object):
              [str(self.converter.datetime_to_days_number(datetime.now()))]
          )
         )
-        if page.label == "ccc":
-            new_shadow_expire_datetime = datetime.now() + relativedelta(
-                months = +self.app.config['SHADOW_DURATION']
-            )
-            new_shadow_expire = str(
-                self.converter.datetime_to_days_number(new_shadow_expire_datetime))
-            add_record.append(
-                ('shadowexpire', [new_shadow_expire] ))
         if 'cinesusr' in ot_oc_list:
             add_record.append(
                 ('cinesSoumission', [self.ldap.get_initial_submission()])
