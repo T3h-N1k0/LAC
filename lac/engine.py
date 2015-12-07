@@ -547,9 +547,11 @@ class Engine(object):
         uid = form.uid.data
         for field in fieldz:
             form_field_values = [
-                self.converter.from_display_mode(
-                    strip(entry.data),
-                    field.fieldtype.type
+                strip(
+                    self.converter.from_display_mode(
+                        entry.data,
+                        field.fieldtype.type
+                    )
                 )
                 for entry in getattr(form, field.label).entries
             ]
@@ -788,9 +790,11 @@ class Engine(object):
         pre_modlist = []
         for field in fieldz:
             form_values = [
-                self.converter.from_display_mode(
-                    strip(entry.data),
-                    field.fieldtype.type
+                strip(
+                    self.converter.from_display_mode(
+                        entry.data,
+                        field.fieldtype.type
+                    )
                 )
                 for entry in getattr(form, field.label).entries
             ]

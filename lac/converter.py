@@ -45,13 +45,13 @@ class Converter(object):
         if value is None:
             return ''
         if display_mode in  self.text_fieldz :
-            return value.encode('utf-8')
+            return str(value.encode('utf-8'))
         elif display_mode == 'Generalizedtime' :
-            return self.datetime_to_generalized_time(value).encode('utf-8')
+            return str(self.datetime_to_generalized_time(value).encode('utf-8'))
         elif display_mode == 'DaysNumber' :
             return str(self.datetime_to_days_number(value)).encode('utf-8')
         else:
-            return value.encode('utf-8')
+            return str(value.encode('utf-8'))
 
 
     def generalized_time_to_datetime(self, generalized_time):
