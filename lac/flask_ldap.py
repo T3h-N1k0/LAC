@@ -201,35 +201,35 @@ class LDAP(object):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_REPLACE, name, values)
                      for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+        return self.generic_modify(dn, mod_attrs)
 
     def add_uid_attribute(self, uid, pre_modlist):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_ADD, name, values)
                      for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+        return self.generic_modify(dn, mod_attrs)
 
     def add_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_ADD, name, values)
                      for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+        return self.generic_modify(dn, mod_attrs)
 
 
     def remove_uid_attribute(self, uid, pre_modlist):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_DELETE, name, values)
                      for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+        return self.generic_modify(dn, mod_attrs)
 
     def remove_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_DELETE, name, values)
                      for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+        return self.generic_modify(dn, mod_attrs)
 
     def update_dn_attribute(self, dn, pre_modlist):
         mod_attrs = [(ldap.MOD_REPLACE, name, values)
                      for name, values in pre_modlist]
-        self.generic_modify(dn, mod_attrs)
+        return self.generic_modify(dn, mod_attrs)
 
     def generic_modify(self, dn, mod_attrs):
         try:
@@ -237,6 +237,7 @@ class LDAP(object):
             self.conn.simple_bind_s(session['user_dn'], session['password'])
             self.conn.modify_s(dn, mod_attrs)
             self.conn.unbind_s()
+            return True
 
         except ldap.LDAPError as e:
             print(e)

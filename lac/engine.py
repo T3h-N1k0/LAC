@@ -229,20 +229,20 @@ class Engine(object):
                                 strip(form.new_pass.data).encode('utf-8')))
             if self.cache.get_group_from_member_uid(uid) not in ['autre', 'soft']:
                 pre_modlist.append(('pwdReset', 'TRUE'))
-            flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
-            self.ldap.update_uid_attribute(uid, pre_modlist)
+            if self.ldap.update_uid_attribute(uid, pre_modlist):
+                flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
             return redirect(url_for('show_user',
                                     page= self.cache.get_group_from_member_uid(uid),
                                     uid=uid))
         else:
-            self.ldap.change_passwd(
+            if self.ldap.change_passwd(
                 uid,
                 session['password'],
                 strip(form.new_pass.data)
+                ):
+                flash(
+                    u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
                 )
-            flash(
-                u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
-            )
 
             if pre_modlist:
                 self.ldap.update_uid_attribute(uid, pre_modlist)
