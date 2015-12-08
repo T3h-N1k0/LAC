@@ -68,7 +68,7 @@
 
   </div>
 
-  <div class="col-sm-offset-2 col-sm-4" >
+  <div class="col-sm-offset-1 col-sm-5" >
     <aside class="row">
       <div id='dn'>Nom LDAP : {{ dn }}</div>
       {% if session['admin'] %}
@@ -108,6 +108,7 @@
          storage=quota[0],
          group=cn_attributez['gidNumber'][0])}}">Ajouter un quota spécifique</a>
       {% endif %}
+      <br>
       {% endfor %}
     </aside>
     {% endif %}
