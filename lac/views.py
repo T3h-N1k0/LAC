@@ -184,18 +184,18 @@ def edit_page(page_label=None):
                            attr_label_list = attr_label_list,
                            form=form)
 
-@app.route('/lac_adminz/', methods=('GET', 'POST'))
+@app.route('/edit_lac_adminz/', methods=('GET', 'POST'))
 @admin_login_required
-def edit_lac_admin():
+def edit_lac_adminz():
     form = fm.generate_edit_lac_admin_form()
     if request.method == 'POST':
         lac.update_lac_admin_from_form(form)
     return render_template('lac_adminz.html',
                            form=form)
 
-@app.route('/ldap_adminz/', methods=('GET', 'POST'))
+@app.route('/edit_ldap_adminz/', methods=('GET', 'POST'))
 @admin_login_required
-def edit_ldap_admin():
+def edit_ldap_adminz():
     form = fm.generate_edit_ldap_admin_form()
     if request.method == 'POST':
         lac.update_ldap_admin_from_form(form)
