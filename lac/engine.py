@@ -406,6 +406,10 @@ class Engine(object):
         self.ldap.add(dn, pre_modlist)
 
     def update_default_quota(self, storage_cn, form):
+        storage_dn = "cn={0},ou=quota,ou=system,{1}".format(
+            storage_cn,
+            self.ldap_search_base
+        )
         cinesQuotaSizeHard = self.fm.get_quota_value_from_form(
             form,
             'cinesQuotaSizeHard')
@@ -422,7 +426,7 @@ class Engine(object):
                        ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
                        ('cinesQuotaInodeHard', cinesQuotaInodeHard),
                        ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
-#        self.ldap.update_cn_attribute(storage_cn, pre_modlist)
+        self.ldap.update_dn_attribute(storage_dn, pre_modlist)
 
     def update_quota(self, storage, form):
         storage_cn = storage['cn'][0]
