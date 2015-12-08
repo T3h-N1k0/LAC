@@ -680,18 +680,18 @@ def show_group(branch, cn):
     kustom_storagez_labelz = [
         storage.get_attributes()['cn'][0]
         for storage in ldap.get_group_quota_list()
-        if storage.get_attributes()['cn'][
-                0
-        ].split('.')[1] == cn_attributez['gidNumber'][0]
+        if storage.get_attributes()[
+                'cn'
+        ][0].split('.G.')[1] == cn_attributez['gidNumber'][0]
     ]
     quotaz = []
-    for storage in default_storagez_labelz:
-        if kustom_storagez_labelz:
-            for kustom_storage in kustom_storagez_labelz:
-                if storage in kustom_storage:
-                    quotaz.append((storage, kustom_storage))
-        else:
-            quotaz.append((storage, None))
+    for default_storage_label in default_storagez_labelz:
+        kustom = None
+        for kustom_storage in kustom_storagez_labelz:
+            original_storage = kustom_storage.split('.G.')[0]
+            if default_storage_label == original_storage:
+                kustom = kustom_storage
+        quotaz.append((default_storage_label, kustom))
     if branch == 'grCcc':
         ressource = C4Ressource.query.filter_by(code_projet = cn).first()
         projet = C4Projet.query.filter_by(
