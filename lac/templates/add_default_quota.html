@@ -1,0 +1,34 @@
+{% from "_formhelpers.html" import render_formfield %}
+{% extends "layout.html" %}
+
+{% block title %} Gestion des quotas {% endblock title %}
+
+{% block head_js %}
+{% endblock head_js %}
+
+{% block body %}
+
+{% if form %}
+<header class="row text-center">
+  <h2>Edition du quota {{ storage_cn }}</h2>
+</header>
+
+<section class="row">
+  <div class='row text-right'>
+      <div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+  </div>
+  <div class="well quota col-sm-6 col-sm-offset-3  large-label">
+    <form method="post" action="/add_default_quota/">
+      {{ render_formfield(form.common_name) }}
+      {{ render_formfield(form.cinesQuotaSizeHard) }}
+      {{ render_formfield(form.cinesQuotaSizeSoft) }}
+      {{ render_formfield(form.cinesQuotaInodeHard) }}
+      {{ render_formfield(form.cinesQuotaInodeSoft) }}
+
+      <div class="row text-center">
+        <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button></div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock body %}
