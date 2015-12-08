@@ -1013,7 +1013,7 @@ def edit_quota(storage_cn=None):
         storage = ldap.get_storage(storage_cn).get_attributes()
         form = EditQuotaForm(request.form)
         if request.method == 'POST' and form.validate():
-            self.lac.update_quota(storage, form)
+            lac.update_quota(storage, form)
             return redirect(url_for('home'))
         default_fieldz = fm.set_quota_form_values(form, storage)
         return render_template('edit_quota.html',
@@ -1031,15 +1031,15 @@ def edit_quota(storage_cn=None):
 def add_quota(storage=None, group=None):
     form = fm.generate_create_quota_form()
     if storage and group:
-        create_ldap_quota(storage, group)
+        lac.create_ldap_quota(storage, group)
         return redirect(
             url_for('edit_quota',
-                    storage_cn = '{0}.{1}'.format(storage, group)))
+                    storage_cn = '{0}.G.{1}'.format(storage, group)))
     if (request.method == 'POST' and form.validate()):
-        niou_cn = '{0}.{1}'.format(
+        niou_cn = '{0}.G.{1}'.format(
             form.default_quota.data,
             form.group.data)
-        create_ldap_quota(form.default_quota.data, form.group.data)
+        lac.create_ldap_quota(form.default_quota.data, form.group.data)
         return redirect(url_for('edit_quota',
                                 storage_cn = niou_cn))
     return render_template('add_quota.html', form=form)

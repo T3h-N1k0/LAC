@@ -10,6 +10,7 @@ from dateutil.relativedelta import relativedelta
 from flask import current_app, request, flash, render_template, session, redirect, url_for
 from lac.data_modelz import *
 from lac.helperz import *
+from lac.formz import SizeQuotaForm, InodeQuotaForm
 
 __author__ = "Nicolas CHATELAIN"
 __copyright__ = "Copyright 2014, Nicolas CHATELAIN @ CINES"
@@ -424,8 +425,16 @@ class Engine(object):
 #        self.ldap.update_cn_attribute(storage_cn, pre_modlist)
 
     def update_quota(self, storage, form):
-        default_storage_cn = storage['cn'][0].split('.')[0]
+        storage_cn = storage['cn'][0]
+        default_storage_cn, group_id = storage_cn.split('.G.')
         default_storage = self.ldap.get_default_storage(default_storage_cn).get_attributes()
+
+        storage_dn = "cn={0},cn={1},ou={2},ou=groupePosix,{3}".format(
+            storage_cn,
+            self.cache.get_posix_group_cn_by_gid(group_id),
+            self.ldap.get_branch_from_posix_group_gidnumber(group_id),
+            self.ldap_search_base
+        )
 
         pre_modlist = []
 
@@ -439,14 +448,21 @@ class Engine(object):
                     and (field_name not in storage
                          or  form_value != storage[field_name][0])
             ):
-                print('form_value : {0} field_name : {1}  default_storage[default_field] : {2}'.format(form_value, field_name,  default_storage[default_field]))
+                print('form_value : {0} \nfield_name : {1}  \ndefault_storage[default_field] : {2}\n'.format(form_value, field_name,  default_storage[default_field]))
                 pre_modlist.append((field_name, form_value))
 
 
         cinesQuotaSizeTempExpire = self.converter.datetime_to_timestamp(
             form.cinesQuotaSizeTempExpire.data
         ).encode('utf-8')
-        if cinesQuotaSizeTempExpire != storage['cinesQuotaSizeTempExpire']:
+        if (form.cinesQuotaSizeTempExpire.data is not None
+            and (
+                'cinesQuotaSizeTempExpire' not in storage
+                or cinesQuotaSizeTempExpire != storage[
+                    'cinesQuotaSizeTempExpire'
+                ]
+            )
+        ):
             pre_modlist.append(('cinesQuotaSizeTempExpire',
                                 cinesQuotaSizeTempExpire))
 
@@ -454,10 +470,21 @@ class Engine(object):
             form.cinesQuotaInodeTempExpire.data
         ).encode('utf-8')
 
-        if cinesQuotaInodeTempExpire != storage['cinesQuotaInodeTempExpire']:
+
+        cinesQuotaInodeTempExpire = self.converter.datetime_to_timestamp(
+            form.cinesQuotaInodeTempExpire.data
+        ).encode('utf-8')
+        if (form.cinesQuotaInodeTempExpire.data is not None
+            and (
+                'cinesQuotaInodeTempExpire' not in storage
+                or cinesQuotaInodeTempExpire != storage[
+                    'cinesQuotaInodeTempExpire'
+                ]
+            )
+        ):
             pre_modlist.append(('cinesQuotaInodeTempExpire',
                                 cinesQuotaInodeTempExpire))
-#        self.ldap.update_cn_attribute(storage['cn'][0], pre_modlist)
+        self.ldap.update_dn_attribute(storage_dn, pre_modlist)
 
 
 
@@ -679,10 +706,9 @@ class Engine(object):
         flash(u'{0} mis à jour'.format(ldap_object_type.description))
 
     def create_ldap_quota(self, storage, group_id):
-        niou_cn = '{0}.{1}'.format(
+        niou_cn = '{0}.G.{1}'.format(
             storage,
             group_id)
-        print("plop  : {0}".format(storage))
         default_storage = self.ldap.get_default_storage(
             storage).get_attributes()
         default_size_unit = getattr(
@@ -769,7 +795,7 @@ class Engine(object):
             next_index += 1
 
     def get_storagez_labelz(self):
-        storagez = ldap.get_group_quota_list()
+        storagez = self.ldap.get_group_quota_list()
         storagez_labelz = [storage.get_attributes()['cn'][0]
                                for storage in storagez]
         return storagez_labelz

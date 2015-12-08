@@ -266,7 +266,7 @@ class FormManager(object):
             default = True
 
         display_value = int(stored_value) / (
-            default_size_unit if app.config[
+            default_size_unit if self.app.config[
                 'QUOTA_FIELDZ'][field_name]['type'] == 'size'
             else default_inode_unit
         )

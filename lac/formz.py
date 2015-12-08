@@ -155,6 +155,7 @@ class EditQuotaForm(Form):
         SizeQuotaForm,
         label=u'Valeur temporaire de quota (taille) maximale avant avertissement (cinesQuotaSizeSoftTemp)')
     cinesQuotaSizeTempExpire = DateField(
+        format='%d/%m/%Y',
         label=u'Date expiration du quota temporaire (cinesQuotaSizeTempExpire)')
     cinesQuotaInodeHardTemp = FormField(
         InodeQuotaForm,
@@ -163,6 +164,7 @@ class EditQuotaForm(Form):
         InodeQuotaForm,
         label=u'Valeur temporaire de quota (nombre inodes) maximale avant avertissement (cinesQuotaInodeSoftTemp)')
     cinesQuotaInodeTempExpire = DateField(
+        format='%d/%m/%Y',
         label=u'Date expiration du quota temporaire (cinesQuotaInodeTempExpire)')
 
 class UserzFileForm(Form):

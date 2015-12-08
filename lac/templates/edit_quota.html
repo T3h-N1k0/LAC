@@ -13,6 +13,15 @@
          url_for('static', filename='quota.js')
          }}"></script>
 
+<script type="text/javascript"
+        src="{{url_for('static', filename='js/bootstrap-datepicker.js')}}">
+</script>
+
+<script type="text/javascript" id="js">
+$(document).ready(function(){
+  $('.datepicker').datepicker({format:"{{ config['DATE_FORMAT_DATEPICKER']}}"})
+ })
+</script>
 {% endblock head_js %}
 
 {% block body %}
@@ -57,7 +66,7 @@
       form.cinesQuotaSizeSoftTemp,
       class="quota-size{0}".format(
       " default-value" if 'cinesQuotaSizeSoftTemp' in default_fieldz else "")) }}
-      {{ render_formfield(form.cinesQuotaSizeTempExpire) }}
+      {{ render_formfield(form.cinesQuotaSizeTempExpire, 'datepicker') }}
       {{ render_formfield(
       form.cinesQuotaInodeHardTemp,
       class="quota-size{0}".format(
@@ -66,7 +75,7 @@
       form.cinesQuotaInodeSoftTemp,
       class="quota-size{0}".format(
       " default-value" if 'cinesQuotaInodeSoftTemp' in default_fieldz else "")) }}
-      {{ render_formfield(form.cinesQuotaInodeTempExpire) }}
+      {{ render_formfield(form.cinesQuotaInodeTempExpire, 'datepicker') }}
       <div class="row text-center">
         <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button></div>
       {% else %}
