@@ -37,11 +37,19 @@
 {% endblock %}
 
 {% block body %}
-<form method="post" action="/lac_adminz/">
-  <input id="searchMemberzFilter" type="text"/>
-  {{ render_formfield(form.available_memberz)}}
-  {{ render_formfield(form.selected_memberz)}}
-  <input id="update" type="submit" value="Mettre à jour" >
-</form>
-
+<section class="row">
+  <div class="col-sm-6  col-sm-offset-3 well">
+    <h1>Administration des admins de LAC </h1>
+    <form method="post" action="/lac_adminz/">
+      <input id="searchMemberzFilter" type="text"/>
+      {{ render_formfield(form.available_memberz)}}
+      {{ render_formfield(form.selected_memberz)}}
+      <section class="row">
+        <div class="text-center">
+          <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button>
+        </div>
+      </section>
+    </form>
+  </div>
+</section>
 {% endblock body %}

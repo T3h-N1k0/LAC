@@ -376,8 +376,9 @@ class FormManager(object):
         form.selected_memberz.choices = selected_memberz
 
 
-    def populate_ldap_admin_choices(form):
-        memberz = [helperz.get_uid_from_dn(dn) for dn in ldap.get_ldap_admin_memberz()]
+    def populate_ldap_admin_choices(self, form):
+        memberz = [helperz.get_uid_from_dn(dn)
+                   for dn in self.ldap.get_ldap_admin_memberz()]
         all_userz = self.ldap.get_all_users()
         selected_memberz = [ (uid, uid) for uid in memberz ]
         available_userz = [ (user.get_attributes()['uid'][0],

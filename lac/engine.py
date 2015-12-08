@@ -297,17 +297,16 @@ class Engine(object):
         db.session.commit()
 
     def update_lac_admin_from_form(self, form):
-        dn = "cn=lacadmin,ou=system,{0}".format(self.ldap_search_base)
+        group_dn = "cn=lacadmin,ou=system,{0}".format(self.ldap_search_base)
         memberz = [ get_uid_from_dn(dn)
                     for dn in self.ldap.get_lac_admin_memberz() ]
         if form.selected_memberz.data is not None:
             memberz_to_add = []
             for member in form.selected_memberz.data:
                 if member not in memberz:
-                    print('ajout de {0}'.format(member))
                     memberz_to_add.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_add:
-                self.ldap.add_dn_attribute(dn,
+                self.ldap.add_dn_attribute(group_dn,
                                            [('member', member.encode('utf8'))
                                             for member in memberz_to_add]
                                        )
@@ -315,26 +314,25 @@ class Engine(object):
             memberz_to_del = []
             for member in memberz:
                 if member not in form.selected_memberz.data:
-                    print('suppression de {0}'.format(member))
                     memberz_to_del.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_del:
-                self.ldap.remove_dn_attribute(dn,
+                self.ldap.remove_dn_attribute(group_dn,
                                               [('member', member.encode('utf8'))
                                                for member in memberz_to_del]
                                    )
+        self.fm.populate_ldap_admin_choices(form)
 
     def update_ldap_admin_from_form(self, form):
-        dn = "cn=ldapadmin,ou=system,{0}".format(self.ldap_search_base)
+        group_dn = "cn=ldapadmin,ou=system,{0}".format(self.ldap_search_base)
         memberz = [ get_uid_from_dn(dn)
                     for dn in self.ldap.get_ldap_admin_memberz() ]
         if form.selected_memberz.data is not None:
             memberz_to_add = []
             for member in form.selected_memberz.data:
                 if member not in memberz:
-                    print('ajout de {0}'.format(member))
                     memberz_to_add.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_add:
-                ldap.add_dn_attribute(dn,
+                self.ldap.add_dn_attribute(group_dn,
                                       [('member', member.encode('utf8'))
                                         for member in memberz_to_add]
                                    )
@@ -342,14 +340,13 @@ class Engine(object):
             memberz_to_del = []
             for member in memberz:
                 if member not in form.selected_memberz.data:
-                    print('suppression de {0}'.format(member))
                     memberz_to_del.append(self.ldap.get_full_dn_from_uid(member))
             if memberz_to_del:
-                self.ldap.remove_dn_attribute(dn,
+                self.ldap.remove_dn_attribute(group_dn,
                                           [('member', member.encode('utf8'))
                                            for member in memberz_to_del]
                                    )
-        fm.populate_ldap_admin_choices(form)
+        self.fm.populate_ldap_admin_choices(form)
 
     def get_last_used_id(self, ldap_ot):
         attributes=['gidNumber'] if ldap_ot.apply_to == 'group' else ['uidNumber']

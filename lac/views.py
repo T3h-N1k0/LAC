@@ -190,14 +190,13 @@ def edit_lac_admin():
     form = fm.generate_edit_lac_admin_form()
     if request.method == 'POST':
         lac.update_lac_admin_from_form(form)
-        fm.populate_lac_admin_choices(form)
     return render_template('lac_adminz.html',
                            form=form)
 
 @app.route('/ldap_adminz/', methods=('GET', 'POST'))
 @admin_login_required
 def edit_ldap_admin():
-    form = fm.generate_edit_lac_admin_form()
+    form = fm.generate_edit_ldap_admin_form()
     if request.method == 'POST':
         lac.update_ldap_admin_from_form(form)
     return render_template('ldap_adminz.html',
@@ -758,7 +757,7 @@ def show_workgroups():
 @app.route('/edit_workgroup/<group_cn>', methods=('GET', 'POST'))
 @login_required
 def edit_workgroup(group_cn):
-    dn = "cn={0},ou=grTravail,,{1}".format(
+    dn = "cn={0},ou=grTravail,{1}".format(
         group_cn,
         app.config['LDAP_SEARCH_BASE']
     )
