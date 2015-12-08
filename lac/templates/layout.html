@@ -129,6 +129,11 @@
                  'show_shells')}}">Gérer les types de shell</a></li>
               <li><a href="{{ url_for(
                  'show_deleted_userz')}}">Afficher les utilisateurs supprimés</a></li>
+              {% if session['admin'] %}
+              <li class="divider"></li>
+              <li><a href="{{ url_for('edit_ldap_adminz')}}">Gérer les admin LDAP</a></li>
+              <li><a href="{{ url_for('edit_lac_adminz') }}">Gérer les admin LAC</a></li>
+              {% endif %}
               <li class="divider"></li>
               <li><a href='#'>LDAP HOST : {{ config['LDAP_HOST']}}</a></li>
               <li><a href='#'>LAC DB HOST : {{ config['LAC_DB_HOST']}}</a></li>
