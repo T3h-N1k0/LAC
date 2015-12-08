@@ -39,9 +39,10 @@ $(document).ready(function(){
        storage_cn=storage_cn
        )}}"><span class="glyphicon glyphicon-minus-sign"> Supprimer le quota</span></a><br><br>
   </div>
-  <div class="well quota col-sm-6 col-sm-offset-3  large-label">
+  <div class="well large-label">
     <form method="post" action="/edit_quota/{{ storage_cn }}">
-
+      <div class="quota col-sm-6 attrz-block">
+        <h3>Surcharge des quotas par défaut</h3>
       {{ render_formfield(
       form.cinesQuotaSizeHard,
       class="quota-size{0}".format(
@@ -58,6 +59,9 @@ $(document).ready(function(){
       form.cinesQuotaInodeSoft,
       class="quota-size{0}".format(
       " default-value" if 'cinesQuotaInodeSoft' in default_fieldz else "")) }}
+      </div>
+      <div class="quota col-sm-6  attrz-block">
+        <h3>Quotas temporaires</h3>
       {{ render_formfield(
       form.cinesQuotaSizeHardTemp,
       class="quota-size{0}".format(
@@ -75,7 +79,8 @@ $(document).ready(function(){
       form.cinesQuotaInodeSoftTemp,
       class="quota-size{0}".format(
       " default-value" if 'cinesQuotaInodeSoftTemp' in default_fieldz else "")) }}
-      {{ render_formfield(form.cinesQuotaInodeTempExpire, 'datepicker') }}
+        {{ render_formfield(form.cinesQuotaInodeTempExpire, 'datepicker') }}
+        </div>
       <div class="row text-center">
         <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button></div>
       {% else %}
