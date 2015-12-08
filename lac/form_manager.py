@@ -3,6 +3,7 @@
 from flask import current_app, request, flash, render_template
 from wtforms import Form, BooleanField, TextField, SelectMultipleField, SelectField, PasswordField,validators, FormField, FieldList, DateTimeField, TextAreaField
 from lac.formz import *
+from string import strip
 import lac.helperz as helperz
 from data_modelz import *
 
@@ -358,7 +359,7 @@ class FormManager(object):
         field = getattr(form, quota)
         value = str(
             int(
-                field.value.data
+                strip(field.value.data)
             ) * int(
                 field.unit.data)
         ).encode('utf-8')

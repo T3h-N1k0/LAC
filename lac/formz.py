@@ -105,35 +105,63 @@ class InodeQuotaForm(Form):
                        coerce=int)
 
 
+class AddDefaultQuotaForm(Form):
+    common_name = TextField('Nom du storage')
+    cinesQuotaSizeHard = FormField(
+        SizeQuotaForm,
+        label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
+    cinesQuotaSizeSoft = FormField(
+        SizeQuotaForm,
+        label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
+    cinesQuotaInodeHard = FormField(
+        InodeQuotaForm,
+        label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
+    cinesQuotaInodeSoft = FormField(
+        InodeQuotaForm,
+        label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
+
+
 class EditDefaultQuotaForm(Form):
-    cinesQuotaSizeHard = FormField(SizeQuotaForm,
-                                   label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
-    cinesQuotaSizeSoft = FormField(SizeQuotaForm,
-                                    label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
-    cinesQuotaInodeHard = FormField(InodeQuotaForm,
-                                    label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
-    cinesQuotaInodeSoft = FormField(InodeQuotaForm,
-                                    label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
+    cinesQuotaSizeHard = FormField(
+        SizeQuotaForm,
+        label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
+    cinesQuotaSizeSoft = FormField(
+        SizeQuotaForm,
+        label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
+    cinesQuotaInodeHard = FormField(
+        InodeQuotaForm,
+        label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
+    cinesQuotaInodeSoft = FormField(
+        InodeQuotaForm,
+        label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
 
 class EditQuotaForm(Form):
-    cinesQuotaSizeHard = FormField(SizeQuotaForm,
-                                   label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
-    cinesQuotaSizeSoft = FormField(SizeQuotaForm,
-                                    label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
-    cinesQuotaInodeHard = FormField(InodeQuotaForm,
-                                    label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
-    cinesQuotaInodeSoft = FormField(InodeQuotaForm,
-                                    label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
-    cinesQuotaSizeHardTemp = FormField(SizeQuotaForm,
-                                       label=u'Valeur temporaire de quota (taille) maximale avant blocage écriture (cinesQuotaSizeHardTemp)')
-    cinesQuotaSizeSoftTemp = FormField(SizeQuotaForm,
-                                       label=u'Valeur temporaire de quota (taille) maximale avant avertissement (cinesQuotaSizeSoftTemp)')
+    cinesQuotaSizeHard = FormField(
+        SizeQuotaForm,
+        label=u'Quota taille maximale autorisée avant blocage écriture (cinesQuotaSizeHard)')
+    cinesQuotaSizeSoft = FormField(
+        SizeQuotaForm,
+        label=u'Quota taille maximale autorise avant avertissement (cinesQuotaSizeSoft)')
+    cinesQuotaInodeHard = FormField(
+        InodeQuotaForm,
+        label=u'Quota nombre inodes maximal autorisé avant blocage écriture (cinesQuotaInodeHard)')
+    cinesQuotaInodeSoft = FormField(
+        InodeQuotaForm,
+        label=u'Quota nombre inodes maximal autorisé avant avertissement (cinesQuotaInodeSoft)')
+    cinesQuotaSizeHardTemp = FormField(
+        SizeQuotaForm,
+        label=u'Valeur temporaire de quota (taille) maximale avant blocage écriture (cinesQuotaSizeHardTemp)')
+    cinesQuotaSizeSoftTemp = FormField(
+        SizeQuotaForm,
+        label=u'Valeur temporaire de quota (taille) maximale avant avertissement (cinesQuotaSizeSoftTemp)')
     cinesQuotaSizeTempExpire = DateField(
         label=u'Date expiration du quota temporaire (cinesQuotaSizeTempExpire)')
-    cinesQuotaInodeHardTemp = FormField(InodeQuotaForm,
-                                        label=u'Valeur temporaire de quota (nombre inodes) maximale avant blocage ecriture (cinesQuotaInodeHardTemp)')
-    cinesQuotaInodeSoftTemp = FormField(InodeQuotaForm,
-                                        label=u'Valeur temporaire de quota (nombre inodes) maximale avant avertissement (cinesQuotaInodeSoftTemp)')
+    cinesQuotaInodeHardTemp = FormField(
+        InodeQuotaForm,
+        label=u'Valeur temporaire de quota (nombre inodes) maximale avant blocage ecriture (cinesQuotaInodeHardTemp)')
+    cinesQuotaInodeSoftTemp = FormField(
+        InodeQuotaForm,
+        label=u'Valeur temporaire de quota (nombre inodes) maximale avant avertissement (cinesQuotaInodeSoftTemp)')
     cinesQuotaInodeTempExpire = DateField(
         label=u'Date expiration du quota temporaire (cinesQuotaInodeTempExpire)')
 

@@ -144,16 +144,17 @@ Accueil
       <div class="panel-heading">Gestion des quotas</div>
       <div class="panel-body">
         <a href="{{ url_for(
-           'edit_quota')}}">Gérer les quotas spécifiques</a>
-        <br>
-        <a href="{{ url_for(
            'add_quota')}}">Ajouter un quota spécifique</a>
         <br>
         <a href="{{ url_for(
+           'edit_quota')}}">Gérer les quotas spécifiques</a>
+        <hr>
+        <a href="{{ url_for(
+           'add_default_quota')}}">Ajouter un quota par défaut</a>
+        <br>
+        <a href="{{ url_for(
            'edit_default_quota')}}">Gérer les quotas par defaut</a>
-        <br>
-        <br>
-
+        <hr>
         <a href="{{ url_for(
            'show_filesystems')}}">Gérer les systèmes de fichier</a>
 

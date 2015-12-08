@@ -971,6 +971,17 @@ def toggle_account(uid):
                             page = cache.get_group_from_member_uid(uid),
                             uid = uid))
 
+@app.route('/add_default_quota/', methods=('GET', 'POST'))
+@admin_login_required
+def add_default_quota():
+    form = AddDefaultQuotaForm(request.form)
+    if request.method == 'POST' and form.validate():
+        lac.create_default_quota(form)
+        return redirect(url_for('home'))
+    return render_template(
+        'add_default_quota.html',
+        form=form)
+
 @app.route('/edit_default_quota/')
 @app.route('/edit_default_quota/<storage_cn>', methods=('GET', 'POST'))
 @admin_login_required
@@ -982,7 +993,7 @@ def edit_default_quota(storage_cn=None):
         storage = ldap.get_default_storage(storage_cn).get_attributes()
         form = EditDefaultQuotaForm(request.form)
         if request.method == 'POST' and form.validate():
-            update_default_quota(storage_cn, form)
+            lac.update_default_quota(storage_cn, form)
             return redirect(url_for('home'))
         fm.set_default_quota_form_values(form, storage)
         return render_template('edit_default_quota.html',

@@ -380,6 +380,29 @@ class Engine(object):
         else:
             return True
 
+    def create_default_quota(self, form):
+        cn = strip(form.common_name.data).encode('utf-8')
+        dn = 'cn={0},ou=quota,ou=system,{1}'.format(cn, self.ldap_search_base)
+        cinesQuotaSizeHard = self.fm.get_quota_value_from_form(
+            form,
+            'cinesQuotaSizeHard')
+        cinesQuotaSizeSoft = self.fm.get_quota_value_from_form(
+            form,
+            'cinesQuotaSizeSoft')
+        cinesQuotaInodeHard = self.fm.get_quota_value_from_form(
+            form,
+            'cinesQuotaInodeHard')
+        cinesQuotaInodeSoft = self.fm.get_quota_value_from_form(
+            form,
+            'cinesQuotaInodeSoft')
+        pre_modlist = [
+            ('cn', cn),
+            ('objectClass', ['top', 'cinesQuota']),
+            ('cinesQuotaSizeHard', cinesQuotaSizeHard),
+            ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
+            ('cinesQuotaInodeHard', cinesQuotaInodeHard),
+            ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
+        self.ldap.add(dn, pre_modlist)
 
     def update_default_quota(self, storage_cn, form):
         cinesQuotaSizeHard = self.fm.get_quota_value_from_form(
