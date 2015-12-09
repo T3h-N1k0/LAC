@@ -455,39 +455,34 @@ class Engine(object):
                 print('form_value : {0} \nfield_name : {1}  \ndefault_storage[default_field] : {2}\n'.format(form_value, field_name,  default_storage[default_field]))
                 pre_modlist.append((field_name, form_value))
 
-
-        cinesQuotaSizeTempExpire = self.converter.datetime_to_timestamp(
-            form.cinesQuotaSizeTempExpire.data
-        ).encode('utf-8')
-        if (form.cinesQuotaSizeTempExpire.data is not None
-            and (
-                'cinesQuotaSizeTempExpire' not in storage
-                or cinesQuotaSizeTempExpire != storage[
-                    'cinesQuotaSizeTempExpire'
-                ]
-            )
-        ):
-            pre_modlist.append(('cinesQuotaSizeTempExpire',
-                                cinesQuotaSizeTempExpire))
-
-        cinesQuotaInodeTempExpire = self.converter.datetime_to_timestamp(
-            form.cinesQuotaInodeTempExpire.data
-        ).encode('utf-8')
-
-
-        cinesQuotaInodeTempExpire = self.converter.datetime_to_timestamp(
-            form.cinesQuotaInodeTempExpire.data
-        ).encode('utf-8')
-        if (form.cinesQuotaInodeTempExpire.data is not None
-            and (
-                'cinesQuotaInodeTempExpire' not in storage
-                or cinesQuotaInodeTempExpire != storage[
-                    'cinesQuotaInodeTempExpire'
-                ]
-            )
-        ):
-            pre_modlist.append(('cinesQuotaInodeTempExpire',
-                                cinesQuotaInodeTempExpire))
+        if form.cinesQuotaSizeTempExpire.data:
+            cinesQuotaSizeTempExpire = self.converter.datetime_to_timestamp(
+                form.cinesQuotaSizeTempExpire.data
+            ).encode('utf-8')
+            if (form.cinesQuotaSizeTempExpire.data is not None
+                and (
+                    'cinesQuotaSizeTempExpire' not in storage
+                    or cinesQuotaSizeTempExpire != storage[
+                        'cinesQuotaSizeTempExpire'
+                    ]
+                )
+            ):
+                pre_modlist.append(('cinesQuotaSizeTempExpire',
+                                    cinesQuotaSizeTempExpire))
+        if form.cinesQuotaInodeTempExpire.data:
+            cinesQuotaInodeTempExpire = self.converter.datetime_to_timestamp(
+                form.cinesQuotaInodeTempExpire.data
+            ).encode('utf-8')
+            if (form.cinesQuotaInodeTempExpire.data is not None
+                and (
+                    'cinesQuotaInodeTempExpire' not in storage
+                    or cinesQuotaInodeTempExpire != storage[
+                        'cinesQuotaInodeTempExpire'
+                    ]
+                )
+            ):
+                pre_modlist.append(('cinesQuotaInodeTempExpire',
+                                    cinesQuotaInodeTempExpire))
         self.ldap.update_dn_attribute(storage_dn, pre_modlist)
 
 
@@ -715,30 +710,14 @@ class Engine(object):
             group_id)
         default_storage = self.ldap.get_default_storage(
             storage).get_attributes()
-        default_size_unit = getattr(
-            getattr(SizeQuotaForm, 'unit'),'kwargs')['default']
-        default_inode_unit = getattr(
-            getattr(InodeQuotaForm, 'unit'),'kwargs')['default']
-        cinesQuotaSizeHard = str(int(
-            default_storage['cinesQuotaSizeHard'][0]
-        ) / default_size_unit)
-        cinesQuotaSizeSoft = str(int(
-            default_storage['cinesQuotaSizeSoft'][0]
-        ) / default_size_unit)
-        cinesQuotaInodeHard = str(int(
-            default_storage['cinesQuotaInodeHard'][0]
-        ) / default_inode_unit)
-        cinesQuotaInodeSoft = str(int(
-            default_storage['cinesQuotaInodeSoft'][0]
-        ) / default_inode_unit)
-        add_record = [('cn', [niou_cn]),
-                      ('objectClass', ['top', 'cinesQuota']),
-                      ('cinesQuotaSizeHard', cinesQuotaSizeHard),
-                      ('cinesQuotaSizeSoft', cinesQuotaSizeSoft),
-                      ('cinesQuotaInodeHard', cinesQuotaInodeHard),
-                      ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)
+        add_record = [
+            ('cn', [niou_cn]),
+            ('objectClass', ['top', 'cinesQuota']),
+            ('cinesQuotaSizeHard', default_storage['cinesQuotaSizeHard']),
+            ('cinesQuotaSizeSoft', default_storage['cinesQuotaSizeSoft']),
+            ('cinesQuotaInodeHard', default_storage['cinesQuotaInodeHard']),
+            ('cinesQuotaInodeSoft', default_storage['cinesQuotaInodeSoft'])
         ]
-        print(group_id)
         group_full_dn = self.ldap.get_full_dn_from_cn(
             self.cache.get_posix_group_cn_by_gid(group_id))
         full_dn = 'cn={0},{1}'.format(niou_cn,group_full_dn)

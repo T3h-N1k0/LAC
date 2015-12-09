@@ -156,7 +156,8 @@ class EditQuotaForm(Form):
         label=u'Valeur temporaire de quota (taille) maximale avant avertissement (cinesQuotaSizeSoftTemp)')
     cinesQuotaSizeTempExpire = DateField(
         format='%d/%m/%Y',
-        label=u'Date expiration du quota temporaire (cinesQuotaSizeTempExpire)')
+        label=u'Date expiration du quota temporaire (cinesQuotaSizeTempExpire)',
+        validators=[validators.optional()])
     cinesQuotaInodeHardTemp = FormField(
         InodeQuotaForm,
         label=u'Valeur temporaire de quota (nombre inodes) maximale avant blocage ecriture (cinesQuotaInodeHardTemp)')
@@ -165,7 +166,8 @@ class EditQuotaForm(Form):
         label=u'Valeur temporaire de quota (nombre inodes) maximale avant avertissement (cinesQuotaInodeSoftTemp)')
     cinesQuotaInodeTempExpire = DateField(
         format='%d/%m/%Y',
-        label=u'Date expiration du quota temporaire (cinesQuotaInodeTempExpire)')
+        label=u'Date expiration du quota temporaire (cinesQuotaInodeTempExpire)',
+        validators=[validators.optional()])
 
 class UserzFileForm(Form):
     userz_file = FileField('Fichier contenant les logins utilisateur')
