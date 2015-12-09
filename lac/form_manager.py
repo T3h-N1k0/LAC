@@ -274,7 +274,7 @@ class FormManager(object):
         return (display_value, default)
 
     def set_quota_form_values(self, form, storage):
-        default_storage_cn = storage['cn'][0].split('.')[0]
+        default_storage_cn = storage['cn'][0].split('.G.')[0]
         default_storage = self.ldap.get_default_storage(
             default_storage_cn).get_attributes()
         date_now = datetime.now()
@@ -322,19 +322,18 @@ class FormManager(object):
             'cinesQuotaInodeSoftTemp')
         cinesQuotaSizeTempExpire = datetime.fromtimestamp(
             float(storage['cinesQuotaSizeTempExpire'][0])
-        ) if 'cinesQuotaSizeTempExpire' in storage else date_now
+        ) if 'cinesQuotaSizeTempExpire' in storage else None
         cinesQuotaInodeTempExpire =  datetime.fromtimestamp(
             float(storage['cinesQuotaInodeTempExpire'][0])
-        ) if 'cinesQuotaInodeTempExpire' in storage else date_now
-
-        form.cinesQuotaSizeHard.value.data= cinesQuotaSizeHard[0]
-        form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft[0]
-        form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard[0]
-        form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft[0]
-        form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp[0]
-        form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp[0]
-        form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp[0]
-        form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp[0]
+        ) if 'cinesQuotaInodeTempExpire' in storage else None
+        form.cinesQuotaSizeHard.value.data = cinesQuotaSizeHard[0] if not cinesQuotaSizeHard[1] else None
+        form.cinesQuotaSizeSoft.value.data= cinesQuotaSizeSoft[0] if not cinesQuotaSizeSoft[1] else None
+        form.cinesQuotaInodeHard.value.data= cinesQuotaInodeHard[0] if not cinesQuotaInodeHard[1] else None
+        form.cinesQuotaInodeSoft.value.data= cinesQuotaInodeSoft[0] if not cinesQuotaInodeSoft[1] else None
+        form.cinesQuotaSizeHardTemp.value.data= cinesQuotaSizeHardTemp[0] if not cinesQuotaSizeHardTemp[1] else None
+        form.cinesQuotaSizeSoftTemp.value.data= cinesQuotaSizeSoftTemp[0] if not cinesQuotaSizeSoftTemp[1] else None
+        form.cinesQuotaInodeHardTemp.value.data= cinesQuotaInodeHardTemp[0] if not cinesQuotaInodeHardTemp[1] else None
+        form.cinesQuotaInodeSoftTemp.value.data= cinesQuotaInodeSoftTemp[0] if not cinesQuotaInodeSoftTemp[1] else None
         form.cinesQuotaSizeTempExpire.data = cinesQuotaSizeTempExpire
         form.cinesQuotaInodeTempExpire.data = cinesQuotaInodeTempExpire
         if cinesQuotaSizeHard[1]:
@@ -357,12 +356,15 @@ class FormManager(object):
 
     def get_quota_value_from_form(self, form, quota):
         field = getattr(form, quota)
-        value = str(
-            int(
-                strip(field.value.data)
-            ) * int(
-                field.unit.data)
-        ).encode('utf-8')
+        if field.value.data:
+            value = str(
+                int(
+                    field.value.data
+                ) * int(
+                    field.unit.data)
+            ).encode('utf-8')
+        else:
+            value = None
         return value
 
     def populate_lac_admin_choices(self, form):
