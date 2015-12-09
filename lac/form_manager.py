@@ -369,12 +369,12 @@ class FormManager(object):
 
     def populate_lac_admin_choices(self, form):
         memberz = [ helperz.get_uid_from_dn(dn) for dn in self.ldap.get_lac_admin_memberz() ]
-        all_userz = self.ldap.get_all_users()
+        all_userz = self.ldap.get_people_group_memberz("Admcines")
         selected_memberz = [ (uid, uid) for uid in memberz ]
-        available_userz = [ (user.get_attributes()['uid'][0],
-                             user.get_attributes()['uid'][0])
-                            for user in all_userz
-                            if user.get_attributes()['uid'][0] not in memberz]
+        available_userz = [ (uid,
+                             uid)
+                            for uid in all_userz
+                            if uid not in memberz]
         form.available_memberz.choices = available_userz
         form.selected_memberz.choices = selected_memberz
 
@@ -382,12 +382,12 @@ class FormManager(object):
     def populate_ldap_admin_choices(self, form):
         memberz = [helperz.get_uid_from_dn(dn)
                    for dn in self.ldap.get_ldap_admin_memberz()]
-        all_userz = self.ldap.get_all_users()
+        all_userz = self.ldap.get_people_group_memberz("Admcines")
         selected_memberz = [ (uid, uid) for uid in memberz ]
-        available_userz = [ (user.get_attributes()['uid'][0],
-                             user.get_attributes()['uid'][0])
-                            for user in all_userz
-                            if user.get_attributes()['uid'][0] not in memberz]
+        available_userz = [ (uid,
+                             uid)
+                            for uid in all_userz
+                            if uid not in memberz]
         form.available_memberz.choices = available_userz
         form.selected_memberz.choices = selected_memberz
 
