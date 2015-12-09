@@ -1112,12 +1112,12 @@ def edit_ldap_object_type(ldap_object_type_label):
             label = ldap_object_type_label).first()
         form = LDAPObjectTypeForm(request.form)
         if request.method == 'POST':
-            print(form.apply_to.data)
             lac.create_ldap_object_from_add_object_type_form(form,
                                                              ldap_object_type)
             return redirect(url_for('home'))
         fm.set_edit_ldap_object_type_form_valuez(ldap_object_type, form)
         return render_template('edit_ldap_object_type.html',
+                               ldap_ot=ldap_object_type_label,
                                form=form)
 
     else:
