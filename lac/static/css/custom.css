@@ -60,3 +60,7 @@ footer {
 .errors {
   color: red;
 }
+
+.default-value {
+  color: orange;
+}
