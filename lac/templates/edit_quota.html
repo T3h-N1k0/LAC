@@ -81,7 +81,10 @@ $(document).ready(function(){
       " default-value" if 'cinesQuotaInodeSoftTemp' in default_fieldz else "")) }}
         {{ render_formfield(form.cinesQuotaInodeTempExpire, 'datepicker') }}
         </div>
-      <div class="row text-center">
+        <div class="col-sm-6 default-value">
+          Valeur par défault en orange
+          </div>
+        <div class="row text-center">
         <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button></div>
       {% else %}
       <div class="col-md-offset-4 col-md-4">
