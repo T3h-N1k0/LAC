@@ -191,6 +191,7 @@ def edit_lac_adminz():
     form = fm.generate_edit_lac_admin_form()
     if request.method == 'POST':
         lac.update_lac_admin_from_form(form)
+        return render_template('home.html')
     return render_template('lac_adminz.html',
                            form=form)
 
@@ -200,6 +201,7 @@ def edit_ldap_adminz():
     form = fm.generate_edit_ldap_admin_form()
     if request.method == 'POST':
         lac.update_ldap_admin_from_form(form)
+        return render_template('home.html')
     return render_template('ldap_adminz.html',
                            form=form)
 
