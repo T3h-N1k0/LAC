@@ -629,10 +629,14 @@ class LDAP(object):
         return schema.subentry.SubSchema( subschema_subentry )
 
     def set_submission(self, uid, group, state):
-        old_cines_soumission = self.search(
+        rq_submission = self.search(
                 ldap_filter='(uid={0})'.format(uid),
                 attributes=['cinesSoumission']
-            )[0].get_attributes()['cinesSoumission'][0]
+            )[0].get_attributes()
+        if "cinesSoumission" in rq_submission:
+            old_cines_soumission = rq_submission['cinesSoumission'][0]
+        else:
+            old_cines_soumission = ""
         if group in old_cines_soumission:
             new_cines_soumission = re.sub(r'(.*{0}=)\d(.*)'.format(group),
                                       r"\g<1>{0}\2".format(str(state)),
