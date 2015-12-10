@@ -94,7 +94,7 @@ class SizeQuotaForm(Form):
                                 (1000, 'Mo'),
                                 (1000000, 'Go'),
                                 (1000000000, 'Po')],
-                       default=1000,
+                       default=1000000,
                        coerce=int)
 
 class InodeQuotaForm(Form):
