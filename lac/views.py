@@ -13,6 +13,7 @@ from ldap import SCOPE_BASE,schema
 import binascii
 import re
 import os
+from string import strip
 import time
 from lac.data_modelz import *
 from lac.flask_ldap import LDAP, login_required, admin_login_required
@@ -139,7 +140,7 @@ def show_user(page, uid):
     sec_groupz = [ group for group in ldap.get_posix_groupz_from_member_uid(uid)
                    if group[0] != group_princ]
     if ('cinesSoumission' in uid_attributez
-        and uid_attributez['cinesSoumission'] != "") :
+        and strip(uid_attributez['cinesSoumission'][0]) != "") :
         submission_list = get_list_from_submission_attr(
             uid_attributez['cinesSoumission'][0])
     else:
