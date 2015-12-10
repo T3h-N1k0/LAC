@@ -588,6 +588,127 @@ def delete_group(branch, cn):
                             branch=branch,
                             cn=cn))
 
+@app.route('/show_container/<cn>')
+@login_required
+def show_container(cn):
+    page = Page.query.filter_by(label = "grConteneur").first()
+    page_fieldz = Field.query.filter_by(
+        page_id = page.id,
+        display=True
+    ).order_by(Field.priority).all()
+    ldap_filter='(cn={0})'.format(cn)
+    attributes=['*','+']
+    base_dn='ou=grConteneur,ou=groupePosix,{0}'.format(
+        app.config['LDAP_SEARCH_BASE']
+    )
+    cn_detailz = ldap.search(ldap_filter=ldap_filter,
+                              attributes=attributes,
+                              base_dn=base_dn)
+    if not cn_detailz:
+        flash(u'Groupe non trouvé')
+        return redirect(url_for('show_containerz'))
+    cn_attributez=cn_detailz[0].get_attributes()
+    if 'uniqueMember' in cn_attributez:
+        cn_attributez['uniqueMember'] = [get_uid_from_dn(member)
+                                         for member in sorted(
+                                                 cn_attributez['uniqueMember'])]
+    dn = cn_attributez['entryDN'][0]
+    blockz =sorted(
+        set(
+            [field.block for field in page_fieldz]
+        )
+    )
+    return render_template('show_container.html',
+                           blockz=blockz,
+                           cn = cn,
+                           dn=dn,
+                           cn_attributez=cn_attributez,
+                           page_fieldz=page_fieldz
+    )
+
+@app.route('/add_container/', methods=('GET', 'POST'))
+@login_required
+def add_container():
+    page = Page.query.filter_by(label = 'grConteneur').first()
+    fieldz = Field.query.filter_by(page_id = page.id,edit = True).order_by(
+        Field.priority
+    ).all()
+    blockz =sorted(set([field.block for field in fieldz]))
+    add_form = fm.generate_add_base_group_form(fieldz)
+    if request.method == 'POST':
+        if add_form.validate():
+            if lac.create_ldap_object_from_add_container_form(
+                    add_form):
+                return redirect(url_for("show_container",
+                                        cn=add_form.cn.data))
+            else :
+                return redirect(url_for("add_container"))
+    return render_template('add_container.html',
+                           fieldz=fieldz,
+                           blockz=blockz,
+                           add_form=add_form)
+
+@app.route('/show_containerz/')
+@login_required
+def show_containerz():
+    groupz = [ group.get_attributes()['cn'][0]
+               for group in ldap.get_posix_groupz("grConteneur")]
+    groupz_count = len(groupz)
+    return render_template('show_containerz.html',
+                           groupz=groupz,
+                           groupz_count=groupz_count)
+
+@app.route('/delete_container/<cn>')
+@login_required
+def delete_container(cn):
+    if ldap.get_people_group_memberz(cn):
+        flash(u'Le groupe n\'est pas vide.\nImpossible de supprimer le groupe.')
+    else:
+        dn = "cn={0},ou=grConteneur,ou=groupePosix,{1}".format(
+            cn,
+            app.config['LDAP_SEARCH_BASE']
+        )
+        ldap.delete(dn)
+        cache.populate_grouplist()
+        cache.populate_people_group()
+        cache.populate_work_group()
+        flash(u'Conteneur {0} supprimé'.format(cn))
+        return redirect(url_for('home'))
+    return redirect(url_for('show_container',
+                            cn=cn))
+
+@app.route('/edit_container/<group_cn>', methods=('GET', 'POST'))
+@login_required
+def edit_container(group_cn):
+    dn = "cn={0},ou=grConteneur,ou=groupePosix,{1}".format(
+        group_cn,
+        app.config['LDAP_SEARCH_BASE']
+    )
+    page = Page.query.filter_by(label='grConteneur').first()
+    form = fm.generate_edit_group_form(page, "grConteneur", group_cn)
+    fieldz = Field.query.filter_by(
+        page_id = page.id,
+        edit = True
+    ).order_by(Field.priority).all()
+    blockz =sorted(
+        set(
+            [field.block for field in fieldz]
+        )
+    )
+    if request.method == 'POST':
+        lac.update_ldap_object_from_edit_group_form(form,page,group_cn)
+        flash(u'Groupe {0} mis à jour'.format(group_cn))
+        return redirect(url_for("show_container",
+                                cn=group_cn))
+    fm.set_edit_group_form_values(form, fieldz, "grConteneur", group_cn)
+    return render_template('edit_container.html',
+                           form=form,
+                           page=page,
+                           dn=dn,
+                           group_cn=group_cn,
+                           fieldz=fieldz,
+                           blockz=blockz)
+
 @app.route('/add_workgroup/', methods=('GET', 'POST'))
 @login_required
 def add_workgroup():
@@ -596,7 +717,7 @@ def add_workgroup():
         Field.priority
     ).all()
     blockz =sorted(set([field.block for field in fieldz]))
-    add_form = fm.generate_add_workgroup_form(fieldz)
+    add_form = fm.generate_add_base_group_form(fieldz)
     if request.method == 'POST':
         if add_form.validate():
             if lac.create_ldap_object_from_add_workgroup_form(

@@ -77,8 +77,13 @@ Accueil
           </div>
 
           <div class="row">
-            <br>
+            <div class="col-sm-3">Conteneurs</div>
+            <div class="col-sm-{% if session['admin'] %}5{% else %}9{% endif %}"><a href="{{ url_for('show_containerz')}}">{% if session['admin'] %}Consulter/Modifier{% else %}Consulter {% endif %}</a></div>
+            {% if session['admin'] %}
+            <div class="col-sm-4"><a href="{{url_for('add_container')}}">Ajouter</a></div>
+            {% endif %}
           </div>
+
           <div class="row">
             <br>
           </div>

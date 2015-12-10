@@ -493,17 +493,18 @@ class FormManager(object):
         form.filesystem.choices = self.get_filesystem_choices()
         return form
 
-    def generate_add_workgroup_form(self, page_fieldz):
+    def generate_add_base_group_form(self, page_fieldz):
         for field in page_fieldz:
             self.append_field_to_form(field,
-                                     AddWorkgroupForm)
+                                     AddBaseGroupForm)
         existing_groupz = [
             group.get_attributes()['cn'][0]
             for group in self.ldap.get_all_groups()]
         self.set_validators_to_form_field(
-            AddWorkgroupForm, 'cn',[validators.NoneOf(existing_groupz)])
-        form = AddWorkgroupForm(request.form)
+            AddBaseGroupForm, 'cn',[validators.NoneOf(existing_groupz)])
+        form = AddBaseGroupForm(request.form)
         return form
+
 
     def generate_add_project_group_form(self):
         existing_groupz = [
@@ -676,7 +677,6 @@ class FormManager(object):
         form.memberz.available_memberz.choices =[
             (member, member) for member in available_memberz
         ]
-
         return form
 
     def generate_edit_workgroup_form(self, page, group_cn):

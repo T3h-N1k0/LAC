@@ -209,7 +209,7 @@ class AddGenericGroupForm(Form):
     filesystem = SelectField(u'Système de fichier',default='DEFAUT')
     description = TextField(u'Description')
 
-class AddWorkgroupForm(Form):
+class AddBaseGroupForm(Form):
     cn = TextField(u'Nom (cn)')
     description = TextField(u'Description')
 

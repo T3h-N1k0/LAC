@@ -581,6 +581,34 @@ class Engine(object):
             flash(u'Groupe créé')
             return 1
 
+    def create_ldap_object_from_add_container_form(self, form):
+        ot = LDAPObjectType.query.filter_by(label = 'grConteneur').first()
+        cn = strip(form.cn.data).encode('utf-8')
+        description = strip(form.description.data).encode('utf-8')
+        object_classes = [oc_ot.ldapobjectclass.label.encode('utf-8')
+                          for oc_ot in LDAPObjectTypeObjectClass.query.filter_by(
+                              ldapobjecttype_id = ot.id).all()]
+        id_number = str(self.get_next_id_from_ldap_ot(ot))
+        if not object_classes:
+            flash(u'ObjectClasss manquants pour ce type d\'objet')
+            return 0
+
+        full_dn = "cn={0},ou=grConteneur,ou=groupePosix,{1}".format(
+            cn,
+            self.ldap_search_base)
+        add_record = [('cn', [cn]),
+                      ('gidNumber', [id_number]),
+                      ('objectClass', object_classes)]
+        if description and description != '':
+            add_record.append(('description', [description]))
+        if self.ldap.add(full_dn, add_record):
+            ot.last_used_id= id_number
+            db.session.add(ot)
+            db.session.commit()
+            self.cache.populate_work_group()
+            flash(u'Groupe créé')
+            return 1
+
     def create_ldap_object_from_add_user_form(self, form, fieldz, page):
         ldap_ot = LDAPObjectType.query.filter_by(
             label=page.label
