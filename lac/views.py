@@ -548,6 +548,7 @@ def edit_group(branch, group_cn):
         )
     )
     if request.method == 'POST':
+        lac.update_ldap_object_from_edit_group_form(form,page,group_cn)
         if branch == 'grCcc':
             ressource = C4Ressource.query.filter_by(
                 code_projet = group_cn).first()
@@ -556,13 +557,11 @@ def edit_group(branch, group_cn):
             else:
                 comite = ''
             lac.update_group_memberz_cines_c4(branch, group_cn, comite)
-        lac.update_ldap_object_from_edit_group_form(form,page,group_cn)
         flash(u'Groupe {0} mis à jour'.format(group_cn))
         return redirect(url_for("show_group",
                                 branch=branch,
                                 cn=group_cn))
     fm.set_edit_group_form_values(form, fieldz, branch, group_cn)
-    #print(form.filesystem.type)
     return render_template('edit_group.html',
                            form=form,
                            page=page,

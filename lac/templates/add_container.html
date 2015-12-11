@@ -1,0 +1,49 @@
+{% from "_formhelpers.html" import render_formfield, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Création d'un conteneur {% endblock title %}
+
+{% block head_js %}
+<script type="text/javascript" src="{{
+        url_for('static', filename='jquery-2.1.1.js')
+        }}"></script>
+
+<script type="text/javascript" src="{{
+        url_for('static', filename='custom_listbox.js')
+        }}"></script>
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#searchGroupFilter').keyup(function() {
+     var searchArea = $('#group');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+     //alert(searchArea);
+   });
+ })
+</script>
+{% endblock head_js %}
+
+{% block body %}
+<div class="well col-md-offset-3 col-md-6 text-center">
+  <form method="post" action="/add_container/">
+    {{ render_formfield(add_form.cn) }}
+      {% for block in blockz %}
+      <div class="attrz-block">
+        {% for field in fieldz %}
+        {% if field.block == block and field.label != 'uniqueMember' %}
+        {% if 'FieldList' in get_type(get_attr(add_form, field.label)) %}
+        {{ render_fieldlist(add_form, field) }}
+        {% else %}
+        {{ render_formfield(get_attr(add_form, field.label))}}
+        {% endif  %}
+        {% endif %}
+        {% endfor  %}
+      </div>
+     {% endfor  %}
+    <button id="update" type="submit"  class="btn btn-primary">
+      <span class="glyphicon glyphicon-arrow-right"> Suivant</span>
+    </button>
+  </form>
+</div>
+{% endblock body %}

@@ -1,0 +1,91 @@
+{% from "_formhelpers.html" import render_formfield, render_field, render_fieldlist %}
+{% extends "layout.html" %}
+
+{% block title %} Edition du groupe {{ group_cn }}  {% endblock title %}
+
+{% block head_js %}
+<script type="text/javascript" src="{{
+         url_for('static', filename='jquery-2.1.1.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='fieldset.js')
+         }}"></script>
+
+<script type="text/javascript" src="{{
+         url_for('static', filename='custom_listbox.js')
+         }}"></script>
+
+<script type="text/javascript" id="js">
+ $(document).ready(function(){
+   $('#memberz-available_memberz').dblclick(function() {
+     selectFromList('#memberz-available_memberz', '#memberz-selected_memberz');
+   });
+   $('#memberz-selected_memberz').dblclick(function() {
+     removeFromList('#memberz-available_memberz', '#memberz-selected_memberz');
+   });
+   $('#toPage').click(function() {
+     selectFromList('#memberz-available_memberz', '#memberz-selected_memberz');
+   });
+   $('#toAvailable').click(function(){
+     removeFromList('#memberz-available_memberz', '#memberz-selected_memberz');
+   });
+   $('#searchMemberFilter').keyup(function() {
+     var searchArea = $('#memberz-available_memberz');
+     // Select Box ID
+     searchFromList($(this).val(), searchArea);
+   });
+   $('#update').click(function() {
+     $('#memberz-selected_memberz option').prop('selected', true);
+   });
+ });
+</script>
+
+{% endblock head_js %}
+
+{% block body %}
+<header class="row text-center">
+  <h4>Edition du conteneur {{ group_cn }}</h4>
+</header>
+
+<div id='dn'> Nom LDAP : {{ dn }}</div> <br/>
+<section class="row">
+  <div class="well">
+
+    <form method="post" action="/edit_container/{{ group_cn }}">
+      <div class="col-sm-6  large-label">
+        <fieldset>
+          {% for field in fieldz %}
+          {% if field.label != "uniqueMember" %}
+          {% if 'FieldList' in get_type(get_attr(form, field.label)) %}
+          {{ render_fieldlist(form, field) }}
+          {% else %}
+          {{ render_formfield(get_attr(form, field.label))}}
+          {% endif  %}
+          {% endif %}
+          {% endfor  %}
+        </fieldset>
+      </div>
+      <div class="group-select col-sm-6">
+        <fieldset class='text-center'>
+          <legend>
+            Gestion des membres
+          </legend>
+          Filter les membres :
+          <input id="searchMemberFilter" type="text"/>
+          <br>
+          <br>
+          {{ render_formfield(form.memberz.available_memberz) }}
+          {{ render_formfield(form.memberz.selected_memberz) }}
+        </fieldset>
+      </div><br>
+      <section class="row">
+        <div class="text-center">
+          <button id="update" type="submit"  class="btn btn-primary"><span class="glyphicon glyphicon-ok-sign"> Mettre à jour</span></button>
+        </div>
+      </section>
+    </form>
+  </div>
+  </section>
+
+{% endblock body %}

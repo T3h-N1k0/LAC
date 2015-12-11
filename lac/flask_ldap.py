@@ -214,7 +214,6 @@ class LDAP(object):
                      for name, values in pre_modlist]
         return self.generic_modify(dn, mod_attrs)
 
-
     def remove_uid_attribute(self, uid, pre_modlist):
         dn = self.get_full_dn_from_uid(uid)
         mod_attrs = [(ldap.MOD_DELETE, name, values)

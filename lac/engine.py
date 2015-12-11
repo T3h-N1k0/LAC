@@ -193,27 +193,50 @@ class Engine(object):
                 attributes=['cinesC4', 'dn', 'uid', 'gidNumber']
             )
         for member in memberz:
-            member_attrz = member.get_attributes()
-            if (
-                    self.is_ccc_group(member_attrz['uid'][0])
-                    and self.is_principal_group(member_attrz, group)
-                    and (
-                        'cinesC4' not in member_attrz
-                         or member_attrz['cinesC4'][0] != comite
-                    )
-            ):
-                if not comite and 'cinesC4' in member_attrz:
-                    self.ldap.remove_uid_attribute(
-                        member_attrz['uid'][0],
-                        [('cinesC4', None)]
-                    )
-                elif comite:
-                    self.ldap.update_uid_attribute(
-                        member_attrz['uid'][0],
-                        [('cinesC4', comite.encode('utf-8'))])
-                print('{0} mis à jour à : {1}'.format(
-                    member_attrz['uid'][0],
-                    comite))
+            self.update_user_cines_c4(member, group, comite)
+
+
+    def update_user_cines_c4(self, user, group, comite):
+        user_attrz = user.get_attributes()
+        user_uid = user_attrz['uid'][0]
+        if (
+                self.is_ccc_group(user_uid)
+                and self.is_principal_group(user_attrz, group)
+                and (
+                    'cinesC4' not in user_attrz
+                    or user_attrz['cinesC4'][0] != comite
+                )
+        ):
+            if not comite and 'cinesC4' in user_attrz:
+                self.ldap.remove_uid_attribute(
+                    user_uid,
+                    [('cinesC4', None)]
+                )
+            elif comite:
+                old_comite = user_attrz['cinesC4']
+                self.rem_user_from_container(user_uid, old_comite)
+                self.add_user_to_container(user_uid, comite)
+                self.ldap.update_uid_attribute(
+                    user_uid,
+                    [('cinesC4', comite.encode('utf-8'))])
+
+    def add_user_to_container(self, user_uid, container_cn):
+        container_dn = "cn={0},ou=grConteneur,ou=groupePosix,{1}".format(
+            container_cn,
+            self.ldap_search_base
+        )
+        pre_modlist = []
+        pre_modlist.append(('memberUid', [user_uid.encode('utf-8')]))
+        self.ldap.add_dn_attribute(container_dn, pre_modlist)
+
+    def rem_user_from_container(self, user_uid, container_cn):
+        container_dn = "cn={0},ou=grConteneur,ou=groupePosix,{1}".format(
+            container_cn,
+            self.ldap_search_base
+        )
+        pre_modlist = []
+        pre_modlist.append(('memberUid', [user_uid.encode('utf-8')]))
+        self.ldap.rm_dn_attribute(container_dn, pre_modlist)
 
     def update_password_from_form(self, form, uid):
         pre_modlist = []
@@ -678,6 +701,7 @@ class Engine(object):
                 add_record.append(
                     ('cinesC4', comite.encode('utf-8'))
                 )
+            self.add_user_to_container(uid, comite)
         if ldap_ot.ppolicy != '':
             add_record.append(
                 ('pwdPolicySubentry',
@@ -837,7 +861,8 @@ class Engine(object):
         self.ldap.update_dn_attribute(dn, pre_modlist)
 
     def update_ldap_object_from_edit_user_form(self, form, fieldz, uid, page):
-        uid_attributez = self.ldap.get_uid_detailz(uid).get_attributes()
+        user = self.ldap.get_uid_detailz(uid)
+        uid_attributez = user.get_attributes()
         pre_modlist = []
         for field in fieldz:
             form_values = [
@@ -871,11 +896,11 @@ class Engine(object):
                         comite = ressource.comite.ct
                     else:
                         comite = ''
-                    if comite != '':
+                    if comite != '' and uid_attributez['cinesC4'] != comite:
                         pre_modlist.append(
                             ('cinesC4', comite.encode('utf-8'))
                         )
-                    print('Group: {0} && Comite: {1}'.format(group_cn, comite))
+                        self.update_user_cines_c4(user, group_cn, comite)
         self.ldap.update_uid_attribute(uid, pre_modlist)
 
     def upsert_otrs_user(self, uid):
