@@ -646,7 +646,6 @@ class LDAP(object):
                                                         state)
         pre_modlist = [('cinesSoumission', new_cines_soumission)]
         self.update_uid_attribute(uid, pre_modlist)
-        flash(u'Soumission mis à jour pour le groupe {0}'.format(group))
 
     def set_group_ppolicy(self, group, ppolicy):
         memberz = self.get_people_group_memberz(group)
