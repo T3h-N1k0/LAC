@@ -69,7 +69,7 @@ class FormManager(object):
                                       validators.Required(
                                           message=u'Champ obligatoire'
                                       )] if field.mandatory
-                                  else None))
+                                  else [validators.optional()]))
         elif  field.fieldtype.type == 'GIDNumber':
             setattr(form,
                     field.label,
@@ -157,7 +157,7 @@ class FormManager(object):
                         validators=[
                             validators.Required(message=u'Champ obligatoire'
                                             ) ] if field.mandatory
-                        else None)))
+                        else [validators.optional()])))
         elif  field.fieldtype.type == 'GIDNumber':
             setattr(form,
                     field.label,
