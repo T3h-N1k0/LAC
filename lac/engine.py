@@ -50,6 +50,7 @@ class Engine(object):
     def disable_account(self, user):
         user_attr = user.get_attributes()
         mod_attr = [('pwdAccountLockedTime', "000001010000Z")]
+        user_uid = user_attr['uid'][0]
         if self.cache.get_group_from_member_uid(user_uid) == 'ccc':
             new_shadow_expire_datetime = datetime.now() - timedelta(days=1)
             new_shadow_expire = str(
@@ -58,11 +59,14 @@ class Engine(object):
             )
             mod_attr.append(('shadowExpire', new_shadow_expire))
         self.ldap.update_uid_attribute(
-            user_attr['uid'][0],
+            user_uid,
             mod_attr
         )
-        flash(u'Compte {0} désactivé'.format(user_attr['uid'][0]))
-
+        flash(u'Compte {0} désactivé'.format(user_uid))
+        print(u'{0} : Compte {1} désactivé'.format(
+            session['uid'],
+            user_uid).encode('utf-8')
+        )
     def enable_account(self, user):
         user_uid = user.get_attributes()['uid'][0]
         if self.cache.get_group_from_member_uid(user_uid) == 'ccc':
