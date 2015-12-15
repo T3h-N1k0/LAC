@@ -201,20 +201,22 @@ class Engine(object):
         user_uid = user_attrz['uid'][0]
         if (
                 self.is_ccc_group(user_uid)
-                and self.is_principal_group(user_attrz, group)
                 and (
                     'cinesC4' not in user_attrz
                     or user_attrz['cinesC4'][0] != comite
                 )
         ):
             if not comite and 'cinesC4' in user_attrz:
+                old_comite = user_attrz['cinesC4'][0]
                 self.ldap.remove_uid_attribute(
                     user_uid,
                     [('cinesC4', None)]
                 )
-            elif comite:
-                old_comite = user_attrz['cinesC4']
                 self.rem_user_from_container(user_uid, old_comite)
+            elif comite:
+                if "cinesC4" in user_attrz:
+                    old_comite = user_attrz['cinesC4'][0]
+                    self.rem_user_from_container(user_uid, old_comite)
                 self.add_user_to_container(user_uid, comite)
                 self.ldap.update_uid_attribute(
                     user_uid,
@@ -236,7 +238,7 @@ class Engine(object):
         )
         pre_modlist = []
         pre_modlist.append(('memberUid', [user_uid.encode('utf-8')]))
-        self.ldap.rm_dn_attribute(container_dn, pre_modlist)
+        self.ldap.remove_dn_attribute(container_dn, pre_modlist)
 
     def update_password_from_form(self, form, uid):
         pre_modlist = []
@@ -896,12 +898,18 @@ class Engine(object):
                         comite = ressource.comite.ct
                     else:
                         comite = ''
-                    if comite != '' and uid_attributez['cinesC4'] != comite:
+                    if (
+                            comite != ''
+                            and "cinesC4" in uid_attributez
+                            and uid_attributez['cinesC4'] != comite
+                    ):
                         pre_modlist.append(
                             ('cinesC4', comite.encode('utf-8'))
                         )
-                        self.update_user_cines_c4(user, group_cn, comite)
+                    self.update_user_cines_c4(user, group_cn, comite)
         self.ldap.update_uid_attribute(uid, pre_modlist)
+        self.cache.populate_people_group()
+
 
     def upsert_otrs_user(self, uid):
         user_attrz = self.ldap.get_uid_detailz(uid).get_attributes()
