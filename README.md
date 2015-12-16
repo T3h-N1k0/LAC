@@ -1,4 +1,30 @@
-# Install dependenciez
+# Web application based on Flask framework.
+
+
+## Description
+
+    - SQLAlchemy ORM is used for mapping with databases.
+    - Bootstrap is used for display customization.
+    - WTForms is used to manipulate HTML Forms.
+    - python-ldap is used to communicate with LDAP server.
+    - Redis is used to cache some data retrieved from LDAP server.
+    - MySQL is used to store application specific data.
+
+    The code is split like this :
+    - data_modelz.py : data classes definition used by SQLAlchemy to retrieve data from MySQL databases
+    - formz.py : forms classes definition used by WTForms
+    - form_manager.py : class used to generate custom formz, set default form values and help manage WTForm formz
+    - cache.py : class use to cache data locally with Redis instead of querying multiple time LDAP server.
+    - converter.py : class used to help convert different time format dans custom form fieldz
+    - flask_ldap.py : class used to communicate with LDAP server
+    - engine.py : class used to perform CINES specific functionz.
+    - views.py : file used by Flask to define the views (URL) of the application
+    - helperz.py : file defining various helper functionz.
+    - templates/ : folder containing templates used by Flask views to render HTML pages
+    - static/ : folder containing display files (CSS/JavaScript/images/...)
+    - scriptz/ : folder containing standalone scriptz
+
+## Install dependenciez
     apt-get install libsasl2-dev python-dev libldap2-dev libssl-dev redis-server libmysqlclient-dev mysql-server mysql-client apache2
 
 # Conf mysql
