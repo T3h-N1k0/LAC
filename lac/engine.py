@@ -481,7 +481,6 @@ class Engine(object):
                     and (field_name not in storage
                          or  form_value != storage[field_name][0])
             ):
-                print('form_value : {0} \nfield_name : {1}  \ndefault_storage[default_field] : {2}\n'.format(form_value, field_name,  default_storage[default_field]))
                 pre_modlist.append((field_name, form_value))
 
         if form.cinesQuotaSizeTempExpire.data:
@@ -1145,7 +1144,6 @@ class Engine(object):
         return page_attr
 
     def upsert_field(self, attr_label, form_field, page):
-        print('Upsert field {0}'.format(attr_label))
         attribute = LDAPAttribute.query.filter_by(label = attr_label).first()
         field_type = FieldType.query.filter_by(
             id=form_field.display_mode.data
@@ -1178,10 +1176,6 @@ class Engine(object):
                               priority=form_field.priority.data,
                               block=form_field.block.data)
             db.session.add(new_field)
-
-    # def add_user_to_lac_admin(self, user):
-    #     self.ldap.update_uid_attribute(user, pre_modlist)
-
 
     def get_dict_from_raw_log_valuez(self, raw_valuez):
         valuez = {}
