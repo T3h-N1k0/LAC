@@ -9,7 +9,7 @@ LDAP_SEARCH_BASE = 'dc=example,dc=com'
 LDAP_LOG_BASE = 'cn=log'
 LDAP_LOGIN_VIEW = 'login'
 LDAP_SUCCESS_REDIRECT = 'home'
-LDAP_DOMAIN = 'ou=cines,ou=people,dc=example,dc=cpù'
+LDAP_DOMAIN = 'ou=cines,ou=people,dc=example,dc=com'
 LDAP_DEFAULT_ADMIN = 'uid=adm.default,ou=Admcines,ou=people,{0}'.format(LDAP_SEARCH_BASE)
 ENCODING = 'utf-8'
 TIMEZONE = 'Europe/Paris'
@@ -57,7 +57,7 @@ BRANCHZ = ({'account': 'cines',
            {'account' : 'Admcines',
             'group' : 'grAdmCines'}
 )
-SHADOW_DURATION = 12
+SHADOW_DURATION = 18
 SAMBA_DOMAIN_NAME = 'SAMBA_DOMAIN_NAME'
 PROD_FLAG = False
 DATE_FORMAT = '%d/%m/%Y'
