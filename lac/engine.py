@@ -1,5 +1,4 @@
-# coding=utf-8
-# -*- coding: utf-8 -*-
+# coding: utf-8
 import os
 import re
 import hashlib
@@ -82,6 +81,10 @@ class Engine(object):
             )
         self.ldap.remove_uid_attribute(user_uid,
                                        [('pwdAccountLockedTime', None)])
+        print(u'{0} : Compte {1} activé'.format(
+            session['uid'],
+            user_uid).encode('utf-8')
+        )
 
     def get_search_user_fieldz(self):
         page = Page.query.filter_by(label = "search_user").first()
@@ -199,7 +202,6 @@ class Engine(object):
         for member in memberz:
             self.update_user_cines_c4(member, group, comite)
 
-
     def update_user_cines_c4(self, user, group, comite):
         user_attrz = user.get_attributes()
         user_uid = user_attrz['uid'][0]
@@ -225,6 +227,13 @@ class Engine(object):
                 self.ldap.update_uid_attribute(
                     user_uid,
                     [('cinesC4', comite.encode('utf-8'))])
+            print(u'{0} : Nouveau comité pour {1} -> {2}'.format(
+                session['uid'],
+                user_uid,
+                comite).encode('utf-8')
+              )
+
+
 
     def add_user_to_container(self, user_uid, container_cn):
         container_dn = "cn={0},ou=grConteneur,ou=groupePosix,{1}".format(
@@ -261,6 +270,10 @@ class Engine(object):
                 pre_modlist.append(('pwdReset', 'TRUE'))
             if self.ldap.update_uid_attribute(uid, pre_modlist):
                 flash(u'Mot de passe pour {0} mis à jour avec succès.'.format(uid))
+                print(u'{0} : Mise à jour du mot de passe pour {1}'.format(
+                    session['uid'],
+                    uid).encode('utf-8')
+                )
             return redirect(url_for('show_user',
                                     page= self.cache.get_group_from_member_uid(uid),
                                     uid=uid))
@@ -273,7 +286,10 @@ class Engine(object):
                 flash(
                     u'Votre mot de passe a été mis à jour avec succès.'.format(uid)
                 )
-
+                print(u'{0} : Mise à jour du mot de passe pour {1}'.format(
+                    session['uid'],
+                    uid).encode('utf-8')
+                )
             if pre_modlist:
                 self.ldap.update_uid_attribute(uid, pre_modlist)
             return redirect(url_for('home'))
@@ -325,6 +341,11 @@ class Engine(object):
                         id=attr_id
                     ).delete()
         db.session.commit()
+        print(u'{0} : Page {1} mise à jour'.format(
+            session['uid'],
+            page.label).encode('utf-8')
+        )
+
 
     def update_lac_admin_from_form(self, form):
         group_dn = "cn=lacadmin,ou=system,{0}".format(self.ldap_search_base)
@@ -351,6 +372,14 @@ class Engine(object):
                                                for member in memberz_to_del]
                                    )
         self.fm.populate_ldap_admin_choices(form)
+        print(u'{0} : Update des admin lac : {1}'.format(
+            session['uid'],
+            form.selected_memberz.data
+            if form.selected_memberz.data is not None
+            else "vide").encode('utf-8')
+        )
+
+
 
     def update_ldap_admin_from_form(self, form):
         group_dn = "cn=ldapadmin,ou=system,{0}".format(self.ldap_search_base)
@@ -377,6 +406,12 @@ class Engine(object):
                                            for member in memberz_to_del]
                                    )
         self.fm.populate_ldap_admin_choices(form)
+        print(u'{0} : Update des admin ldap : {1}'.format(
+            session['uid'],
+            form.selected_memberz.data
+            if form.selected_memberz.data is not None
+            else "vide").encode('utf-8')
+        )
 
     def get_last_used_id(self, ldap_ot):
         attributes=['gidNumber'] if ldap_ot.apply_to == 'group' else ['uidNumber']
@@ -433,6 +468,10 @@ class Engine(object):
             ('cinesQuotaInodeHard', cinesQuotaInodeHard),
             ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
         self.ldap.add(dn, pre_modlist)
+        print(u'{0} : Quota par défaut {1} créé'.format(
+            session['uid'],
+            cn).encode('utf-8')
+        )
 
     def update_default_quota(self, storage_cn, form):
         storage_dn = "cn={0},ou=quota,ou=system,{1}".format(
@@ -456,6 +495,10 @@ class Engine(object):
                        ('cinesQuotaInodeHard', cinesQuotaInodeHard),
                        ('cinesQuotaInodeSoft', cinesQuotaInodeSoft)]
         self.ldap.update_dn_attribute(storage_dn, pre_modlist)
+        print(u'{0} : Quota par défaut {1} mis à jour'.format(
+            session['uid'],
+            storage_cn).encode('utf-8')
+        )
 
     def update_quota(self, storage, form):
         storage_cn = storage['cn'][0]
@@ -512,10 +555,10 @@ class Engine(object):
                 pre_modlist.append(('cinesQuotaInodeTempExpire',
                                     cinesQuotaInodeTempExpire))
         self.ldap.update_dn_attribute(storage_dn, pre_modlist)
-
-
-
-
+        print(u'{0} : Quota par spécifique {1} mis à jour'.format(
+            session['uid'],
+            storage_cn).encode('utf-8')
+        )
 
     def populate_last_used_idz(self):
         ignore_ot_list = ['reserved', 'grLight', 'grPrace']
@@ -578,6 +621,10 @@ class Engine(object):
             self.cache.populate_grouplist()
             self.cache.populate_people_group()
             flash(u'Groupe créé')
+            print(u'{0} : Groupe posix {1} créé'.format(
+                session['uid'],
+                cn).encode('utf-8')
+            )
             return 1
 
     def create_ldap_object_from_add_workgroup_form(self, form):
@@ -607,6 +654,10 @@ class Engine(object):
             db.session.commit()
             self.cache.populate_work_group()
             flash(u'Groupe créé')
+            print(u'{0} : Groupe de travail {1} créé'.format(
+                session['uid'],
+                cn).encode('utf-8')
+            )
             return 1
 
     def create_ldap_object_from_add_container_form(self, form):
@@ -635,6 +686,10 @@ class Engine(object):
             db.session.commit()
             self.cache.populate_work_group()
             flash(u'Groupe créé')
+            print(u'{0} : Conteneur {1} créé'.format(
+                session['uid'],
+                cn).encode('utf-8')
+              )
             return 1
 
     def create_ldap_object_from_add_user_form(self, form, fieldz, page):
@@ -723,6 +778,10 @@ class Engine(object):
             db.session.commit()
             self.cache.populate_grouplist()
             self.cache.populate_people_group()
+            print(u'{0} : Utilisateur {1} créé'.format(
+                session['uid'],
+                uid).encode('utf-8')
+            )
         else:
             flash(u'L\'utilisateur n\'a pas été créé')
         return True
@@ -759,7 +818,11 @@ class Engine(object):
         if form.set_ppolicy.data :
             self.ldap.set_group_ppolicy(ldap_object_type.label,
                                    ldap_object_type.ppolicy)
-        flash(u'{0} mis à jour'.format(ldap_object_type.description))
+            flash(u'{0} mis à jour'.format(ldap_object_type.description))
+        print(u'{0} : Type d\'objet {1} créé'.format(
+            session['uid'],
+            ldap_object_type.label).encode('utf-8')
+        )
 
     def create_ldap_quota(self, storage, group_id):
         niou_cn = '{0}.G.{1}'.format(
@@ -780,6 +843,10 @@ class Engine(object):
         full_dn = 'cn={0},{1}'.format(niou_cn,group_full_dn)
         self.ldap.add(full_dn, add_record)
         flash(u'Quota initialisé')
+        print(u'{0} : Quota spécifique {1} créé'.format(
+            session['uid'],
+            niou_cn).encode('utf-8')
+        )
 
     def update_users_by_file(self, edit_form, attrz_list):
         fieldz = Field.query.filter(Field.id.in_(attrz_list)).all()
@@ -853,7 +920,9 @@ class Engine(object):
 
 
     def update_ldap_object_from_edit_ppolicy_form(self, form, attributes, cn):
-        dn = "cn={0},ou=policies,ou=system,{1}".format(self.ldap_search_base)
+        dn = "cn={0},ou=policies,ou=system,{1}".format(
+            cn,
+            self.ldap_search_base)
         ppolicy_attrz = self.ldap.get_ppolicy(cn).get_attributes()
         pre_modlist = []
         for attr in attributes:
@@ -864,6 +933,10 @@ class Engine(object):
                 # else:
                 pre_modlist.append((attr, [field_value]))
         self.ldap.update_dn_attribute(dn, pre_modlist)
+        print(u'{0} : Ppolicy {1} créée'.format(
+            session['uid'],
+            cn).encode('utf-8')
+        )
 
     def update_ldap_object_from_edit_user_form(self, form, fieldz, uid, page):
         user = self.ldap.get_uid_detailz(uid)
@@ -912,7 +985,10 @@ class Engine(object):
                     self.update_user_cines_c4(user, group_cn, comite)
         self.ldap.update_uid_attribute(uid, pre_modlist)
         self.cache.populate_people_group()
-
+        print(u'{0} : Mise à jour de l\'utilisteur {1}'.format(
+            session['uid'],
+            uid).encode('utf-8')
+        )
 
     def upsert_otrs_user(self, uid):
         user_attrz = self.ldap.get_uid_detailz(uid).get_attributes()
@@ -1081,6 +1157,10 @@ class Engine(object):
             page.label,
             self.ldap_search_base)
         self.ldap.update_dn_attribute(group_dn, pre_modlist)
+        print(u'{0} : Groupe posix {1} mis à jour'.format(
+            session['uid'],
+            group_cn).encode('utf-8')
+        )
 
     def update_ldap_object_from_edit_workgroup_form(self, form, page, group_cn):
         dn="cn={0},ou=grTravail,{1}".format(
@@ -1122,6 +1202,10 @@ class Engine(object):
         )
         self.cache.populate_work_group()
         self.ldap.update_dn_attribute(dn, pre_modlist)
+        print(u'{0} : Groupe de travail {1} mis à jour'.format(
+            session['uid'],
+            group_cn).encode('utf-8')
+        )
 
     def update_fields_from_edit_page_admin_form(self, form, attributes, page):
         Field.query.filter(Field.page_id == page.id,
@@ -1247,3 +1331,7 @@ class Engine(object):
                     ('objectClass', ['device', 'pwdPolicy'])]
         if self.ldap.add(dn, add_record):
             flash(u'PPolicy {0} ajoutée'.format(cn))
+            print(u'{0} : PPolicy {1} créé'.format(
+                session['uid'],
+                cn).encode('utf-8')
+            )
