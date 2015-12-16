@@ -1,8 +1,9 @@
-# Web application based on Flask framework.
+# Web application for LDAP management based on Flask framework.
 
 
 ## Description
 
+Modules used:
 - SQLAlchemy ORM is used for mapping with databases.
 - Bootstrap is used for display customization.
 - WTForms is used to manipulate HTML Forms.
