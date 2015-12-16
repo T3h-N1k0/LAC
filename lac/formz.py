@@ -93,7 +93,7 @@ class SizeQuotaForm(Form):
                        choices=[(1, 'Ko'),
                                 (1000, 'Mo'),
                                 (1000000, 'Go'),
-                                (1000000000, 'Po')],
+                                (1000000000, 'To')],
                        default=1000000,
                        coerce=int)
 
